@@ -1,0 +1,1 @@
+{"$id":"1","$type":"IonEngine.Material, IonEngine","shaderIndex":0,"albedoMap":null,"metallicMap":null,"roughnessMap":null,"aoMap":null,"albedo":{"$id":"2","$type":"System.Numerics.Vector3, System.Private.CoreLib","X":0.0,"Y":1.0,"Z":0.0},"metallic":0.0,"roughness":0.0,"ao":0.0}
