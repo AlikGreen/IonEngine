@@ -84,7 +84,7 @@ namespace Neon
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-        RHI::SamplerDescription samplerDesc{};
+        RHI::SamplerDesc samplerDesc{};
         samplerDesc.wrapMode.x = RHI::TextureWrap::ClampToEdge;
         samplerDesc.wrapMode.y = RHI::TextureWrap::ClampToEdge;
         m_colorTextureSampler = m_device->createSampler(samplerDesc);
@@ -143,7 +143,7 @@ namespace Neon
         if(!m_imguiTexture || m_imguiTexture != imGuiTexture)
         {
             m_imguiTexture = imGuiTexture;
-            const auto viewDesc = RHI::TextureViewDescription(imGuiTexture);
+            const auto viewDesc = RHI::TextureViewDesc(imGuiTexture);
             m_colorTextureView = m_device->createTextureView(viewDesc);
         }
 

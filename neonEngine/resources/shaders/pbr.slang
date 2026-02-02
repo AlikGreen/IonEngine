@@ -1,6 +1,6 @@
 // Slang shader (vertex + fragment). No register annotations.
 
-static const int MAX_POINT_LIGHTS = 32;
+static const int MAX_POINT_LIGHTS = 64;
 
 struct VertexInput
 {
@@ -21,6 +21,11 @@ cbuffer CameraUniforms
 {
     float4x4 viewMatrix;
     float4x4 projMatrix;
+    float4x4 viewProjMatrix;
+
+    float4x4 invViewMatrix;
+    float4x4 invProjMatrix;
+    float4x4 invViewProjMatrix;
 };
 
 cbuffer ModelUniforms
@@ -40,12 +45,12 @@ struct PointLight
     float3 position;
     float  power;
     float3 color;
-    float  pad;
+    float  radius;
 };
 
 cbuffer PointLightUniforms
 {
-    int      count;
+    int count;
     PointLight lights[MAX_POINT_LIGHTS];
 };
 

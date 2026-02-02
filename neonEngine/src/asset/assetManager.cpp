@@ -10,10 +10,10 @@ namespace Neon
     {
         for (const auto& dir: Engine::getConfig().resourcePaths)
         {
-            auto filepath = std::filesystem::path(dir)/filePath;
-            if(exists(filepath))
+            auto filepath = Path::join(dir, filePath);
+            if(Path::exists(filepath))
             {
-                return filepath.string();
+                return filepath;
             }
         }
         return filePath;
@@ -28,7 +28,7 @@ namespace Neon
 
     bool AssetManager::isValid(const AssetID id) const
     {
-        return id.getId() > 0 && id.getId() < nextHandle;
+        return id.handle() > 0 && id.handle() < nextHandle;
     }
 
     std::vector<AssetID> AssetManager::getAllAssetIDs()

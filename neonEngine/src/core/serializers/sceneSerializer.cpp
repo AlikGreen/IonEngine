@@ -1,6 +1,7 @@
 #include "sceneSerializer.h"
 
 #include "asset/assetManager.h"
+#include "asset/assetStream.h"
 #include "core/scene.h"
 
 namespace Neon

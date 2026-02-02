@@ -1,4 +1,6 @@
 #pragma once
+#include "Coral/Array.hpp"
+#include "Coral/String.hpp"
 
 namespace Neon
 {
@@ -8,6 +10,7 @@ namespace Neon
 
 namespace Neon::ECS
 {
+    class TypeErasedRegistry;
     class ViewBase;
     class Registry;
 }
@@ -20,8 +23,7 @@ namespace Neon::Scripting
         struct EntityComponentData
         {
             size_t entityId;
-            size_t componentCount;
-            const void* componentPtrs;
+            void* const* componentPtrs;
         };
     }
 
@@ -42,15 +44,15 @@ namespace Neon::Scripting
         {
             extern "C"
             {
-                void registerComponentType(ECS::Registry* reg, size_t typeHash, size_t size, size_t alignment);
-                size_t createEntity(ECS::Registry* reg);
-                void* addComponent(ECS::Registry* reg, size_t entity, size_t componentTypeHash, void* componentData);
+                void registerComponentType(ECS::TypeErasedRegistry* reg, uint64_t typeHash, uint64_t size, uint64_t alignment);
+                size_t createEntity(ECS::TypeErasedRegistry* reg);
+                void* addComponent(ECS::TypeErasedRegistry* reg, size_t entity, size_t componentTypeHash, void* componentData);
 
-                ECS::ViewBase* createView(ECS::Registry* reg, size_t* typeHashes, size_t count);
+                ECS::ViewBase* createView(ECS::TypeErasedRegistry* reg, Coral::Array<uint64_t> typeHashes);
                 size_t getViewSize(ECS::ViewBase* view);
-                Interop::EntityComponentData* getViewEntry(ECS::ViewBase* view, size_t index);
+                Interop::EntityComponentData getViewEntry(ECS::ViewBase* view, size_t index);
 
-                size_t getTypeHash(const char* typeName);
+                size_t getTypeHash(Coral::String typeName);
             }
         }
 
@@ -58,8 +60,7 @@ namespace Neon::Scripting
         {
             extern "C"
             {
-                Scene* getCurrentScene();
-                ECS::Registry* getSceneRegistry(Scene* scene);
+                ECS::TypeErasedRegistry* getSceneRegistry();
             }
         }
 
@@ -68,8 +69,16 @@ namespace Neon::Scripting
         {
             extern "C"
             {
-                const char* Tag_getName(Tag* component);
-                void Tag_setName(Tag* component, const char* name);
+                Coral::String Tag_getName(Tag* component);
+                void Tag_setName(Tag* component, Coral::String);
+            }
+        }
+
+        namespace Log
+        {
+            extern "C"
+            {
+                void logInfo(Coral::String message);
             }
         }
     }

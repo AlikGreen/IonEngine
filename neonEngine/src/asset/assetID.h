@@ -12,7 +12,7 @@ struct AssetID
     auto operator<=>(const AssetID&) const = default;
     static constexpr AssetID invalid() { return AssetID(0); }
     [[nodiscard]] bool isValid() const { return id != 0; }
-    [[nodiscard]] int64_t getId() const { return id; }
+    [[nodiscard]] uint64_t handle() const { return id; }
 private:
     uint64_t id;
 };
@@ -23,6 +23,6 @@ struct std::hash<Neon::AssetID>
 {
     std::size_t operator()(const Neon::AssetID& id) const noexcept
     {
-        return std::hash<uint64_t>{}(id.getId());
+        return std::hash<uint64_t>{}(id.handle());
     }
 };

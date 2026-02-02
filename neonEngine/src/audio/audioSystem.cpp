@@ -19,16 +19,16 @@ namespace Neon
 
         for (auto [entity, audioSource, transform] : audioSources)
         {
-            const bool isPlaying = sounds.contains(audioSource.clip.getID());
+            const bool isPlaying = sounds.contains(audioSource.clip.id());
             if(audioSource.isPlaying && !isPlaying)
             {
-                Sound sound = audioManager.createSound(audioSource.clip.get());
+                Sound sound = audioManager.createSound(*audioSource.clip);
                 sound.play();
-                sounds.emplace(audioSource.clip.getID(), sound);
+                sounds.emplace(audioSource.clip.id(), sound);
             }
             if(audioSource.isPlaying && isPlaying)
             {
-                Sound& sound = sounds.at(audioSource.clip.getID());
+                Sound& sound = sounds.at(audioSource.clip.id());
                 sound.setLoop(audioSource.loop);
                 sound.setVolume(audioSource.volume);
                 sound.setPitch(audioSource.pitch);
@@ -36,9 +36,9 @@ namespace Neon
             }
             if(!audioSource.isPlaying && isPlaying)
             {
-                Sound sound = audioManager.createSound(audioSource.clip.get());
+                Sound sound = audioManager.createSound(*audioSource.clip);
                 sound.stop();
-                sounds.erase(audioSource.clip.getID());
+                sounds.erase(audioSource.clip.id());
             }
         }
     }

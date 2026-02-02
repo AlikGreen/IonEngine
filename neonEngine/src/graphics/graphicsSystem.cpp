@@ -27,18 +27,13 @@ namespace Neon
     void GraphicsSystem::updateSwapchainFramebuffers()
     {
         std::vector<Rc<RHI::Texture>> textures = m_swapchain->getTextures();
-        m_framebuffers.clear();
+        m_renderTextures.clear();
 
         for(const auto& texture : textures)
         {
-            const RHI::TextureViewDescription viewDesc(texture);
+            const RHI::TextureViewDesc viewDesc(texture);
             Rc<RHI::TextureView> colView = m_device->createTextureView(viewDesc);
-
-            RHI::FramebufferDescription framebufferDesc{};
-            framebufferDesc.colorTargets.push_back(colView);
-
-            Rc<RHI::Framebuffer> framebuffer = m_device->createFramebuffer(framebufferDesc);
-            m_framebuffers.push_back(framebuffer);
+            m_renderTextures.push_back(colView);
         }
     }
 
@@ -47,7 +42,7 @@ namespace Neon
         m_window->run();
         m_device = m_window->createDevice();
 
-        RHI::SwapchainDescription swapchainDesc{};
+        RHI::SwapchainDesc swapchainDesc{};
         swapchainDesc.window = m_window;
         m_swapchain = m_device->createSwapchain(swapchainDesc);
 
@@ -84,15 +79,13 @@ namespace Neon
         RHI::RasterizerState rasterizerState{};
         rasterizerState.cullMode = RHI::CullMode::None;
 
-        const RHI::RenderTargetsDescription targetsDesc{};
-
         RHI::BlendState blendState{};
         blendState.enableBlend = true;
 
-        RHI::GraphicsPipelineDescription pipelineDescription{};
+        RHI::GraphicsPipelineDesc pipelineDescription{};
         pipelineDescription.shader             = shader;
         pipelineDescription.inputLayout		   = vertexInputState;
-        pipelineDescription.targetsDescription = targetsDesc;
+        pipelineDescription.targetsDescription = {};
         pipelineDescription.depthState         = depthState;
         pipelineDescription.rasterizerState    = rasterizerState;
         pipelineDescription.blendState         = blendState;
@@ -105,7 +98,7 @@ namespace Neon
         m_indexBuffer = m_device->createIndexBuffer();
 
         constexpr uint32_t texSize = 1;
-        RHI::TextureDescription desc = RHI::TextureDescription::Texture2D(
+        RHI::TextureDesc desc = RHI::TextureDesc::Texture2D(
             texSize,
             texSize,
             RHI::PixelFormat::R8G8B8A8Unorm,
@@ -118,7 +111,7 @@ namespace Neon
 
         Rc<RHI::CommandList> cl = m_device->createCommandList();
 
-        RHI::TextureUploadDescription uploadDesc{};
+        RHI::TextureUploadDesc uploadDesc{};
         uploadDesc.width = texSize;
         uploadDesc.height = texSize;
         uploadDesc.data = pixel;
@@ -135,7 +128,7 @@ namespace Neon
 
         m_device->submit(cl);
 
-        const auto viewDesc = RHI::TextureViewDescription(texture);
+        const auto viewDesc = RHI::TextureViewDesc(texture);
         m_defaultTexture = m_device->createTextureView(viewDesc);
     }
 
@@ -219,14 +212,6 @@ namespace Neon
     void GraphicsSystem::preRender()
     {
         m_imageIndex = m_swapchain->acquireNextImage();
-
-        const Rc<RHI::CommandList> commandList = m_device->createCommandList();
-
-        commandList->begin();
-        commandList->setPipeline(m_pipeline);
-        commandList->setFramebuffer(m_framebuffers[m_imageIndex]);
-        commandList->clearColorTarget(0, {0, 0, 0, 1});
-        m_device->submit(commandList);
     }
 
     void GraphicsSystem::postRender()
@@ -241,22 +226,31 @@ namespace Neon
 
     void GraphicsSystem::drawTexture(const Rc<RHI::TextureView> &texture, const Rc<RHI::Sampler> &sampler) const
     {
-        const Rc<RHI::CommandList> commandList = m_device->createCommandList();
+        const Rc<RHI::CommandList> cmd = m_device->createCommandList();
 
-        commandList->begin();
+        cmd->begin();
 
-        commandList->setPipeline(m_pipeline);
-        commandList->setFramebuffer(m_framebuffers[m_imageIndex]);
 
-        commandList->setIndexBuffer(m_indexBuffer, RHI::IndexFormat::UInt32);
-        commandList->setVertexBuffer(0, m_vertexBuffer);
+        RHI::ColorAttachment colorAttachment{};
+        colorAttachment.texture = m_renderTextures[m_imageIndex];
 
-        commandList->setTexture("blitTexture", texture);
-        commandList->setSampler("blitSampler", sampler);
+        RHI::RenderPassDesc renderPassDesc{};
+        renderPassDesc.colorAttachments = {colorAttachment};
+        cmd->beginRenderPass(renderPassDesc);
 
-        commandList->drawIndexed(6);
+        cmd->setPipeline(m_pipeline);
 
-        m_device->submit(commandList);
+        cmd->setIndexBuffer(m_indexBuffer, RHI::IndexFormat::UInt32);
+        cmd->setVertexBuffer(0, m_vertexBuffer);
+
+        cmd->setTexture("blitTexture", texture);
+        cmd->setSampler("blitSampler", sampler);
+
+        cmd->drawIndexed(6);
+
+        cmd->endRenderPass();
+
+        m_device->submit(cmd);
     }
 
     Rc<RenderTarget> GraphicsSystem::createRenderTarget(const uint32_t width, const uint32_t height, const bool useDepth) const

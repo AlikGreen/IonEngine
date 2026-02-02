@@ -12,8 +12,8 @@ class AssetsWindow final : public EditorWindow
 public:
     void render() override;
     void event(Event *event) override;
-    void dropFile(std::string filepath);
 private:
+    std::string currentPath = "";
     std::vector<std::string> droppedPaths;
     AssetID hoveredAssetId = AssetID::invalid();
     double hoverStartTime = 0.0;

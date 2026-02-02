@@ -31,9 +31,8 @@ int main()
     Neon::Engine::registerSystem<Neon::RenderSystem>();
     Neon::Engine::registerSystem<Neon::ImGuiSystem>();
     Neon::Engine::registerSystem<Neon::InputSystem>();
-    Neon::Engine::registerSystem<Neon::ScriptingSystem>();
-
     Neon::Engine::registerSystem<Neon::Editor::EditorSystem>();
+    Neon::Engine::registerSystem<Neon::ScriptingSystem>();
 
     Neon::Engine::run();
 }

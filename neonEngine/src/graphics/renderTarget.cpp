@@ -10,16 +10,16 @@ namespace Neon
         m_width = glm::max(w, 1u);
         m_height = glm::max(h, 1u);
 
-        const RHI::TextureDescription colTexDesc = RHI::TextureDescription::Texture2D(m_width, m_height, RHI::PixelFormat::R8G8B8A8Unorm, RHI::TextureUsage::ColorTarget);
+        const RHI::TextureDesc colTexDesc = RHI::TextureDesc::Texture2D(m_width, m_height, RHI::PixelFormat::R8G8B8A8Unorm, RHI::TextureUsage::ColorTarget);
         const Rc<RHI::Texture> colTex = m_device->createTexture(colTexDesc);
-        const RHI::TextureViewDescription colViewDesc(colTex);
+        const RHI::TextureViewDesc colViewDesc(colTex);
         m_colorAttachment = m_device->createTextureView(colViewDesc);
 
         if(m_useDepth)
         {
-            const RHI::TextureDescription depthTexDesc = RHI::TextureDescription::Texture2D(m_width, m_height, RHI::PixelFormat::D24UnormS8Uint, RHI::TextureUsage::DepthStencilTarget);
+            const RHI::TextureDesc depthTexDesc = RHI::TextureDesc::Texture2D(m_width, m_height, RHI::PixelFormat::D24UnormS8Uint, RHI::TextureUsage::DepthStencilTarget);
             const Rc<RHI::Texture> depthTex = m_device->createTexture(depthTexDesc);
-            const RHI::TextureViewDescription depthViewDesc(depthTex);
+            const RHI::TextureViewDesc depthViewDesc(depthTex);
             m_depthAttachment = m_device->createTextureView(depthViewDesc);
         }
 

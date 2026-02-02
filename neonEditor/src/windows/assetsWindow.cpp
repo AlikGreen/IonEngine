@@ -5,6 +5,7 @@
 #include <util/file.h>
 
 #include "propertiesWindow.h"
+#include "../editorAssetImporter.h"
 #include "asset/assetManager.h"
 #include "graphics/imGuiSystem.h"
 #include "../editorSystem.h"
@@ -27,13 +28,7 @@ namespace Neon::Editor
 
             if (rect.Contains(p))
             {
-                std::string ext = Path::extension(path);
-
-                if(ext == ".glb")
-                {
-                    assetManager.import<Scene>(path);
-                    Log::info("Loaded Prefab {}", path);
-                }
+                EditorAssetImporter::import(path, currentPath);
             }
         }
 
@@ -44,16 +39,12 @@ namespace Neon::Editor
     void AssetsWindow::render()
     {
         AssetManager& assetManager = Engine::getAssetManager();
-
-        static ImGuiTextFilter assetFilter;
         static AssetID selectedAssetId = AssetID::invalid();
 
         static AssetID hoveredAssetId = AssetID::invalid();
         static double hoverStartTime = 0.0;
 
         ImGui::Begin("Assets");
-
-        assetFilter.Draw("Search", 220.0f);
         ImGui::Separator();
 
         ImGui::BeginChild("##assetGrid", ImVec2(0.0f, 0.0f), true, ImGuiWindowFlags_HorizontalScrollbar);
@@ -97,10 +88,6 @@ namespace Neon::Editor
             {
                 const AssetMetadata assetMetadata = assetManager.getMetadata(assetId);
                 const std::string assetName = assetMetadata.name;
-                if (!assetFilter.PassFilter(assetName.c_str()))
-                {
-                    continue;
-                }
 
                 ImGui::TableNextColumn();
                 ImGui::PushID(static_cast<int>(static_cast<size_t>(assetId)));

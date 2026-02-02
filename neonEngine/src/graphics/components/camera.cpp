@@ -58,7 +58,7 @@ namespace Neon
         return farClip;
     }
 
-    Frustum Camera::getFrustum(const glm::mat4 &view)
+    Frustum Camera::getFrustum(const glm::mat4 &view) const
     {
         if(projectionDirty || view != this->viewMatrix)
         {
@@ -70,7 +70,7 @@ namespace Neon
     }
 
 
-    const glm::mat4 & Camera::getProjectionMatrix()
+    const glm::mat4 & Camera::getProjectionMatrix() const
     {
         if (projectionDirty)
         {
@@ -80,7 +80,7 @@ namespace Neon
     }
 
 
-    void Camera::updateProjectionMatrix()
+    void Camera::updateProjectionMatrix() const
     {
         projectionMatrix = glm::perspective(
             glm::radians(fov),

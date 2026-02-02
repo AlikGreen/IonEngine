@@ -24,14 +24,14 @@ namespace Neon::Editor
         AssetManager& assetManager = Engine::getAssetManager();
         auto model = assetManager.import<Scene>("models/monkey.glb");
 
-        ECS::Entity modelEntity = scene.import(model.get());
+        ECS::Entity modelEntity = scene.import(*model);
         modelEntity.get<Tag>().name = "Imported model";
         modelEntity.get<Transform>().setScale(glm::vec3(1.0f));
 
 
         auto skyboxData =  assetManager.loadUnmanaged<TextureData>("textures/skybox.hdr");
         const Rc<RHI::Texture> skyboxTexture = assetManager.addAsset(Image(skyboxData.release()), "Skybox Image")->texture;
-        const auto skyboxTexViewDesc = RHI::TextureViewDescription(skyboxTexture);
+        const auto skyboxTexViewDesc = RHI::TextureViewDesc(skyboxTexture);
         const Rc<RHI::TextureView> skyboxTextureView = Engine::getSystem<GraphicsSystem>()->getDevice()->createTextureView(skyboxTexViewDesc);
 
         MaterialShader skyboxMaterial = MaterialShader::createEquirectangularSkybox();
@@ -94,6 +94,7 @@ namespace Neon::Editor
 
         imGuiSystem->addRenderCallback([this]()
         {
+            drawMenuBar();
             for(const auto& window : editorWindows)
             {
                 window->render();
@@ -101,11 +102,6 @@ namespace Neon::Editor
         });
 
         model->name = "monkey number 12";
-        Log::info("Original: {} ", model->name);
-        auto stream = assetManager.serialize(model);
-        stream.setCursorPos(0);
-        const AssetRef<Scene> deserialized = assetManager.deserialize<Scene>(stream);
-        Log::info("Prefab loaded: {} ", deserialized->name);
     }
 
     void EditorSystem::update()
@@ -127,5 +123,25 @@ namespace Neon::Editor
     std::vector<ComponentInfo> EditorSystem::getComponents()
     {
         return registeredComponents;
+    }
+
+    void EditorSystem::drawMenuBar()
+    {
+        if (ImGui::BeginMainMenuBar())
+        {
+            if (ImGui::BeginMenu("File"))
+            {
+                if (ImGui::MenuItem("New")) { /* Do something */ }
+                if (ImGui::MenuItem("Open", "Ctrl+O")) { /* Do something */ }
+                if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Do something */ }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Windows"))
+            {
+                if (ImGui::MenuItem("Settings")) { /* Do something */ }
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
+        }
     }
 }

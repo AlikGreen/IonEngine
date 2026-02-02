@@ -25,6 +25,11 @@ class AssetRef;
 class AssetManager
 {
 public:
+    AssetManager() = default;
+
+    AssetManager (const AssetManager&) = delete;
+    AssetManager& operator= (const AssetManager&) = delete;
+
     template<typename T>
     AssetRef<T> addAsset(T* asset, std::string name = "");
     template<typename T>
@@ -72,7 +77,7 @@ public:
     }
 
     template<typename T>
-    AssetStream serialize(AssetRef<T> asset);
+    void serialize(AssetStream& assetStream, AssetRef<T> asset);
     template<typename T>
     AssetRef<T> deserialize(AssetStream& assetStream);
 

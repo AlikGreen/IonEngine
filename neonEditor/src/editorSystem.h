@@ -27,6 +27,7 @@ namespace Neon::Editor
         }
         std::vector<ComponentInfo> getComponents();
     private:
+        void drawMenuBar();
         std::vector<ComponentInfo> registeredComponents{};
         std::vector<Box<EditorWindow>> editorWindows{};
     };

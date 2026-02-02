@@ -17,7 +17,7 @@ namespace Neon
     {
         name = description.name;
         device = Engine::getSystem<GraphicsSystem>()->getDevice();
-        const RHI::ShaderReflection reflection = description.shader.get()->getShaderReflection();
+        reflection = (*description.shader)->getShaderReflection();
 
         uint32_t requiredSize = 0;
 
@@ -56,7 +56,6 @@ namespace Neon
         RHI::RasterizerState rasterizerState{};
         rasterizerState.cullMode = RHI::CullMode::Back;
 
-        const RHI::RenderTargetsDescription targetsDesc{};
 
         RHI::BlendState blendState{};
         blendState.enableBlend = description.blendEnabled;
@@ -65,10 +64,10 @@ namespace Neon
         blendState.srcAlphaFactor = description.srcAlphaBlendFactor;
         blendState.dstAlphaFactor = description.dstAlphaBlendFactor;
 
-        RHI::GraphicsPipelineDescription pipelineDescription{};
-        pipelineDescription.shader             = description.shader.get();
+        RHI::GraphicsPipelineDesc pipelineDescription{};
+        pipelineDescription.shader             = *description.shader;
         pipelineDescription.inputLayout        = inputLayout;
-        pipelineDescription.targetsDescription = targetsDesc;
+        pipelineDescription.targetsDescription = {};
         pipelineDescription.depthState         = depthState;
         pipelineDescription.rasterizerState    = rasterizerState;
         pipelineDescription.blendState         = blendState;
@@ -78,7 +77,7 @@ namespace Neon
         propertiesBuffer = device->createUniformBuffer();
 
         defaultTexture = Engine::getSystem<GraphicsSystem>()->getDefaultTexture();
-        RHI::SamplerDescription samplerDescription{};
+        RHI::SamplerDesc samplerDescription{};
         defaultSampler = device->createSampler(samplerDescription);
     }
 
@@ -143,6 +142,11 @@ namespace Neon
     std::vector<RHI::ShaderReflection::Member> MaterialShader::getProperties() const
     {
         return memberInfos;
+    }
+
+    RHI::ShaderReflection MaterialShader::getReflection()
+    {
+        return reflection;
     }
 
     Rc<RHI::Pipeline> MaterialShader::getPipeline()
@@ -229,9 +233,9 @@ namespace Neon
         MaterialDescription desc{};
         desc.name = "Skybox equirectangular";
         desc.shader = shader;
-        desc.cullMode = RHI::CullMode::Front;
+        desc.cullMode = RHI::CullMode::Back;
         desc.blendEnabled = false;
-        desc.depthTest = false;
+        desc.depthTest = true;
         desc.depthWrite = false;
 
         return MaterialShader(desc);

@@ -1,0 +1,15 @@
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\bin\Debug\net9.0\NeonEngine.deps.json
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\bin\Debug\net9.0\NeonEngine.dll
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\bin\Debug\net9.0\NeonEngine.pdb
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\obj\Debug\net9.0\NeonEngine.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\obj\Debug\net9.0\NeonEngine.AssemblyInfoInputs.cache
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\obj\Debug\net9.0\NeonEngine.AssemblyInfo.cs
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\obj\Debug\net9.0\NeonEngine.csproj.CoreCompileInputs.cache
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\obj\Debug\net9.0\NeonEngine.dll
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\obj\Debug\net9.0\refint\NeonEngine.dll
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\obj\Debug\net9.0\NeonEngine.pdb
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\obj\Debug\net9.0\ref\NeonEngine.dll
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\bin\Debug\net9.0\Coral.Managed.dll
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\bin\Debug\net9.0\Coral.Managed.pdb
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\obj\Debug\net9.0\NeonEngine.csproj.AssemblyReference.cache
+C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonEngine\obj\Debug\net9.0\NeonEngine.csproj.Up2Date

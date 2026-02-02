@@ -37,7 +37,7 @@ private:
     Rc<RHI::Buffer> m_indexBuffer{};
     Rc<RHI::Pipeline> m_pipeline{};
 
-    std::vector<Rc<RHI::Framebuffer>> m_framebuffers{};
+    std::vector<Rc<RHI::TextureView>> m_renderTextures{};
 
     void updateSwapchainFramebuffers();
 };

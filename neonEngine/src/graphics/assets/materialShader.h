@@ -23,6 +23,7 @@ struct MaterialDescription
 class MaterialShader
 {
 public:
+    MaterialShader() = default;
     explicit MaterialShader(const MaterialDescription& description);
 
     template<typename T>
@@ -84,6 +85,7 @@ public:
     std::vector<RHI::ShaderReflection::Resource> getSamplers() const;
     std::vector<RHI::ShaderReflection::Resource> getTextures() const;
     std::vector<RHI::ShaderReflection::Member> getProperties() const;
+    RHI::ShaderReflection getReflection();
 
     Rc<RHI::Pipeline> getPipeline();
     void bindUniforms(const Rc<RHI::CommandList>& commandList);
@@ -108,5 +110,6 @@ private:
     bool dirty = true;
     std::vector<uint8_t> cpuData;
     Rc<RHI::Buffer> propertiesBuffer;
+    RHI::ShaderReflection reflection;
 };
 }

@@ -25,8 +25,8 @@ public:
     void setFar(float far);
     [[nodiscard]] float getFar() const;
 
-    Frustum getFrustum(const glm::mat4 &view);
-    [[nodiscard]] const glm::mat4& getProjectionMatrix();
+    Frustum getFrustum(const glm::mat4 &view) const;
+    [[nodiscard]] const glm::mat4& getProjectionMatrix() const;
 
     Rc<RenderTarget> renderTarget{};
     AssetRef<MaterialShader> skyboxMaterial{};
@@ -36,13 +36,13 @@ private:
     float farClip = 1000.0f;
     float aspectRatio = 1.0f;
 
-    bool projectionDirty = true;
+    mutable bool projectionDirty = true;
 
-    glm::mat4 projectionMatrix{};
-    glm::mat4 viewMatrix{};
+    mutable glm::mat4 projectionMatrix{};
+    mutable glm::mat4 viewMatrix{};
 
-    Frustum frustum{};
+    mutable Frustum frustum{};
 
-    void updateProjectionMatrix();
+    void updateProjectionMatrix() const;
 };
 }

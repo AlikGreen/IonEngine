@@ -2,6 +2,9 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/neonEditor/cmake-build-debug/_deps/libdwarf-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/neonEditor/cmake-build-relwithdebinfo/_deps/libdwarf-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/coral" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/miniaudio" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonecs" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonecs/dependencies/neonCore" vcs="Git" />
@@ -12,6 +15,7 @@
     <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/imguizmo" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/neonCore" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/neonLog" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/neonLog/dependencies/cpptrace" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/neonLog/dependencies/spdlog" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/rapidyaml" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/rapidyaml/ext/c4core" vcs="Git" />

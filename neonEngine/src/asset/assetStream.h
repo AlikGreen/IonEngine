@@ -4,6 +4,9 @@
 #include <utility>
 #include <vector>
 
+#include "assetManager.h"
+#include "assetRef.h"
+
 namespace Neon
 {
 class AssetStream
@@ -30,7 +33,15 @@ public:
             return false;
 
         auto* byteData = static_cast<const uint8_t*>(data);
-        buffer.insert(buffer.end(), byteData, byteData + size);
+        const size_t writeEnd = m_cursor + size;
+
+        if (writeEnd > buffer.size())
+        {
+            buffer.reserve(static_cast<float>(buffer.size()) * 1.5f);
+            buffer.resize(writeEnd);
+        }
+
+        std::copy(byteData, byteData + size, buffer.begin() + m_cursor);
         m_cursor += size;
         return true;
     }
@@ -58,6 +69,23 @@ public:
         if(!write(vector.data(), sizeof(T)))
             return false;
 
+        return true;
+    }
+
+    template<typename T>
+    bool write(AssetRef<T> assetRef)
+    {
+        write<uint64_t>(assetRef.id().handle());
+        return true;
+    }
+
+    template<typename T>
+    bool read(AssetRef<T>& assetRef)
+    {
+        uint64_t id = 0;
+        read<uint64_t>(id);
+
+        assetRef = Engine::getAssetManager().getAsset<T>(AssetID(id));
         return true;
     }
 
@@ -104,6 +132,11 @@ public:
         }
 
         return true;
+    }
+
+    size_t getCursorPos() const
+    {
+        return m_cursor;
     }
 
     void setCursorPos(const size_t pos)

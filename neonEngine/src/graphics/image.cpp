@@ -26,20 +26,20 @@ namespace Neon
         const Rc<RHI::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
         if(sampler == nullptr)
         {
-            constexpr RHI::SamplerDescription samplerDesc;
+            constexpr RHI::SamplerDesc samplerDesc;
             sampler = device->createSampler(samplerDesc);
         }
 
         this->sampler = sampler;
 
-        RHI::TextureDescription texDesc{};
+        RHI::TextureDesc texDesc{};
         texDesc.width = data->width;
         texDesc.height = data->height;
         texDesc.format = getFormat(data->pixelType);
 
         texture = device->createTexture(texDesc);
 
-        RHI::TextureUploadDescription uploadDesc{};
+        RHI::TextureUploadDesc uploadDesc{};
 
         uploadDesc.data = data->data;
         uploadDesc.pixelType = data->pixelType;

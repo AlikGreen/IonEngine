@@ -167,7 +167,7 @@ namespace Neon
         if (pbr.baseColorTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.baseColorTexture.index], model, true);
-            Rc<RHI::TextureView> view = device->createTextureView(RHI::TextureViewDescription(imageRef->texture));
+            Rc<RHI::TextureView> view = device->createTextureView(RHI::TextureViewDesc(imageRef->texture));
             mat.setTexture("albedoTexture", view);
             mat.setSampler("albedoSampler", imageRef->sampler);
         }
@@ -180,7 +180,7 @@ namespace Neon
         if (pbr.metallicRoughnessTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.metallicRoughnessTexture.index], model, false);
-            Rc<RHI::TextureView> view = device->createTextureView(RHI::TextureViewDescription(imageRef->texture));
+            Rc<RHI::TextureView> view = device->createTextureView(RHI::TextureViewDesc(imageRef->texture));
             mat.setTexture("metallicRoughnessTexture", view);
             mat.setSampler("metallicRoughnessSampler", imageRef->sampler);
         }
@@ -193,7 +193,7 @@ namespace Neon
         if (material.normalTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.normalTexture.index], model, false);
-            Rc<RHI::TextureView> view = device->createTextureView(RHI::TextureViewDescription(imageRef->texture));
+            Rc<RHI::TextureView> view = device->createTextureView(RHI::TextureViewDesc(imageRef->texture));
             mat.setTexture("normalTexture", view);
             mat.setSampler("normalSampler", imageRef->sampler);
 
@@ -203,7 +203,7 @@ namespace Neon
         if (material.occlusionTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.occlusionTexture.index], model, false);
-            const Rc<RHI::TextureView> view = device->createTextureView(RHI::TextureViewDescription(imageRef->texture));
+            const Rc<RHI::TextureView> view = device->createTextureView(RHI::TextureViewDesc(imageRef->texture));
             mat.setTexture("occlusionTexture", view);
             mat.setSampler("occlusionSampler", imageRef->sampler);
 
@@ -213,7 +213,7 @@ namespace Neon
         if (material.emissiveTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.emissiveTexture.index], model, false);
-            const Rc<RHI::TextureView> view = device->createTextureView(RHI::TextureViewDescription(imageRef->texture));
+            const Rc<RHI::TextureView> view = device->createTextureView(RHI::TextureViewDesc(imageRef->texture));
             mat.setTexture("emissionTexture", view);
             mat.setSampler("emissionSampler", imageRef->sampler);
         }
@@ -314,12 +314,12 @@ namespace Neon
         const tinygltf::Image& image = model.images[texture.source];
         const std::vector<unsigned char>& data = image.image;
 
-        RHI::TextureDescription textureDescription{};
+        RHI::TextureDesc textureDescription{};
         textureDescription.format = determineTextureFormat(image, isSrgb);
         textureDescription.width = image.width;
         textureDescription.height = image.height;
 
-        RHI::SamplerDescription samplerDescription{};
+        RHI::SamplerDesc samplerDescription{};
 
         if (texture.sampler >= 0)
         {
@@ -336,7 +336,7 @@ namespace Neon
 
         AssetManager& assetManager = Engine::getAssetManager();
 
-        RHI::TextureUploadDescription uploadDescription{};
+        RHI::TextureUploadDesc uploadDescription{};
         uploadDescription.data = data.data();
         uploadDescription.pixelType = tinyGltfGetPixelType(image);
         uploadDescription.width = image.width;

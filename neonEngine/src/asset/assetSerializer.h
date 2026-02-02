@@ -1,8 +1,8 @@
 #pragma once
-#include "assetStream.h"
 
 namespace Neon
 {
+    class AssetStream;
     class AssetManager;
 }
 

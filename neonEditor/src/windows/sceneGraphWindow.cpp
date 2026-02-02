@@ -3,6 +3,7 @@
 #include <imgui.h>
 
 #include "propertiesWindow.h"
+#include "../editorCamera.h"
 #include "core/engine.h"
 #include "core/sceneManager.h"
 #include "core/components/parentComponent.h"
@@ -110,6 +111,8 @@ namespace Neon::Editor
 
     void SceneGraphWindow::drawEntityNode(const ECS::Entity e)
     {
+        if(e.has<EditorCamera>()) return;
+
         auto& world = Engine::getSceneManager().getCurrentScene().getRegistry();
 
         const auto it = m_childrenMap.find(e);
@@ -119,7 +122,7 @@ namespace Neon::Editor
 
         const bool searched = !search.empty() && toLower(world.get<Tag>(e).name).contains(toLower(search));
 
-        ImGui::PushID(static_cast<int>(e.getId()));
+        ImGui::PushID(static_cast<int>(e.id()));
 
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow
             | ImGuiTreeNodeFlags_SpanAvailWidth;
