@@ -1,0 +1,388 @@
+version: 1
+Alpha: 1
+DisabledAlpha: 0.5
+WindowPadding:
+  x: 8
+  y: 8
+WindowRounding: 6
+WindowBorderSize: 1
+WindowMinSize:
+  x: 32
+  y: 32
+WindowTitleAlign:
+  x: 0
+  y: 0.5
+WindowMenuButtonPosition: 0
+ChildRounding: 4
+ChildBorderSize: 1
+PopupRounding: 4
+PopupBorderSize: 1
+FramePadding:
+  x: 6
+  y: 4
+FrameRounding: 4
+FrameBorderSize: 0
+ItemSpacing:
+  x: 6
+  y: 5
+ItemInnerSpacing:
+  x: 6
+  y: 4
+CellPadding:
+  x: 4
+  y: 3
+TouchExtraPadding:
+  x: 0
+  y: 0
+IndentSpacing: 21
+ColumnsMinSpacing: 6
+ScrollbarSize: 12
+ScrollbarRounding: 6
+GrabMinSize: 12
+GrabRounding: 4
+LogSliderDeadzone: 4
+TabRounding: 4
+TabBorderSize: 0
+TabCloseButtonMinWidthSelected: -1
+TabBarBorderSize: 0
+TableAngledHeadersAngle: 0.61086524
+TableAngledHeadersTextAlign:
+  x: 0.5
+  y: 0
+ColorButtonPosition: 1
+ButtonTextAlign:
+  x: 0.5
+  y: 0.5
+SelectableTextAlign:
+  x: 0
+  y: 0
+SeparatorTextBorderSize: 1
+SeparatorTextAlign:
+  x: 0
+  y: 0.5
+SeparatorTextPadding:
+  x: 12
+  y: 6
+DisplayWindowPadding:
+  x: 19
+  y: 19
+DisplaySafeAreaPadding:
+  x: 3
+  y: 3
+MouseCursorScale: 1
+AntiAliasedLines: 1
+AntiAliasedLinesUseTex: 1
+AntiAliasedFill: 1
+CurveTessellationTol: 1.25
+CircleTessellationMaxError: 0.3
+Colors:
+  Text:
+    x: 0.95
+    y: 0.96
+    z: 0.98
+    w: 1
+  TextDisabled:
+    x: 0.5
+    y: 0.5
+    z: 0.5
+    w: 1
+  WindowBg:
+    x: 0.09
+    y: 0.09
+    z: 0.11
+    w: 1
+  ChildBg:
+    x: 0.13
+    y: 0.13
+    z: 0.15
+    w: 0.8
+  PopupBg:
+    x: 0.15
+    y: 0.15
+    z: 0.18
+    w: 0.98
+  Border:
+    x: 0.28
+    y: 0.28
+    z: 0.32
+    w: 0.7
+  BorderShadow:
+    x: 0
+    y: 0
+    z: 0
+    w: 0.3
+  FrameBg:
+    x: 0.16
+    y: 0.16
+    z: 0.19
+    w: 1
+  FrameBgHovered:
+    x: 0.20
+    y: 0.20
+    z: 0.24
+    w: 1
+  FrameBgActive:
+    x: 0.24
+    y: 0.24
+    z: 0.28
+    w: 1
+  TitleBg:
+    x: 0.06
+    y: 0.06
+    z: 0.08
+    w: 1
+  TitleBgActive:
+    x: 0.14
+    y: 0.14
+    z: 0.17
+    w: 1
+  TitleBgCollapsed:
+    x: 0.06
+    y: 0.06
+    z: 0.08
+    w: 0.8
+  MenuBarBg:
+    x: 0.12
+    y: 0.12
+    z: 0.14
+    w: 1
+  ScrollbarBg:
+    x: 0.07
+    y: 0.07
+    z: 0.09
+    w: 1
+  ScrollbarGrab:
+    x: 0.28
+    y: 0.28
+    z: 0.32
+    w: 1
+  ScrollbarGrabHovered:
+    x: 0.35
+    y: 0.35
+    z: 0.40
+    w: 1
+  ScrollbarGrabActive:
+    x: 0.42
+    y: 0.42
+    z: 0.48
+    w: 1
+  CheckMark:
+    x: 0.28
+    y: 0.68
+    z: 1
+    w: 1
+  SliderGrab:
+    x: 0.24
+    y: 0.52
+    z: 0.88
+    w: 1
+  SliderGrabActive:
+    x: 0.28
+    y: 0.68
+    z: 1
+    w: 1
+  Button:
+    x: 0.18
+    y: 0.18
+    z: 0.22
+    w: 1
+  ButtonHovered:
+    x: 0.24
+    y: 0.24
+    z: 0.28
+    w: 1
+  ButtonActive:
+    x: 0.28
+    y: 0.28
+    z: 0.34
+    w: 1
+  Header:
+    x: 0.24
+    y: 0.52
+    z: 0.88
+    w: 0.45
+  HeaderHovered:
+    x: 0.26
+    y: 0.59
+    z: 0.98
+    w: 0.75
+  HeaderActive:
+    x: 0.28
+    y: 0.68
+    z: 1
+    w: 1
+  Separator:
+    x: 0.25
+    y: 0.25
+    z: 0.29
+    w: 1
+  SeparatorHovered:
+    x: 0.24
+    y: 0.52
+    z: 0.88
+    w: 1
+  SeparatorActive:
+    x: 0.28
+    y: 0.68
+    z: 1
+    w: 1
+  ResizeGrip:
+    x: 0.24
+    y: 0.52
+    z: 0.88
+    w: 0.3
+  ResizeGripHovered:
+    x: 0.26
+    y: 0.59
+    z: 0.98
+    w: 0.7
+  ResizeGripActive:
+    x: 0.28
+    y: 0.68
+    z: 1
+    w: 1
+  InputTextCursor:
+    x: 1
+    y: 1
+    z: 1
+    w: 1
+  TabHovered:
+    x: 0.26
+    y: 0.59
+    z: 0.98
+    w: 0.8
+  Tab:
+    x: 0.12
+    y: 0.12
+    z: 0.14
+    w: 1
+  TabSelected:
+    x: 0.20
+    y: 0.20
+    z: 0.24
+    w: 1
+  TabSelectedOverline:
+    x: 0.28
+    y: 0.68
+    z: 1
+    w: 1
+  TabDimmed:
+    x: 0.09
+    y: 0.09
+    z: 0.11
+    w: 1
+  TabDimmedSelected:
+    x: 0.16
+    y: 0.16
+    z: 0.18
+    w: 1
+  TabDimmedSelectedOverline:
+    x: 0.24
+    y: 0.52
+    z: 0.88
+    w: 0.5
+  DockingPreview:
+    x: 0.28
+    y: 0.68
+    z: 1
+    w: 0.7
+  DockingEmptyBg:
+    x: 0.08
+    y: 0.08
+    z: 0.1
+    w: 1
+  PlotLines:
+    x: 0.61
+    y: 0.61
+    z: 0.61
+    w: 1
+  PlotLinesHovered:
+    x: 1
+    y: 0.43
+    z: 0.35
+    w: 1
+  PlotHistogram:
+    x: 0.9
+    y: 0.7
+    z: 0
+    w: 1
+  PlotHistogramHovered:
+    x: 1
+    y: 0.6
+    z: 0
+    w: 1
+  TableHeaderBg:
+    x: 0.16
+    y: 0.16
+    z: 0.19
+    w: 1
+  TableBorderStrong:
+    x: 0.25
+    y: 0.25
+    z: 0.29
+    w: 1
+  TableBorderLight:
+    x: 0.18
+    y: 0.18
+    z: 0.22
+    w: 1
+  TableRowBg:
+    x: 0
+    y: 0
+    z: 0
+    w: 0
+  TableRowBgAlt:
+    x: 1
+    y: 1
+    z: 1
+    w: 0.06
+  TextLink:
+    x: 0.28
+    y: 0.68
+    z: 1
+    w: 1
+  TextSelectedBg:
+    x: 0.26
+    y: 0.59
+    z: 0.98
+    w: 0.4
+  TreeLines:
+    x: 0.4
+    y: 0.4
+    z: 0.45
+    w: 1
+  DragDropTarget:
+    x: 0.28
+    y: 0.68
+    z: 1
+    w: 1
+  DragDropTargetBg:
+    x: 0
+    y: 0
+    z: 0
+    w: 0
+  UnsavedMarker:
+    x: 1
+    y: 0.6
+    z: 0.2
+    w: 1
+  NavCursor:
+    x: 0.24
+    y: 0.52
+    z: 0.88
+    w: 1
+  NavWindowingHighlight:
+    x: 1
+    y: 1
+    z: 1
+    w: 0.7
+  NavWindowingDimBg:
+    x: 0
+    y: 0
+    z: 0
+    w: 0.35
+  ModalWindowDimBg:
+    x: 0
+    y: 0
+    z: 0
+    w: 0.5
