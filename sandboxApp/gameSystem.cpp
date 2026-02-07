@@ -5,7 +5,7 @@
 #include "glm/gtx/string_cast.hpp"
 #include "graphics/events/rhiWindowEvent.h"
 #include "input/events/keyDownEvent.h"
-#include "neonEngine/neonEngine.h"
+#include "ionEngine/ionEngine.h"
 
 void GameSystem::startup()
 {

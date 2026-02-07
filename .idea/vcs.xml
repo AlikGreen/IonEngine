@@ -2,27 +2,28 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEditor/cmake-build-debug/_deps/libdwarf-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEditor/cmake-build-relwithdebinfo/_deps/libdwarf-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/coral" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/miniaudio" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonecs" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonecs/dependencies/neonCore" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/glfw" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/glm" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/imgui" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/imguizmo" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/neonCore" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/neonLog" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/neonLog/dependencies/cpptrace" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/neonLog/dependencies/spdlog" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/rapidyaml" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/rapidyaml/ext/c4core" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/rapidyaml/ext/c4core/cmake" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/rapidyaml/ext/c4core/src/c4/ext/debugbreak" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/rapidyaml/ext/c4core/src/c4/ext/fast_float" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/neonrhi/dependencies/spirv-cross" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/neonEngine/dependencies/tinygltf" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEditor/cmake-build-debug/_deps/libdwarf-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEditor/cmake-build-relwithdebinfo/_deps/libdwarf-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/cmake-build-debug/_deps/libdwarf-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/cmake-build-relwithdebinfo/_deps/libdwarf-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/coral" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/entis" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/entis/dependencies/grl" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/miniaudio" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/tinygltf" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/clogr" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/clogr/dependencies/catch2" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/clogr/dependencies/cpptrace" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/clogr/dependencies/fmtlib" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/clogr/dependencies/grl" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/grl" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/imgui" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/imguizmo" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/rapidyaml" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/rapidyaml/ext/c4core" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/rapidyaml/ext/c4core/cmake" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/rapidyaml/ext/c4core/src/c4/ext/debugbreak" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/rapidyaml/ext/c4core/src/c4/ext/fast_float" vcs="Git" />
   </component>
 </project>

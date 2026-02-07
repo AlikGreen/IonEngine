@@ -12,5 +12,5 @@ add_executable(sandboxApp
         gameSystem.cpp
         gameSystem.h)
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/../neonEngine ${CMAKE_BINARY_DIR}/neonEngine)
-target_link_libraries(sandboxApp PRIVATE neonEngine)
+add_subdirectory(${CMAKE_SOURCE_DIR}/../ionEngine ${CMAKE_BINARY_DIR}/ionEngine)
+target_link_libraries(sandboxApp PRIVATE ionEngine)

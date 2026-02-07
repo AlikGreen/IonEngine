@@ -1,4 +1,0 @@
-C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonManaged\obj\Debug\net10.0\NeonManaged.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonManaged\obj\Debug\net10.0\NeonManaged.AssemblyInfoInputs.cache
-C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonManaged\obj\Debug\net10.0\NeonManaged.AssemblyInfo.cs
-C:\Users\alikg\CLionProjects\NeonEngine\neonEngine\sdk\NeonManaged\obj\Debug\net10.0\NeonManaged.csproj.CoreCompileInputs.cache

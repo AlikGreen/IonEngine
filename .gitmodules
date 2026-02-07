@@ -28,3 +28,9 @@
 [submodule "neonEngine/dependencies/coral"]
 	path = neonEngine/dependencies/coral
 	url = https://github.com/AlikGreen/Coral.git
+[submodule "ionEngine/dependencies/entis"]
+	path = ionEngine/dependencies/entis
+	url = https://github.com/AlikGreen/entis.git
+[submodule "ionEngine/dependencies/urhi"]
+	path = ionEngine/dependencies/urhi
+	url = https://github.com/AlikGreen/urhi.git

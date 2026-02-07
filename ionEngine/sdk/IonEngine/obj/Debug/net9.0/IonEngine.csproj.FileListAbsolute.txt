@@ -1,0 +1,15 @@
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\bin\Debug\net9.0\IonEngine.deps.json
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\bin\Debug\net9.0\IonEngine.dll
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\bin\Debug\net9.0\IonEngine.pdb
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\bin\Debug\net9.0\Coral.Managed.dll
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\bin\Debug\net9.0\Coral.Managed.pdb
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\obj\Debug\net9.0\IonEngine.csproj.AssemblyReference.cache
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\obj\Debug\net9.0\IonEngine.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\obj\Debug\net9.0\IonEngine.AssemblyInfoInputs.cache
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\obj\Debug\net9.0\IonEngine.AssemblyInfo.cs
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\obj\Debug\net9.0\IonEngine.csproj.CoreCompileInputs.cache
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\obj\Debug\net9.0\IonEngine.csproj.Up2Date
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\obj\Debug\net9.0\IonEngine.dll
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\obj\Debug\net9.0\refint\IonEngine.dll
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\obj\Debug\net9.0\IonEngine.pdb
+C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\obj\Debug\net9.0\ref\IonEngine.dll
