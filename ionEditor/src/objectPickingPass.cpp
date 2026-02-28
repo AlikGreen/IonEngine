@@ -37,13 +37,13 @@ namespace ion::Editor
 
     void ObjectPickingPass::execute(const grl::Rc<urhi::CommandList>& cmd, RenderContext &ctx)
     {
-        if(!ctx.has("renderables") ||
+        if(!ctx.has("all_renderables") ||
             !ctx.has("picker_color_texture") ||
             !ctx.has("picker_depth_texture") ||
             !ctx.has("camera_buffer"))
             return;
 
-        const auto& renderables = *ctx.get<std::vector<Renderable>*>("renderables");
+        const auto& renderables = *ctx.get<std::vector<Renderable>*>("all_renderables");
         const auto pickerColorTexture = ctx.get<grl::Rc<urhi::TextureView>>("picker_color_texture");
         const auto pickerDepthTexture = ctx.get<grl::Rc<urhi::TextureView>>("picker_depth_texture");
         const auto& cameraBuffer = ctx.get<grl::Rc<urhi::Buffer>>("camera_buffer");
@@ -64,7 +64,7 @@ namespace ion::Editor
 
         for(auto renderable : renderables)
         {
-            ModelUniforms modelUniforms = { renderable.worldMatrix, (uint32_t)renderable.entity.id() };
+            ModelUniforms modelUniforms = { renderable.worldMatrix, static_cast<uint32_t>(renderable.entity.id()) };
             cmd->updateBuffer(m_modelUniformBuffer, modelUniforms);
             cmd->setUniformBuffer("ModelUniforms", m_modelUniformBuffer);
 

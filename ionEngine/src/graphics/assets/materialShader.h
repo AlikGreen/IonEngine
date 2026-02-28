@@ -85,7 +85,8 @@ public:
     std::vector<urhi::ShaderReflection::Resource> getSamplers() const;
     std::vector<urhi::ShaderReflection::Resource> getTextures() const;
     std::vector<urhi::ShaderReflection::Member> getProperties() const;
-    urhi::ShaderReflection getReflection();
+    urhi::ShaderReflection getReflection() const;
+    MaterialDescription getDescription() const;
 
     grl::Rc<urhi::Pipeline> getPipeline();
     void bindUniforms(const grl::Rc<urhi::CommandList>& commandList);
@@ -95,6 +96,7 @@ public:
     static MaterialShader createEquirectangularSkybox();
 private:
     std::string name;
+    MaterialDescription description;
 
     grl::Rc<urhi::Device> device;
     grl::Rc<urhi::Pipeline> pipeline;

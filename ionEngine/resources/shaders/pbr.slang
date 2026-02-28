@@ -19,14 +19,14 @@ struct VertexOutput
 
 cbuffer CameraUniforms
 {
-    float4x4 viewMatrix;
-    float4x4 projMatrix;
-    float4x4 viewProjMatrix;
+    float4x4 camView;
+    float4x4 camProj;
+    float4x4 camViewProj;
 
-    float4x4 invViewMatrix;
-    float4x4 invProjMatrix;
-    float4x4 invViewProjMatrix;
-};
+    float4x4 camInvView;
+    float4x4 camInvProj;
+    float4x4 camInvViewProj;
+}
 
 cbuffer ModelUniforms
 {
@@ -76,7 +76,7 @@ VertexOutput vertexMain(VertexInput input)
     float4 fragPos = mul(matrix, float4(input.inPosition, 1.0));
     output.vFragPos = fragPos.xyz;
 
-    output.position = mul(projMatrix, mul(viewMatrix, fragPos));
+    output.position = mul(camProj, mul(camView, fragPos));
 
     return output;
 }

@@ -18,6 +18,7 @@ namespace ion
         name = description.name;
         device = Engine::getSystem<GraphicsSystem>()->getDevice();
         reflection = (*description.shader)->getShaderReflection();
+        this->description = description;
 
         uint32_t requiredSize = 0;
 
@@ -144,9 +145,14 @@ namespace ion
         return memberInfos;
     }
 
-    urhi::ShaderReflection MaterialShader::getReflection()
+    urhi::ShaderReflection MaterialShader::getReflection() const
     {
         return reflection;
+    }
+
+    MaterialDescription MaterialShader::getDescription() const
+    {
+        return description;
     }
 
     grl::Rc<urhi::Pipeline> MaterialShader::getPipeline()

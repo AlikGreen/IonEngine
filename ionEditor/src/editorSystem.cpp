@@ -12,6 +12,7 @@
 #include "windows/assetsWindow.h"
 #include "windows/propertiesWindow.h"
 #include "windows/sceneGraphWindow.h"
+#include "windows/statisticsWindow.h"
 
 namespace ion::Editor
 {
@@ -20,11 +21,11 @@ namespace ion::Editor
         auto& scene = Engine::getSceneManager().getCurrentScene();
 
         AssetManager& assetManager = Engine::getAssetManager();
-        const auto model = assetManager.import<Scene>("models/monkey.glb");
+        const auto model = assetManager.import<Scene>("models/cube.glb");
 
         entis::Entity modelEntity = scene.import(*model);
         modelEntity.get<Tag>().name = "Imported model";
-        modelEntity.get<Transform>().setScale(glm::vec3(1.0f));
+        modelEntity.get<Transform>().scale = glm::vec3(1.0f);
 
 
         auto skyboxData =  assetManager.loadUnmanaged<TextureData>("textures/skybox.hdr");
@@ -41,21 +42,21 @@ namespace ion::Editor
         auto& camera = cameraEntity.emplace<Camera>();
         camera.skyboxMaterial = skyboxMaterialAsset;
         auto& camTransform = cameraEntity.get<Transform>();
-        camTransform.setPosition({0, 0, 0});
+        camTransform.position = {0, 0, 0};
 
         entis::Entity editorCameraEntity = scene.createEntity("Editor Camera");
         auto& editorCamera = editorCameraEntity.emplace<Camera>();
         editorCamera.skyboxMaterial = skyboxMaterialAsset;
         editorCamera.renderTarget = Engine::getSystem<GraphicsSystem>()->createRenderTarget(800, 600);
         auto& editorCameraTransform = editorCameraEntity.get<Transform>();
-        editorCameraTransform.setPosition({0, 0, 0});
+        editorCameraTransform.position = {0, 0, 0};
         editorCameraEntity.emplace<EditorCamera>();
 
 
         // Light entity
         entis::Entity lightEntity = scene.createEntity("Light");
         auto& lightTransform = lightEntity.get<Transform>();
-        lightTransform.setPosition({8, 10, 8});
+        lightTransform.position = {8, 10, 8};
 
         lightEntity.emplace<PointLight>();
         auto& pointLight = lightEntity.get<PointLight>();
@@ -84,6 +85,7 @@ namespace ion::Editor
         editorWindows.push_back(grl::makeBox<AssetsWindow>());
         editorWindows.push_back(grl::makeBox<PropertiesWindow>());
         editorWindows.push_back(grl::makeBox<SceneGraphWindow>());
+        editorWindows.push_back(grl::makeBox<StatisticsWindow>());
 
         for(const auto& window : editorWindows)
         {

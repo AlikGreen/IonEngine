@@ -13,9 +13,8 @@
 #include "graphics/graphicsSystem.h"
 #include "graphics/image.h"
 #include "graphics/components/camera.h"
-#include "graphics/components/pointLight.h"
-#include "graphics/events/windowResizeEvent.h"
-#include "graphics/renderPasses/opaqueForwardScenePass.h"
+#include "graphics/renderPasses/bvhBuilderPass.h"
+#include "graphics/renderPasses/raytracePass.h"
 #include "graphics/renderPasses/skyboxPass.h"
 #include "imgui/imGuiExtensions.h"
 #include "input/input.h"
@@ -54,7 +53,8 @@ namespace ion::Editor
         cl->reserveBuffer(m_pointLightsUniformBuffer, sizeof(PointLightsUniformData));
         m_device->submit(cl);
 
-        m_renderer.addPass<ForwardSceneRenderPass>(m_device);
+        m_renderer.addPass<BvhBuilderPass>(m_device);
+        m_renderer.addPass<RayTracePass>(m_device);
         m_renderer.addPass<SkyboxRenderPass>();
 
         m_objectPickingPass = grl::makeBox<ObjectPickingPass>(m_device);
@@ -73,26 +73,26 @@ namespace ion::Editor
         if(Input::isButtonHeld(MouseButton::Right) && m_mouseOverViewport)
         {
             m_wasFocused = true;
-            constexpr float sens = 5.0f; // In future get from settings
-            float xDelta = Input::getMouseDelta().x * Engine::getDeltaTime() * sens;
-            camTransform.rotate({ 0.0f, xDelta, 0.0f });
-            float yDelta = Input::getMouseDelta().y * Engine::getDeltaTime() * sens;
-            camTransform.rotate({ yDelta, 0.0f, 0.0f });
+            constexpr float sens = 0.0025f; // In future get from settings
+            const float xDelta = Input::getMouseDelta().x * sens;
+            camTransform.rotation += glm::vec3{ 0.0f, xDelta, 0.0f };
+            const float yDelta = Input::getMouseDelta().y * sens;
+            camTransform.rotation += glm::vec3{ yDelta, 0.0f, 0.0f };
 
-            constexpr float camSpeed = 5.0f; // In future get from settings
+            const float camSpeed = 5.0f * Engine::getDeltaTime(); // In future get from settings
 
             if(Input::isKeyHeld(KeyCode::W))
-                camTransform.translate(camTransform.forward() * Engine::getDeltaTime() * camSpeed);
+                camTransform.position += camTransform.forward() * camSpeed;
             if(Input::isKeyHeld(KeyCode::S))
-                camTransform.translate(camTransform.backward() * Engine::getDeltaTime() * camSpeed);
+                camTransform.position += camTransform.backward() * camSpeed;
             if(Input::isKeyHeld(KeyCode::A))
-                camTransform.translate(camTransform.left() * Engine::getDeltaTime() * camSpeed);
+                camTransform.position += camTransform.left() * camSpeed;
             if(Input::isKeyHeld(KeyCode::D))
-                camTransform.translate(camTransform.right() * Engine::getDeltaTime() * camSpeed);
+                camTransform.position += camTransform.right() * camSpeed;
             if(Input::isKeyHeld(KeyCode::Space))
-                camTransform.translate(camTransform.up() * Engine::getDeltaTime() * camSpeed);
+                camTransform.position += camTransform.up() * camSpeed;
             if(Input::isKeyHeld(KeyCode::LShift))
-                camTransform.translate(camTransform.down() * Engine::getDeltaTime() * camSpeed);
+                camTransform.position += camTransform.down() * camSpeed;
 
             Input::setCursorLocked(true);
             Input::setCursorVisible(false);
@@ -152,7 +152,8 @@ namespace ion::Editor
             CameraUniformData cameraUniformData = Renderer::getCameraUniformData(camEntity);
             PointLightsUniformData pointLightsUniformData = Renderer::getPointLightsUniformData(scene);
 
-            renderCtx.set("renderables", &cullingResult.all);
+            renderCtx.set("opaque_renderables", &cullingResult.opaques);
+            renderCtx.set("all_renderables", &cullingResult.all);
             renderCtx.set("skybox_material", camera.skyboxMaterial.get());
             renderCtx.set("scene_color_texture", camera.renderTarget->getColorAttachment());
             renderCtx.set("scene_depth_texture", camera.renderTarget->getDepthAttachment());

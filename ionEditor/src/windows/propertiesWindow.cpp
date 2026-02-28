@@ -201,27 +201,27 @@ namespace ion::Editor
 
         PropertyGrid grid("##TransformGrid");
 
-        glm::vec3 position = transform.getPosition();
+        glm::vec3 position = transform.position;
         grid.nextRow("Position");
         if (ImGui::DragFloat3("##value", &position.x, 0.05f))
         {
-            transform.setPosition(position);
+            transform.position = position;
         }
         grid.endRow();
 
-        glm::vec3 rotation = degrees(transform.getRotation());
+        glm::vec3 rotation = degrees(transform.rotation);
         grid.nextRow("Rotation");
         if (ImGui::DragFloat3("##value", &rotation.x, 0.1f))
         {
-            transform.setRotation(radians(rotation));
+            transform.rotation = radians(rotation);
         }
         grid.endRow();
 
-        glm::vec3 scale = transform.getScale();
+        glm::vec3 scale = transform.scale;
         grid.nextRow("Scale");
         if (ImGui::DragFloat3("##value", &scale.x, 0.025f))
         {
-            transform.setScale(scale);
+            transform.scale = scale;
         }
         grid.endRow();
     }
