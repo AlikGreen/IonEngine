@@ -1,4 +1,4 @@
-#include "opaqueForwardScenePass.h"
+#include "opaqueForwardPass.h"
 
 #include "core/components/transformComponent.h"
 #include "graphics/components/camera.h"
@@ -18,7 +18,7 @@ namespace ion
         int useAlbedoTexture;
     };
 
-    ForwardSceneRenderPass::ForwardSceneRenderPass(const grl::Rc<urhi::Device>& device)
+    OpaqueForwardPass::OpaqueForwardPass(const grl::Rc<urhi::Device>& device)
     {
         m_modelUniformBuffer = device->createUniformBuffer();
 
@@ -28,10 +28,10 @@ namespace ion
         device->submit(cl);
     }
 
-    void ForwardSceneRenderPass::execute(const grl::Rc<urhi::CommandList>& cmd, RenderContext &ctx)
+    void OpaqueForwardPass::execute(const grl::Rc<urhi::CommandList>& cmd, RenderContext &ctx)
     {
         if(!ctx.has("camera_buffer")
-            || !ctx.has("renderables")
+            || !ctx.has("opaque_renderables")
             || !ctx.has("point_lights_buffer")
             || !ctx.has("scene_color_texture")
             || !ctx.has("scene_depth_texture"))
@@ -55,7 +55,7 @@ namespace ion
         renderPassDesc.depthAttachment = depthAttachment;
         cmd->beginRenderPass(renderPassDesc);
 
-        auto& renderables = *ctx.get<std::vector<Renderable>*>("renderables");
+        auto& renderables = *ctx.get<std::vector<Renderable>*>("opaque_renderables");
 
         for (const auto& renderable: renderables)
         {
@@ -66,7 +66,7 @@ namespace ion
     }
 
 
-    void ForwardSceneRenderPass::drawRenderable(const grl::Rc<urhi::CommandList> &cmd, const Renderable& renderable, const grl::Rc<urhi::Buffer> &cameraBuffer, const grl::Rc<urhi::Buffer> &pointLightsBuffer) const
+    void OpaqueForwardPass::drawRenderable(const grl::Rc<urhi::CommandList> &cmd, const Renderable& renderable, const grl::Rc<urhi::Buffer> &cameraBuffer, const grl::Rc<urhi::Buffer> &pointLightsBuffer) const
     {
         ModelUniforms modelUniforms = { renderable.worldMatrix };
         cmd->updateBuffer(m_modelUniformBuffer, modelUniforms);

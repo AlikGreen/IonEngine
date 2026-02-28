@@ -113,19 +113,19 @@ namespace ion
 
         if (node.translation.size() == 3)
         {
-            transform.setPosition(glm::vec3(node.translation[0], node.translation[1], node.translation[2]));
+            transform.position = glm::vec3(node.translation[0], node.translation[1], node.translation[2]);
         }
         if (node.rotation.size() == 4)
         {
-            transform.setRotation(eulerAngles(glm::quat(
+            transform.rotation = eulerAngles(glm::quat(
                 static_cast<float>(node.rotation[3]),
                 static_cast<float>(node.rotation[0]),
                 static_cast<float>(node.rotation[1]),
-                static_cast<float>(node.rotation[2]))));
+                static_cast<float>(node.rotation[2])));
         }
         if (node.scale.size() == 3)
         {
-            transform.setScale(glm::vec3(node.scale[0], node.scale[1], node.scale[2]));
+            transform.scale = glm::vec3(node.scale[0], node.scale[1], node.scale[2]);
         }
     }
 

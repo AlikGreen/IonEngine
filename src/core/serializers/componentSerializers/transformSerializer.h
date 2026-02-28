@@ -11,9 +11,9 @@ public:
     void serialize(AssetStream &assetStream, AssetManager &assetManager, void *asset) override
     {
         const Transform& transform = *static_cast<Transform*>(asset);
-        const glm::vec3& pos = transform.getPosition();
-        const glm::vec3& rot = transform.getRotation();
-        const glm::vec3& scl = transform.getScale();
+        const glm::vec3& pos = transform.position;
+        const glm::vec3& rot = transform.rotation;
+        const glm::vec3& scl = transform.scale;
 
         assetStream.write(pos);
         assetStream.write(rot);
@@ -31,9 +31,9 @@ public:
         assetStream.read(scl);
 
         auto* transform = new Transform();
-        transform->setPosition(pos);
-        transform->setRotation(rot);
-        transform->setScale(scl);
+        transform->position = pos;
+        transform->rotation = rot;
+        transform->scale = scl;
 
         return transform;
     }

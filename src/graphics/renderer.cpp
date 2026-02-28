@@ -10,8 +10,12 @@ namespace ion
     {
         const auto& camera = camEntity.get<Camera>();
         const auto& meshRenderers = scene.getRegistry().view<MeshRenderer, Transform>();
-        std::vector<Renderable> orderedAndCulledEntities;
-        orderedAndCulledEntities.reserve(meshRenderers.size());
+        std::vector<Renderable> renderables;
+        renderables.reserve(meshRenderers.size());
+        std::vector<Renderable> opaqueRenderables;
+        opaqueRenderables.reserve(meshRenderers.size());
+        std::vector<Renderable> transparentRenderables;
+        transparentRenderables.reserve(meshRenderers.size());
 
         for (auto[entity, meshRenderer, transform] : meshRenderers)
         {
@@ -40,13 +44,24 @@ namespace ion
 
                     renderable.distanceToCamera = glm::distance(camPos, meshPos);
 
-                    orderedAndCulledEntities.emplace_back(renderable);
+                    renderables.emplace_back(renderable);
+
+                    if(!renderable.material->getDescription().blendEnabled)
+                        opaqueRenderables.emplace_back(renderable);
+                    else
+                        transparentRenderables.emplace_back(renderable);
                 }
             }
         }
 
+        renderables.shrink_to_fit();
+        opaqueRenderables.shrink_to_fit();
+        transparentRenderables.shrink_to_fit();
+
         CulledRenderables culledEntities{};
-        culledEntities.all = orderedAndCulledEntities;
+        culledEntities.all = renderables;
+        culledEntities.opaques = opaqueRenderables;
+        culledEntities.transparent = transparentRenderables;
 
         return culledEntities;
     }
@@ -81,7 +96,7 @@ namespace ion
         {
             PointLightUniformData pointLightData{};
             pointLightData.color = light.color;
-            pointLightData.position = transform.getPosition();
+            pointLightData.position = transform.position;
             pointLightData.intensity = light.power;
             pointLightData.radius = 0.0f; // not used yet
 

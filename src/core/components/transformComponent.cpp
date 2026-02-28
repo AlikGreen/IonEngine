@@ -6,83 +6,34 @@
 
 namespace ion
 {
-    const glm::vec3 & Transform::getPosition() const
+    glm::mat4 Transform::getLocalMatrix() const
     {
-        return position;
+        const glm::mat4 localTranslationMatrix = glm::translate(glm::mat4(1.0f), position);
+
+        const glm::mat4 Rx = glm::rotate(glm::mat4(1.0f), rotation.x, glm::vec3(1, 0, 0));
+        const glm::mat4 Ry = glm::rotate(glm::mat4(1.0f), rotation.y, glm::vec3(0, 1, 0));
+        const glm::mat4 Rz = glm::rotate(glm::mat4(1.0f), rotation.z, glm::vec3(0, 0, 1));
+        const glm::mat4 localRotationMatrix = Rz * Ry * Rx;
+
+        const glm::mat4 localScaleMatrix = glm::scale(glm::mat4(1.0f), scale);
+
+        return localTranslationMatrix * localRotationMatrix * localScaleMatrix;
     }
 
-    void Transform::setPosition(const glm::vec3 &pos)
+    void Transform::setLocalMatrix(const glm::mat4 &transform)
     {
-        if (position != pos)
-        {
-            position = pos;
-            dirty = true;
-        }
-    }
-
-    const glm::vec3 & Transform::getRotation() const
-    {
-        return rotation;
-    }
-
-    void Transform::setRotation(const glm::vec3 &rot)
-    {
-        if(rotation != rot)
-        {
-            rotation = rot;
-            dirty = true;
-        }
-    }
-
-    void Transform::rotate(const glm::vec3 &rot)
-    {
-        if(distance(rot, glm::vec3(0)) > 0)
-        {
-            rotation += rot;
-            dirty = true;
-        }
-    }
-    const glm::vec3 & Transform::getScale() const
-    {
-        return scale;
-    }
-
-    void Transform::setScale(const glm::vec3 &scl)
-    {
-        if(scale != scl)
-        {
-            scale = scl;
-            dirty = true;
-        }
-    }
-
-    const glm::mat4 & Transform::getLocalMatrix() const
-    {
-        if (dirty)
-        {
-            updateMatrix();
-        }
-        return cachedLocalMatrix;
-    }
-
-    void Transform::setLocalMatrix(const glm::mat4& transform)
-    {
-        cachedLocalMatrix = transform;
-
         glm::vec3 skew;
         glm::vec4 perspective;
         glm::quat rotQuat;
         glm::decompose(transform, scale, rotQuat, position, skew, perspective);
 
         rotation = glm::eulerAngles(rotQuat);
-        cachedLocalRotationMatrix = glm::toMat4(rotQuat);
-        dirty = false;
     }
 
 
     glm::vec3 Transform::forward() const
     {
-        return xyz((cachedLocalRotationMatrix * glm::vec4(0, 0, 1, 0)));
+        return xyz((getLocalMatrix() * glm::vec4(0, 0, 1, 0)));
     }
 
     glm::vec3 Transform::backward() const
@@ -92,7 +43,7 @@ namespace ion
 
     glm::vec3 Transform::up() const
     {
-        return xyz((cachedLocalRotationMatrix * glm::vec4(0, 1, 0, 0)));
+        return xyz((getLocalMatrix() * glm::vec4(0, 1, 0, 0)));
     }
 
     glm::vec3 Transform::down() const
@@ -102,7 +53,7 @@ namespace ion
 
     glm::vec3 Transform::right() const
     {
-        return xyz((cachedLocalRotationMatrix * glm::vec4(1, 0, 0, 0)));
+        return xyz((getLocalMatrix() * glm::vec4(1, 0, 0, 0)));
     }
 
     glm::vec3 Transform::left() const
@@ -110,11 +61,6 @@ namespace ion
         return -right();
     }
 
-    void Transform::translate(const glm::vec3 translation)
-    {
-        position += translation;
-        dirty = true;
-    }
 
     // TODO speed up and remove recursion
 
@@ -134,20 +80,5 @@ namespace ion
 
         // No parent, so world matrix is just parent matrix * local matrix
         return parentMatrix * localMatrix;
-    }
-
-    void Transform::updateMatrix() const
-    {
-        const glm::mat4 localTranslationMatrix = glm::translate(glm::mat4(1.0f), position);
-
-        const glm::mat4 Rx = glm::rotate(glm::mat4(1.0f), rotation.x, glm::vec3(1, 0, 0));
-        const glm::mat4 Ry = glm::rotate(glm::mat4(1.0f), rotation.y, glm::vec3(0, 1, 0));
-        const glm::mat4 Rz = glm::rotate(glm::mat4(1.0f), rotation.z, glm::vec3(0, 0, 1));
-        cachedLocalRotationMatrix = Rz * Ry * Rx;
-
-        const glm::mat4 localScaleMatrix = glm::scale(glm::mat4(1.0f), scale);
-
-        cachedLocalMatrix = localTranslationMatrix * cachedLocalRotationMatrix * localScaleMatrix;
-        dirty = false;
     }
 }

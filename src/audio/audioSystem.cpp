@@ -32,7 +32,7 @@ namespace ion
                 sound.setLoop(audioSource.loop);
                 sound.setVolume(audioSource.volume);
                 sound.setPitch(audioSource.pitch);
-                sound.setPosition(transform.getPosition());
+                sound.setPosition(transform.position);
             }
             if(!audioSource.isPlaying && isPlaying)
             {
