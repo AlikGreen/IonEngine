@@ -18,15 +18,6 @@ namespace ion
         int useAlbedoTexture;
     };
 
-    OpaqueForwardPass::OpaqueForwardPass(const grl::Rc<urhi::Device>& device)
-    {
-        m_modelUniformBuffer = device->createUniformBuffer();
-
-        const auto cl = device->createCommandList();
-        cl->begin();
-        cl->reserveBuffer(m_modelUniformBuffer, sizeof(ModelUniforms));
-        device->submit(cl);
-    }
 
     void OpaqueForwardPass::execute(const grl::Rc<urhi::CommandList>& cmd, RenderContext &ctx)
     {
@@ -45,45 +36,38 @@ namespace ion
         const auto sceneDepthTexture = ctx.get<grl::Rc<urhi::TextureView>>("scene_depth_texture");
 
         urhi::ColorAttachment colorAttachment{};
-        colorAttachment.texture = sceneColorTexture;
+        colorAttachment.target = sceneColorTexture;
+        colorAttachment.loadOp = urhi::LoadOp::Clear;
 
         urhi::DepthStencilAttachment depthAttachment{};
-        depthAttachment.texture = sceneDepthTexture;
+        depthAttachment.target = sceneDepthTexture;
 
         urhi::RenderPassDesc renderPassDesc{};
         renderPassDesc.colorAttachments = {colorAttachment};
         renderPassDesc.depthAttachment = depthAttachment;
-        cmd->beginRenderPass(renderPassDesc);
+        const auto pass = cmd->beginRenderPass(renderPassDesc);
 
         auto& renderables = *ctx.get<std::vector<Renderable>*>("opaque_renderables");
 
         for (const auto& renderable: renderables)
         {
-            drawRenderable(cmd, renderable, cameraBuffer, pointLightsBuffer);
+            ModelUniforms modelUniforms = { renderable.worldMatrix };
+
+            pass->setPipeline(renderable.material->getPipeline());
+
+            pass->setUniformBuffer("camera", cameraBuffer);
+            pass->setUniformBuffer("pointLights", pointLightsBuffer);
+            pass->pushConstants(modelUniforms);
+
+            renderable.material->bindUniforms(cmd, pass);
+
+            const Primitive primitive = renderable.mesh->getPrimitives().at(renderable.submeshIndex);
+
+            pass->setVertexBuffer(0, renderable.mesh->getVertexBuffer());
+            pass->setIndexBuffer(renderable.mesh->getIndexBuffer(), urhi::IndexFormat::UInt32);
+            pass->drawIndexed(primitive.indexCount, 1, primitive.indexStart);
         }
 
-        cmd->endRenderPass();
+        pass->end();
     }
-
-
-    void OpaqueForwardPass::drawRenderable(const grl::Rc<urhi::CommandList> &cmd, const Renderable& renderable, const grl::Rc<urhi::Buffer> &cameraBuffer, const grl::Rc<urhi::Buffer> &pointLightsBuffer) const
-    {
-        ModelUniforms modelUniforms = { renderable.worldMatrix };
-        cmd->updateBuffer(m_modelUniformBuffer, modelUniforms);
-
-        cmd->setPipeline(renderable.material->getPipeline());
-
-        cmd->setUniformBuffer("CameraUniforms", cameraBuffer);
-        cmd->setUniformBuffer("PointLightUniforms", pointLightsBuffer);
-        cmd->setUniformBuffer("ModelUniforms", m_modelUniformBuffer);
-
-        renderable.material->bindUniforms(cmd);
-
-        const Primitive primitive = renderable.mesh->getPrimitives().at(renderable.submeshIndex);
-
-        cmd->setVertexBuffer(0, renderable.mesh->getVertexBuffer());
-        cmd->setIndexBuffer(renderable.mesh->getIndexBuffer(), urhi::IndexFormat::UInt32);
-        cmd->drawIndexed(primitive.indexCount, 1, primitive.indexStart);
-    }
-
 }

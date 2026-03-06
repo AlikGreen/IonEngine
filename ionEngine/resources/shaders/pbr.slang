@@ -17,27 +17,22 @@ struct VertexOutput
     float3 vFragPos : TEXCOORD3;
 };
 
-cbuffer CameraUniforms
+struct Camera
 {
-    float4x4 camView;
-    float4x4 camProj;
-    float4x4 camViewProj;
+    float4x4 view;
+    float4x4 proj;
+    float4x4 viewProj;
 
-    float4x4 camInvView;
-    float4x4 camInvProj;
-    float4x4 camInvViewProj;
+    float4x4 invView;
+    float4x4 invProj;
+    float4x4 invViewProj;
 }
 
-cbuffer ModelUniforms
+struct Properties
 {
-    float4x4 matrix;
-};
-
-cbuffer Properties
-{
-    float matRoughness;
-    float matMetanless;
-    float4 matAlbedo;
+    float roughness;
+    float metanless;
+    float4 albedo;
 };
 
 struct PointLight
@@ -48,11 +43,23 @@ struct PointLight
     float  radius;
 };
 
-cbuffer PointLightUniforms
+struct PointLights
 {
     int count;
     PointLight lights[MAX_POINT_LIGHTS];
 };
+
+struct ModelInfo
+{
+    float4x4 matrix;
+};
+
+ConstantBuffer<Properties> properties;
+ConstantBuffer<Camera> camera;
+ConstantBuffer<PointLights> pointLights;
+
+[[vk::push_constant]]
+ModelInfo model;
 
 Texture2D<float4> albedoTexture;
 SamplerState albedoSampler;
@@ -73,10 +80,10 @@ VertexOutput vertexMain(VertexInput input)
     output.vNormal = input.inNormal;
     output.vUV = input.inUV;
 
-    float4 fragPos = mul(matrix, float4(input.inPosition, 1.0));
+    float4 fragPos = mul(model.matrix, float4(input.inPosition, 1.0));
     output.vFragPos = fragPos.xyz;
 
-    output.position = mul(camProj, mul(camView, fragPos));
+    output.position = mul(camera.proj, mul(camera.view, fragPos));
 
     return output;
 }
@@ -86,9 +93,9 @@ float4 fragmentMain(VertexOutput inV) : SV_Target
 {
     float3 diffuseLight = float3(0.0, 0.0, 0.0);
 
-    for (int i = 0; i < count; ++i)
+    for (int i = 0; i < pointLights.count; ++i)
     {
-        PointLight light = lights[i];
+        PointLight light = pointLights.lights[i];
         float dist = length(inV.vFragPos - light.position);
         float3 lightDir = light.position - inV.vFragPos;
 
@@ -97,7 +104,7 @@ float4 fragmentMain(VertexOutput inV) : SV_Target
 
     diffuseLight = max(diffuseLight, float3(0.2, 0.2, 0.2));
 
-    float4 albedo = matAlbedo;
+    float4 albedo = properties.albedo;
     albedo *= albedoTexture.Sample(albedoSampler, inV.vUV);
 
     return albedo * float4(diffuseLight, 1.0);

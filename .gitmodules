@@ -34,3 +34,4 @@
 [submodule "ionEngine/dependencies/urhi"]
 	path = ionEngine/dependencies/urhi
 	url = https://github.com/AlikGreen/urhi.git
+	branch = vulkan

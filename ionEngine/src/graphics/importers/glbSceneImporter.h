@@ -35,8 +35,5 @@ private:
     static std::vector<uint32_t> extractIndices(const tinygltf::Primitive& primitive, const tinygltf::Model& model);
 
     static AssetRef<Image> loadTexture(const tinygltf::Texture& texture, const tinygltf::Model& model, bool isSrgb);
-
-    // static urhi::PixelFormat tinyGltfGetPixelFormat(const tinygltf::Image &img);
-    static urhi::PixelType tinyGltfGetPixelType(const tinygltf::Image &img);
 };
 }

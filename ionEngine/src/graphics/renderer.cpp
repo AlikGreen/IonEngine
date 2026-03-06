@@ -46,7 +46,7 @@ namespace ion
 
                     renderables.emplace_back(renderable);
 
-                    if(!renderable.material->getDescription().blendEnabled)
+                    if(renderable.material->isOpaque())
                         opaqueRenderables.emplace_back(renderable);
                     else
                         transparentRenderables.emplace_back(renderable);

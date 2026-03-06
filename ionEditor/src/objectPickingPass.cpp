@@ -13,11 +13,11 @@ namespace ion::Editor
     ObjectPickingPass::ObjectPickingPass(const grl::Rc<urhi::Device> &device)
     {
         AssetManager& assetManager = Engine::getAssetManager();
-        const auto shader = assetManager.import<grl::Rc<urhi::Shader>>("shaders/objectPicker.slang");
+        const auto shaders = assetManager.import<std::vector<urhi::ShaderEntryPoint>>("shaders/objectPicker.slang");
 
         MaterialDescription desc{};
         desc.name = "Editor viewport object picker";
-        desc.shader = shader;
+        desc.shaders = shaders;
         desc.cullMode = urhi::CullMode::Back;
         desc.blendEnabled = false;
         desc.depthTest = false;
@@ -25,14 +25,7 @@ namespace ion::Editor
 
         m_pickingMaterial = MaterialShader(desc);
 
-        m_modelUniformBuffer = device->createUniformBuffer();
-
-        auto cmd = device->createCommandList();
-        cmd->begin();
-
-        cmd->reserveBuffer(m_modelUniformBuffer, sizeof(ModelUniforms));
-
-        device->submit(cmd);
+        m_modelUniformBuffer = device->createBuffer({ urhi::BufferUsage::Uniform, sizeof(ModelUniforms) });
     }
 
     void ObjectPickingPass::execute(const grl::Rc<urhi::CommandList>& cmd, RenderContext &ctx)
@@ -49,32 +42,34 @@ namespace ion::Editor
         const auto& cameraBuffer = ctx.get<grl::Rc<urhi::Buffer>>("camera_buffer");
 
         urhi::ColorAttachment colorAttachment{};
-        colorAttachment.texture = pickerColorTexture;
-        colorAttachment.clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+        colorAttachment.target = pickerColorTexture;
+        colorAttachment.clearValue = urhi::ClearColorFloat{ 0.0f, 0.0f, 0.0f, 1.0f };
 
         urhi::DepthStencilAttachment depthStencilAttachment{};
-        depthStencilAttachment.texture = pickerDepthTexture;
+        depthStencilAttachment.target = pickerDepthTexture;
+        depthStencilAttachment.clearDepth = 1.0f;
 
         urhi::RenderPassDesc renderPassDesc{};
         renderPassDesc.colorAttachments = {colorAttachment};
-        cmd->beginRenderPass(renderPassDesc);
+        renderPassDesc.depthAttachment = depthStencilAttachment;
+        auto pass = cmd->beginRenderPass(renderPassDesc);
 
-        cmd->setPipeline(m_pickingMaterial.getPipeline());
-        cmd->setUniformBuffer("CameraUniforms", cameraBuffer);
+        pass->setPipeline(m_pickingMaterial.getPipeline());
+        pass->setUniformBuffer("CameraUniforms", cameraBuffer);
 
         for(auto renderable : renderables)
         {
             ModelUniforms modelUniforms = { renderable.worldMatrix, static_cast<uint32_t>(renderable.entity.id()) };
             cmd->updateBuffer(m_modelUniformBuffer, modelUniforms);
-            cmd->setUniformBuffer("ModelUniforms", m_modelUniformBuffer);
+            pass->setUniformBuffer("ModelUniforms", m_modelUniformBuffer);
 
             const Primitive primitive = renderable.mesh->getPrimitives().at(renderable.submeshIndex);
 
-            cmd->setVertexBuffer(0, renderable.mesh->getVertexBuffer());
-            cmd->setIndexBuffer(renderable.mesh->getIndexBuffer(), urhi::IndexFormat::UInt32);
-            cmd->drawIndexed(primitive.indexCount, 1, primitive.indexStart);
+            pass->setVertexBuffer(0, renderable.mesh->getVertexBuffer());
+            pass->setIndexBuffer(renderable.mesh->getIndexBuffer(), urhi::IndexFormat::UInt32);
+            pass->drawIndexed(primitive.indexCount, 1, primitive.indexStart);
         }
 
-        cmd->endRenderPass();
+        pass->end();
     }
 }

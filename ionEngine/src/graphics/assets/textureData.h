@@ -1,5 +1,6 @@
 #pragma once
-#include <neonRHI/neonRHI.h>
+
+#include <urhi/urhi.h>
 
 namespace ion
 {
@@ -7,8 +8,7 @@ class TextureData
 {
 public:
   uint32_t width, height;
-  urhi::PixelLayout pixelLayout;
-  urhi::PixelType pixelType;
+  urhi::PixelFormat pixelFormat;
   void* data;
 };
 }

@@ -16,7 +16,7 @@ namespace ion
     void setNeonImGuiStyle()
     {
         ImGuiStyle &style = ImGui::GetStyle();
-        NeonGui::LoadStyle(AssetManager::getFullPath("style.yaml"), style);
+        ImGui::LoadStyle(AssetManager::getFullPath("style.yaml"), style);
     }
 
    void ImGuiSystem::preStartup()
@@ -79,8 +79,8 @@ namespace ion
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
         urhi::SamplerDesc samplerDesc{};
-        samplerDesc.wrapMode.x = urhi::TextureWrap::ClampToEdge;
-        samplerDesc.wrapMode.y = urhi::TextureWrap::ClampToEdge;
+        samplerDesc.addressModeU = urhi::AddressMode::ClampToEdge;
+        samplerDesc.addressModeV = urhi::AddressMode::ClampToEdge;
         m_colorTextureSampler = m_device->createSampler(samplerDesc);
 
         urhi::ImGuiController::InitInfo initInfo{};
@@ -113,8 +113,8 @@ namespace ion
     {
         ImGuiIO &io = ImGui::GetIO();
         io.DisplaySize = ImVec2(
-            static_cast<float>(m_window->getWidth()),
-            static_cast<float>(m_window->getHeight())
+            static_cast<float>(m_window->width()),
+            static_cast<float>(m_window->height())
         );
         io.DeltaTime = Engine::getDeltaTime();
 
@@ -141,7 +141,7 @@ namespace ion
             m_colorTextureView = m_device->createTextureView(viewDesc);
         }
 
-        m_graphicsSystem->drawTexture(m_colorTextureView, m_colorTextureSampler);
+        m_graphicsSystem->drawTexture(m_colorTextureView->texture());
     }
 
     void ImGuiSystem::addRenderCallback(const std::function<void()> &callback)

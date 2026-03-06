@@ -347,7 +347,7 @@ namespace ion::Editor
         drawComponentSpacing();
 
         PropertyGrid propGrid("##MaterialPropertiesGrid");
-        for(const urhi::ShaderReflection::Member& property : mat->getProperties())
+        for(const urhi::ShaderReflection::Member& property : mat->getProperties() | std::ranges::views::values)
         {
             propGrid.nextRow(property.name.c_str());
             if(property.type == urhi::ShaderReflection::DataType::Float)

@@ -3,8 +3,6 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ionEditor/cmake-build-debug/_deps/libdwarf-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/ionEditor/cmake-build-relwithdebinfo/_deps/libdwarf-src" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/ionEngine/cmake-build-debug/_deps/libdwarf-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ionEngine/cmake-build-relwithdebinfo/_deps/libdwarf-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/coral" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/entis" vcs="Git" />
@@ -24,5 +22,7 @@
     <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/rapidyaml/ext/c4core/cmake" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/rapidyaml/ext/c4core/src/c4/ext/debugbreak" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/rapidyaml/ext/c4core/src/c4/ext/fast_float" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/vk-bootstrap" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ionEngine/dependencies/urhi/dependencies/vma" vcs="Git" />
   </component>
 </project>

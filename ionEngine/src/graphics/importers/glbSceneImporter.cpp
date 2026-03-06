@@ -6,7 +6,7 @@
 #include "core/engine.h"
 #include "glm/gtc/type_ptr.hpp"
 
-#include <neonRHI/neonRHI.h>
+#include <urhi/urhi.h>
 #include <clogr.h>
 
 
@@ -256,24 +256,23 @@ namespace ion
                 return MipmapFilter::Nearest;
             case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:
             case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
-                return MipmapFilter::Linear;
             default:
-                return MipmapFilter::None;
+                return MipmapFilter::Linear;
         }
     }
 
-    urhi::TextureWrap convertGLTFWrap(const int gltfWrap)
+    urhi::AddressMode convertGLTFWrap(const int gltfWrap)
     {
         using namespace urhi;
         switch (gltfWrap)
         {
             case TINYGLTF_TEXTURE_WRAP_MIRRORED_REPEAT:
-                return TextureWrap::MirroredRepeat;
+                return AddressMode::MirroredRepeat;
             case TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE:
-                return TextureWrap::ClampToEdge;
+                return AddressMode::ClampToEdge;
             case TINYGLTF_TEXTURE_WRAP_REPEAT:
             default:
-                return TextureWrap::Repeat;
+                return AddressMode::Repeat;
         }
     }
 
@@ -285,35 +284,33 @@ namespace ion
 
         if (components == 1)
         {
-            if (bits == 8) return PixelFormat::R8Unorm;
-            if (bits == 16) return PixelFormat::R16Unorm;
+            if (bits == 8) return PixelFormat::R8UNorm;
+            if (bits == 16) return PixelFormat::R16Float;
             if (bits == 32) return PixelFormat::R32Float;
         }
         else if (components == 2)
         {
-            if (bits == 8) return PixelFormat::R8G8Unorm;
-            if (bits == 16) return PixelFormat::R16G16Unorm;
-            if (bits == 32) return PixelFormat::R32G32Float;
+            if (bits == 8) return PixelFormat::RG8UNorm;
+            if (bits == 16) return PixelFormat::RG16Float;
+            if (bits == 32) return PixelFormat::RG32Float;
         }
         else if (components == 3 || components == 4)
         {
-            if (bits == 8) return isSRGB ? PixelFormat::R8G8B8A8UnormSrgb : PixelFormat::R8G8B8A8Unorm;
-            if (bits == 16) return PixelFormat::R16G16B16A16Unorm;
-            if (bits == 32) return PixelFormat::R32G32B32A32Float;
+            if (bits == 8) return isSRGB ? PixelFormat::RGBA8UNormSrgb : PixelFormat::RGBA8UNorm;
+            if (bits == 16) return PixelFormat::RGBA16Float;
+            if (bits == 32) return PixelFormat::RGBA32Float;
         }
 
-        return PixelFormat::R8G8B8A8Unorm;
+        return PixelFormat::RGBA8UNorm;
     }
 
     AssetRef<Image> GLBSceneImporter::loadTexture(const tinygltf::Texture& texture, const tinygltf::Model& model, const bool isSrgb)
     {
         if (texture.source < 0)
-        {
             return nullptr;
-        }
 
         const tinygltf::Image& image = model.images[texture.source];
-        const std::vector<unsigned char>& data = image.image;
+        const std::vector<uint8_t>& data = image.image;
 
         urhi::TextureDesc textureDescription{};
         textureDescription.format = determineTextureFormat(image, isSrgb);
@@ -327,8 +324,8 @@ namespace ion
             const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
             samplerDescription.minFilter = convertGLTFFilter(sampler.minFilter);
             samplerDescription.magFilter = convertGLTFFilter(sampler.magFilter);
-            samplerDescription.wrapMode.x = convertGLTFWrap(sampler.wrapS);
-            samplerDescription.wrapMode.y = convertGLTFWrap(sampler.wrapT);
+            samplerDescription.addressModeU = convertGLTFWrap(sampler.wrapS);
+            samplerDescription.addressModeV = convertGLTFWrap(sampler.wrapT);
         }
 
         const grl::Rc<urhi::Device>& device = Engine::getSystem<GraphicsSystem>()->getDevice();
@@ -337,18 +334,18 @@ namespace ion
 
         AssetManager& assetManager = Engine::getAssetManager();
 
-        urhi::TextureUploadDesc uploadDescription{};
-        uploadDescription.data = data.data();
-        uploadDescription.pixelType = tinyGltfGetPixelType(image);
-        uploadDescription.width = image.width;
-        uploadDescription.height = image.height;
+        urhi::TextureUploadDesc uploadDesc{};
+        uploadDesc.texture = tex;
+        uploadDesc.data = data.data();
+        uploadDesc.width = image.width;
+        uploadDesc.height = image.height;
 
-        const auto commandList = device->createCommandList();
+        const auto cmd = device->acquireCommandList(urhi::QueueType::Graphics);
 
-        commandList->begin();
-        commandList->updateTexture(tex, uploadDescription);
-        commandList->generateMipmaps(tex);
-        device->submit(commandList);
+        cmd->begin();
+        cmd->updateTexture(uploadDesc);
+        cmd->generateMipmaps(tex);
+        device->submit(cmd);
 
         return assetManager.addAsset(Image(tex, sampler), texture.name);
     }
@@ -525,29 +522,4 @@ namespace ion
         return newIndices;
     }
 
-
-    urhi::PixelType GLBSceneImporter::tinyGltfGetPixelType(const tinygltf::Image &img)
-    {
-        switch (img.pixel_type)
-        {
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
-                return urhi::PixelType::UnsignedByte;
-            case TINYGLTF_COMPONENT_TYPE_BYTE:
-                return urhi::PixelType::Byte;
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
-                return urhi::PixelType::UnsignedShort;
-            case TINYGLTF_COMPONENT_TYPE_SHORT:
-                return urhi::PixelType::Short;
-            case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
-                return urhi::PixelType::UnsignedInt;
-            case TINYGLTF_COMPONENT_TYPE_INT:
-                return urhi::PixelType::Int;
-            case TINYGLTF_COMPONENT_TYPE_FLOAT:
-                return urhi::PixelType::Float;
-            default:
-                    if (img.bits == 16) return urhi::PixelType::UnsignedShort;
-            if (img.bits == 32) return urhi::PixelType::Float;
-            return urhi::PixelType::UnsignedByte;
-        }
-    }
 }

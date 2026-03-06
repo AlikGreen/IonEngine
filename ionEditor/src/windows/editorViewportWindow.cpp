@@ -13,8 +13,7 @@
 #include "graphics/graphicsSystem.h"
 #include "graphics/image.h"
 #include "graphics/components/camera.h"
-#include "graphics/renderPasses/bvhBuilderPass.h"
-#include "graphics/renderPasses/raytracePass.h"
+#include "graphics/renderPasses/opaqueForwardPass.h"
 #include "graphics/renderPasses/skyboxPass.h"
 #include "imgui/imGuiExtensions.h"
 #include "input/input.h"
@@ -40,21 +39,13 @@ namespace ion::Editor
         m_lightTextureView = m_device->createTextureView(viewDesc);
         m_gizmoSampler = image.sampler;
 
-        m_matrixUniformBuffer = m_device->createUniformBuffer();
-        m_cameraUniformBuffer = m_device->createUniformBuffer();
-        m_pointLightsUniformBuffer = m_device->createUniformBuffer();
+        m_matrixUniformBuffer = m_device->createBuffer({ urhi::BufferUsage::Uniform, sizeof(MatrixUniforms) });
+        m_cameraUniformBuffer = m_device->createBuffer({ urhi::BufferUsage::Uniform, sizeof(CameraUniformData) });
+        m_pointLightsUniformBuffer = m_device->createBuffer({ urhi::BufferUsage::Uniform, sizeof(PointLightsUniformData) });
 
         m_billboardMaterial = MaterialShader::createBillboard();
 
-        const auto cl = m_device->createCommandList();
-        cl->begin();
-        cl->reserveBuffer(m_matrixUniformBuffer, sizeof(MatrixUniforms));
-        cl->reserveBuffer(m_cameraUniformBuffer, sizeof(CameraUniformData));
-        cl->reserveBuffer(m_pointLightsUniformBuffer, sizeof(PointLightsUniformData));
-        m_device->submit(cl);
-
-        m_renderer.addPass<BvhBuilderPass>(m_device);
-        m_renderer.addPass<RayTracePass>(m_device);
+        m_renderer.addPass<OpaqueForwardPass>();
         m_renderer.addPass<SkyboxRenderPass>();
 
         m_objectPickingPass = grl::makeBox<ObjectPickingPass>(m_device);
@@ -161,7 +152,7 @@ namespace ion::Editor
             renderCtx.set("point_lights_buffer", m_pointLightsUniformBuffer);
 
 
-            auto cmd = m_device->createCommandList();
+            auto cmd = m_device->acquireCommandList(urhi::QueueType::Graphics);
             cmd->begin();
 
             cmd->updateBuffer(m_cameraUniformBuffer, cameraUniformData);
@@ -173,7 +164,7 @@ namespace ion::Editor
 
             // renderBillboards(camEntity, camTransform, camera);
             const grl::Rc<urhi::TextureView> sceneTexture = camera.renderTarget->getColorAttachment();
-            NeonGui::Image(sceneTexture, avail, ImVec2(0, 1), ImVec2(1, 0));
+            ImGui::Image(sceneTexture, avail, ImVec2(0, 1), ImVec2(1, 0));
 
             ImVec2 windowPos = ImGui::GetItemRectMin();
             ImVec2 windowSize = ImGui::GetItemRectSize();
@@ -192,36 +183,33 @@ namespace ion::Editor
                 updatePickerTexture(static_cast<uint32_t>(avail.x), static_cast<uint32_t>(avail.y));
                 renderCtx.set("picker_color_texture", m_objPickerTexView);
                 renderCtx.set("picker_depth_texture", camera.renderTarget->getDepthAttachment());
-                cmd = m_device->createCommandList();
-                cmd->begin();
-                m_objectPickingPass->execute(cmd, renderCtx);
-                m_device->submit(cmd);
+
                 const ImVec2 rectMin = ImGui::GetItemRectMin();
                 const ImVec2 mouse = ImGui::GetIO().MousePos;
                 ImVec2 rectMax = ImGui::GetItemRectMax();
                 const auto relative = ImVec2(mouse.x - rectMin.x, rectMax.y - mouse.y);
 
-                std::vector<uint32_t> data{};
-                data.resize(1);
+                cmd = m_device->acquireCommandList(urhi::QueueType::Graphics);
+                cmd->begin();
+                m_objectPickingPass->execute(cmd, renderCtx);
 
-                const auto cl = m_device->createCommandList();
-                cl->begin();
 
-                urhi::TextureReadDesc readDesc{};
+                urhi::TextureReadbackDesc readDesc{};
+                readDesc.texture = m_objPickerTexView->texture();
                 readDesc.width = 1;
                 readDesc.height = 1;
                 readDesc.depth = 1;
-                readDesc.x = static_cast<uint32_t>(relative.x);
-                readDesc.y = static_cast<uint32_t>(relative.y);
-                readDesc.pixelLayout = urhi::PixelLayout::RInt;
-                readDesc.pixelType = urhi::PixelType::UnsignedInt;
+                readDesc.x = static_cast<int32_t>(relative.x);
+                readDesc.y = static_cast<int32_t>(relative.y);
 
-                cl->readTexture(m_objPickerTexView, readDesc, data);
-                m_device->submit(cl);
+                auto readResult = cmd->readback(readDesc);
+                m_device->submit(cmd);
 
-                if(data[0] != 0)
+                readResult->wait();
+                auto objectVal = readResult->at<uint32_t>(0);
+                if(objectVal != 0)
                 {
-                    Engine::getEventManager().queueEvent<InspectEvent>(registry.getEntity(data[0]));
+                    Engine::getEventManager().queueEvent<InspectEvent>(registry.getEntity(objectVal));
                 }
             }
 
@@ -259,10 +247,10 @@ namespace ion::Editor
 
     void EditorViewportWindow::updatePickerTexture(const uint32_t width, const uint32_t height)
     {
-        if(m_objPickerTexView != nullptr && width == m_objPickerTexView->getWidth() && height == m_objPickerTexView->getHeight())
+        if(m_objPickerTexView != nullptr && width == m_objPickerTexView->texture()->width() && height == m_objPickerTexView->texture()->width())
             return;
 
-        const urhi::TextureDesc texDesc = urhi::TextureDesc::Texture2D(width, height, urhi::PixelFormat::R8Uint);
+        const urhi::TextureDesc texDesc = urhi::TextureDesc::Texture2D(width, height, urhi::PixelFormat::R8UInt);
         const grl::Rc<urhi::Texture> pickerTex = m_device->createTexture(texDesc);
 
         const auto viewDesc = urhi::TextureViewDesc(pickerTex);

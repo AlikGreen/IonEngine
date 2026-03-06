@@ -9,14 +9,6 @@
 
 namespace ion
 {
-    urhi::PixelType getPixelTypeFromExtension(const std::string &extension)
-    {
-        if (extension == "exr" || extension == "hdr")
-            return urhi::PixelType::Float;
-
-        return urhi::PixelType::UnsignedByte;
-    }
-
     void* TextureImporter::load(const std::string &filepath)
     {
         std::string ext = std::filesystem::path(filepath).extension().string();
@@ -30,7 +22,9 @@ namespace ion
 
         stbi_set_flip_vertically_on_load(true);
 
-        if (ext == "exr" || ext == "hdr")
+        const bool hdr = ext == "exr" || ext == "hdr";
+
+        if (hdr)
             pixels = stbi_loadf(filepath.c_str(), &w, &h, &channels, 4);
         else
             pixels = stbi_load(filepath.c_str(), &w, &h, &channels, 4);
@@ -40,9 +34,12 @@ namespace ion
         auto* texData = new TextureData();
         texData->width = w;
         texData->height = h;
-        texData->pixelLayout = urhi::PixelLayout::RGBA;
-        texData->pixelType = getPixelTypeFromExtension(ext);
         texData->data = pixels;
+        if(hdr)
+            texData->pixelFormat = urhi::PixelFormat::RGBA32Float;
+        else
+            texData->pixelFormat = urhi::PixelFormat::RGBA8UNorm;
+
         return texData;
     }
 }
