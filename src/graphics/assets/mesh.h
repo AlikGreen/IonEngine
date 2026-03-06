@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-#include <neonRHI/neonRHI.h>
+#include <urhi/urhi.h>
 #include "glm/glm.hpp"
 
 namespace ion

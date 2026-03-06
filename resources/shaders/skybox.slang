@@ -13,16 +13,18 @@ struct VertexOutput
     float3 vWorldDir : TEXCOORD1;
 };
 
-cbuffer CameraUniforms
+struct Camera
 {
-    float4x4 viewMatrix;
-    float4x4 projMatrix;
-    float4x4 viewProjMatrix;
+    float4x4 view;
+    float4x4 proj;
+    float4x4 viewProj;
 
-    float4x4 invViewMatrix;
-    float4x4 invProjMatrix;
-    float4x4 invViewProjMatrix;
-};
+    float4x4 invView;
+    float4x4 invProj;
+    float4x4 invViewProj;
+}
+
+ConstantBuffer<Camera> camera;
 
 Texture2D<float4> skyboxTexture;
 SamplerState linearSampler;
@@ -34,11 +36,10 @@ VertexOutput vertexMain(VertexInput input)
 
     output.position = float4(input.inPosition, 1.0);
 
-    float4x4 invProj = invProjMatrix;
-    float3x3 viewRot = (float3x3)viewMatrix;
+    float3x3 viewRot = (float3x3)camera.view;
     float3x3 invViewRot = transpose(viewRot);
 
-    float4 viewPos = mul(invProj, float4(input.inPosition.xy, 1.0, 1.0));
+    float4 viewPos = mul(camera.invProj, float4(input.inPosition.xy, 1.0, 1.0));
     output.vWorldDir = mul(invViewRot, viewPos.xyz);
 
     return output;

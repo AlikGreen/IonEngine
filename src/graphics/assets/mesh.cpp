@@ -14,16 +14,13 @@ namespace ion
 
         const auto device = Engine::getSystem<GraphicsSystem>()->getDevice();
 
-        vertexBuffer = device->createVertexBuffer();
-        indexBuffer  = device->createIndexBuffer();
+        vertexBuffer = device->createBuffer({ urhi::BufferUsage::Vertex, vertices.size() * sizeof(Vertex) });
+        indexBuffer  = device->createBuffer({ urhi::BufferUsage::Index, indices.size() * sizeof(uint32_t) });
 
-        const auto cl = device->createCommandList();
+        const auto cl = device->acquireCommandList(urhi::QueueType::Graphics);
         cl->begin();
 
-        cl->reserveBuffer(vertexBuffer, vertices.size() * sizeof(Vertex));
         cl->updateBuffer(vertexBuffer, vertices);
-
-        cl->reserveBuffer(indexBuffer, indices.size() * sizeof(uint32_t));
         cl->updateBuffer(indexBuffer, indices);
 
         device->submit(cl);

@@ -8,6 +8,10 @@ class SceneManager
 {
 public:
     SceneManager();
+
+    SceneManager(const SceneManager&) = delete;
+    SceneManager& operator=(const SceneManager&) = delete;
+
     void setScene(std::string name);
     Scene& getCurrentScene() const;
 private:

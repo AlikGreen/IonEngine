@@ -15,8 +15,8 @@ namespace ion
 
         const std::vector<uint32_t> quadIndices =
         {
-            0, 1, 2,
-            0, 2, 3
+            0, 2, 1,
+            0, 3, 2
         };
 
         m_screenMesh.setVertices(screenVertices);
@@ -39,30 +39,29 @@ namespace ion
         const auto sceneDepthTexture = ctx.get<grl::Rc<urhi::TextureView>>("scene_depth_texture");
 
         urhi::ColorAttachment colorAttachment{};
-        colorAttachment.texture = sceneColorTexture;
+        colorAttachment.target = sceneColorTexture;
         colorAttachment.loadOp = urhi::LoadOp::Load;
         colorAttachment.storeOp = urhi::StoreOp::Store;
 
         urhi::DepthStencilAttachment depthAttachment{};
-        depthAttachment.texture = sceneDepthTexture;
-        depthAttachment.depthLoadOp = urhi::LoadOp::Load;
-        depthAttachment.depthStoreOp = urhi::StoreOp::DontCare;
+        depthAttachment.target = sceneDepthTexture;
+        depthAttachment.loadOp = urhi::LoadOp::Load;
+        depthAttachment.storeOp = urhi::StoreOp::DontCare;
 
         urhi::RenderPassDesc renderPassDesc{};
         renderPassDesc.colorAttachments = {colorAttachment};
         renderPassDesc.depthAttachment = depthAttachment;
-        cmd->beginRenderPass(renderPassDesc);
+        const auto pass = cmd->beginRenderPass(renderPassDesc);
 
-        cmd->setPipeline(material.getPipeline());
+        pass->setPipeline(material.getPipeline());
 
-        cmd->setUniformBuffer("CameraUniforms", cameraBuffer);
+        pass->setUniformBuffer("camera", cameraBuffer);
+        material.bindUniforms(cmd, pass);
 
-        material.bindUniforms(cmd);
+        pass->setVertexBuffer(0, m_screenMesh.getVertexBuffer());
+        pass->setIndexBuffer(m_screenMesh.getIndexBuffer(), urhi::IndexFormat::UInt32);
+        pass->drawIndexed(6);
 
-        cmd->setVertexBuffer(0, m_screenMesh.getVertexBuffer());
-        cmd->setIndexBuffer(m_screenMesh.getIndexBuffer(), urhi::IndexFormat::UInt32);
-        cmd->drawIndexed(6);
-
-        cmd->endRenderPass();
+        pass->end();
     }
 }

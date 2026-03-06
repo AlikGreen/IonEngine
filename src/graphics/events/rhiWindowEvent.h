@@ -1,5 +1,7 @@
 #pragma once
-#include <neonRHI/neonRHI.h>
+#include <urhi/urhi.h>
+
+#include <utility>
 #include "core/event.h"
 
 namespace ion
@@ -7,7 +9,7 @@ namespace ion
     class RhiWindowEvent final : public Event
     {
     public:
-        explicit RhiWindowEvent(const urhi::Event &event) : event(event) {  }
+        explicit RhiWindowEvent(urhi::Event event) : event(std::move(event)) {  }
         urhi::Event event;
     };
 }

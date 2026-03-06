@@ -8,7 +8,6 @@
 #include "events/quitEvent.h"
 #include "events/rhiWindowEvent.h"
 #include "events/windowResizeEvent.h"
-#include "implementations/opengl/blitShader.h"
 #include "input/events/keyDownEvent.h"
 #include "input/events/keyUpEvent.h"
 #include "input/events/mouseButtonDownEvent.h"
@@ -17,116 +16,36 @@
 #include "input/events/mouseWheelEvent.h"
 #include "input/events/textInputEvent.h"
 
+#include "sinks/fileSink.h"
+
 namespace ion
 {
-    GraphicsSystem::GraphicsSystem(const urhi::WindowCreationOptions &windowOptions)
-    {
-        m_window = urhi::Window::createWindow(windowOptions);
-    }
-
-    void GraphicsSystem::updateSwapchainFramebuffers()
-    {
-        std::vector<grl::Rc<urhi::Texture>> textures = m_swapchain->getTextures();
-        m_renderTextures.clear();
-
-        for(const auto& texture : textures)
-        {
-            const urhi::TextureViewDesc viewDesc(texture);
-            grl::Rc<urhi::TextureView> colView = m_device->createTextureView(viewDesc);
-            m_renderTextures.push_back(colView);
-        }
-    }
+    GraphicsSystem::GraphicsSystem(const urhi::WindowDesc &windowOptions)
+        : m_windowDesc(windowOptions) { }
 
     void GraphicsSystem::preStartup()
     {
-        m_window->run();
-        m_device = m_window->createDevice();
+        clogr::getDefaultLogger()->addSink<clogr::FileSink>(R"(C:\Users\alikg\Downloads\log.log)");
+        m_context = urhi::Context::create(urhi::BackendAPI::Vulkan);
+
+        m_window = m_context->createWindow(m_windowDesc);
+        m_device = m_context->createDevice({ m_window });
 
         urhi::SwapchainDesc swapchainDesc{};
         swapchainDesc.window = m_window;
-        m_swapchain = m_device->createSwapchain(swapchainDesc);
+        swapchainDesc.device = m_device;
 
-        const std::vector<glm::vec2> quadPositions =
-        {
-            {-1, -1 },
-            { 1, -1 },
-            { 1,  1 },
-            {-1,  1 }
-        };
-
-        const std::vector<uint32_t> quadIndices =
-        {
-            0, 1, 2,
-            0, 2, 3
-        };
-
-        urhi::ShaderCompileDescription compileDesc{};
-        compileDesc.path = "graphicsSystemBlitShader.slang";
-        compileDesc.source = urhi::blitShaderSource;
-        auto spirv = urhi::ShaderCompiler::compile(compileDesc);
-
-        grl::Rc<urhi::Shader> shader = m_device->createShader(spirv);
-        shader->compile();
-
-        urhi::InputLayout vertexInputState{};
-        vertexInputState.addVertexBuffer<glm::vec2>(0);
-        vertexInputState.addVertexAttribute<glm::vec2>(0, 0);
-
-        urhi::DepthState depthState{};
-        depthState.hasDepthTarget  = false;
-        depthState.enableDepthTest = false;
-
-        urhi::RasterizerState rasterizerState{};
-        rasterizerState.cullMode = urhi::CullMode::None;
-
-        urhi::BlendState blendState{};
-        blendState.enableBlend = true;
-
-        urhi::GraphicsPipelineDesc pipelineDescription{};
-        pipelineDescription.shader             = shader;
-        pipelineDescription.inputLayout		   = vertexInputState;
-        pipelineDescription.targetsDescription = {};
-        pipelineDescription.depthState         = depthState;
-        pipelineDescription.rasterizerState    = rasterizerState;
-        pipelineDescription.blendState         = blendState;
-
-        m_pipeline = m_device->createPipeline(pipelineDescription);
-
-        updateSwapchainFramebuffers();
-
-        m_vertexBuffer = m_device->createVertexBuffer();
-        m_indexBuffer = m_device->createIndexBuffer();
+        m_swapchain = m_context->createSwapchain(swapchainDesc);
 
         constexpr uint32_t texSize = 1;
-        urhi::TextureDesc desc = urhi::TextureDesc::Texture2D(
+        const urhi::TextureDesc desc = urhi::TextureDesc::Texture2D(
             texSize,
             texSize,
-            urhi::PixelFormat::R8G8B8A8Unorm,
+            urhi::PixelFormat::RGBA8UNorm,
             urhi::TextureUsage::Sampled
         );
 
-        grl::Rc<urhi::Texture> texture = m_device->createTexture(desc);
-
-        uint8_t pixel[4] = {255, 255, 255, 255};
-
-        grl::Rc<urhi::CommandList> cl = m_device->createCommandList();
-
-        urhi::TextureUploadDesc uploadDesc{};
-        uploadDesc.width = texSize;
-        uploadDesc.height = texSize;
-        uploadDesc.data = pixel;
-
-        cl->begin();
-
-        cl->updateTexture(texture, uploadDesc);
-
-        cl->reserveBuffer(m_vertexBuffer, quadPositions.size() * sizeof(glm::vec2));
-        cl->updateBuffer(m_vertexBuffer, quadPositions);
-
-        cl->reserveBuffer(m_indexBuffer, quadIndices.size() * sizeof(uint32_t));
-        cl->updateBuffer(m_indexBuffer, quadIndices);
-
-        m_device->submit(cl);
+        const grl::Rc<urhi::Texture> texture = m_device->createTexture(desc);
 
         const auto viewDesc = urhi::TextureViewDesc(texture);
         m_defaultTexture = m_device->createTextureView(viewDesc);
@@ -154,7 +73,6 @@ namespace ion
                     const auto& windowEvent = std::get<urhi::Event::WindowResizeEvent>(event.data);
                     eventManager.queueEvent<WindowResizeEvent>(windowEvent.width, windowEvent.height);
                     m_swapchain->resize(windowEvent.width, windowEvent.height);
-                    updateSwapchainFramebuffers();
                     break;
                 }
                 case urhi::Event::Type::KeyDown:
@@ -211,12 +129,12 @@ namespace ion
 
     void GraphicsSystem::preRender()
     {
-        m_imageIndex = m_swapchain->acquireNextImage();
+        m_renderView = m_swapchain->acquireNextImage();
     }
 
     void GraphicsSystem::postRender()
     {
-        m_swapchain->present(m_imageIndex);
+        m_swapchain->present();
     }
 
     void GraphicsSystem::shutdown()
@@ -224,31 +142,18 @@ namespace ion
         m_window->close();
     }
 
-    void GraphicsSystem::drawTexture(const grl::Rc<urhi::TextureView> &texture, const grl::Rc<urhi::Sampler> &sampler) const
+    void GraphicsSystem::drawTexture(const grl::Rc<urhi::Texture> &texture, const urhi::TextureFilter filter) const
     {
-        const grl::Rc<urhi::CommandList> cmd = m_device->createCommandList();
+        const grl::Rc<urhi::CommandList> cmd = m_device->acquireCommandList(urhi::QueueType::Graphics);
 
         cmd->begin();
 
+        urhi::BlitTextureDesc blitDesc;
+        blitDesc.src = texture;
+        blitDesc.dst = m_renderView->texture();
+        blitDesc.filter = filter;
 
-        urhi::ColorAttachment colorAttachment{};
-        colorAttachment.texture = m_renderTextures[m_imageIndex];
-
-        urhi::RenderPassDesc renderPassDesc{};
-        renderPassDesc.colorAttachments = {colorAttachment};
-        cmd->beginRenderPass(renderPassDesc);
-
-        cmd->setPipeline(m_pipeline);
-
-        cmd->setIndexBuffer(m_indexBuffer, urhi::IndexFormat::UInt32);
-        cmd->setVertexBuffer(0, m_vertexBuffer);
-
-        cmd->setTexture("blitTexture", texture);
-        cmd->setSampler("blitSampler", sampler);
-
-        cmd->drawIndexed(6);
-
-        cmd->endRenderPass();
+        cmd->blitTexture(blitDesc);
 
         m_device->submit(cmd);
     }

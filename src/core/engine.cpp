@@ -39,7 +39,7 @@ namespace ion
 
         assetManager->registerImporter<GLBSceneImporter, Scene>();
         assetManager->registerImporter<TextureImporter, TextureData>();
-        assetManager->registerImporter<ShaderImporter, grl::Rc<urhi::Shader>>();
+        assetManager->registerImporter<ShaderImporter, std::vector<urhi::ShaderEntryPoint>>();
         assetManager->registerImporter<AudioClipImporter, AudioClip>();
 
         // component serializers

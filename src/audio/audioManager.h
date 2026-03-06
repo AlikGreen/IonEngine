@@ -13,6 +13,10 @@ class AudioManager
 {
 public:
     AudioManager();
+
+    AudioManager(const AudioManager&) = delete;
+    AudioManager& operator=(const AudioManager&) = delete;
+
     Sound createSound(const AudioClip &clip);
     void shutdown();
 private:

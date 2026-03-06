@@ -3,8 +3,9 @@
 #include <memory>
 #include <vector>
 
-#include <neonRHI/neonRHI.h>
+#include <urhi/urhi.h>
 #include "core/system.h"
+#include "descriptions/windowDesc.h"
 
 namespace ion
 {
@@ -16,7 +17,7 @@ namespace ion
     struct EngineConfig
     {
         std::vector<std::string> resourcePaths{};
-        urhi::WindowCreationOptions windowOptions;
+        urhi::WindowDesc windowOptions;
     };
 
     class Engine
