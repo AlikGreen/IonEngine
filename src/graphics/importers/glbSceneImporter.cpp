@@ -174,14 +174,14 @@ namespace ion
         }
 
         const auto& baseColor = pbr.baseColorFactor;
-        mat.setProperty("matAlbedo", glm::vec4(baseColor[0], baseColor[1], baseColor[2], baseColor[3]));
+        mat.setProperty("albedo", glm::vec4(baseColor[0], baseColor[1], baseColor[2], baseColor[3]));
         // mat.setProperty("matMetalness", static_cast<float>(pbr.metallicFactor));
-        mat.setProperty("matRoughness", static_cast<float>(pbr.roughnessFactor));
+        mat.setProperty("roughness", static_cast<float>(pbr.roughnessFactor));
 
         if (pbr.metallicRoughnessTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.metallicRoughnessTexture.index], model, false);
-            grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture));
+            const grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture));
             mat.setTexture("metallicRoughnessTexture", view);
             mat.setSampler("metallicRoughnessSampler", imageRef->sampler);
         }
@@ -316,6 +316,7 @@ namespace ion
         textureDescription.format = determineTextureFormat(image, isSrgb);
         textureDescription.width = image.width;
         textureDescription.height = image.height;
+        textureDescription.maxMipLevels = ~0u;
 
         urhi::SamplerDesc samplerDescription{};
 

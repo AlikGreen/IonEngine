@@ -28,12 +28,14 @@ namespace ion
         clogr::getDefaultLogger()->addSink<clogr::FileSink>(R"(C:\Users\alikg\Downloads\log.log)");
         m_context = urhi::Context::create(urhi::BackendAPI::Vulkan);
 
+
         m_window = m_context->createWindow(m_windowDesc);
         m_device = m_context->createDevice({ m_window });
 
         urhi::SwapchainDesc swapchainDesc{};
         swapchainDesc.window = m_window;
         swapchainDesc.device = m_device;
+        swapchainDesc.presentMode = urhi::PresentMode::NoVSync;
 
         m_swapchain = m_context->createSwapchain(swapchainDesc);
 

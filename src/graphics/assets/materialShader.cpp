@@ -151,8 +151,10 @@ namespace ion
             {
                 case urhi::ShaderReflection::ResourceType::Texture:
                     pass->setTexture(resource.name, defaultTexture);
+                    break;
                 case urhi::ShaderReflection::ResourceType::Sampler:
                     pass->setSampler(resource.name, defaultSampler);
+                    break;
                 default:
                     break;
             }
