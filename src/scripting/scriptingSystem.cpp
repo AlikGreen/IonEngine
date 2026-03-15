@@ -40,7 +40,7 @@ namespace ion
         {
             clogr::ScopeTimer<std::chrono::milliseconds> timer("Script runtime load");
 
-            const auto coralDir = R"(C:\Users\alikg\CLionProjects\IonEngine\ionEngine\dependencies\coral\Coral.Managed\bin\Debug\net9.0)";
+            const auto coralDir = R"(C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\external\coral\Coral.Managed\bin\Debug\net9.0)";
             Coral::HostSettings settings;
             settings.CoralDirectory = coralDir;
             settings.ExceptionCallback = cSharpExceptionCallback;
@@ -49,7 +49,7 @@ namespace ion
 
             clogr::ensure(status == Coral::CoralInitStatus::Success, "Coral Initialization Failed with Error: {}", (int)status);
 
-            const auto managedDllPath = R"(C:\Users\alikg\CLionProjects\IonEngine\ionEngine\sdk\IonEngine\bin\Debug\net9.0)";
+            const auto managedDllPath = R"(C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\bin\Debug\net9.0)";
             // std::string testDllPath = exeDir.parent_path().string() + ":" + exeDir.parent_path().parent_path().string();
             auto loadContext = hostInstance.CreateAssemblyLoadContext("TestContext", managedDllPath);
 

@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\alikg\\CLionProjects\\IonEngine\\ionEngine\\sdk\\IonEngine\\IonEngine.csproj",
+      "projectUniqueName": "C:\\Users\\alikg\\CLionProjects\\IonEditor\\external\\ionEngine\\sdk\\IonEngine\\IonEngine.csproj",
       "projectName": "IonEngine",
-      "projectPath": "C:\\Users\\alikg\\CLionProjects\\IonEngine\\ionEngine\\sdk\\IonEngine\\IonEngine.csproj",
+      "projectPath": "C:\\Users\\alikg\\CLionProjects\\IonEditor\\external\\ionEngine\\sdk\\IonEngine\\IonEngine.csproj",
       "packagesPath": "C:\\Users\\alikg\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\alikg\\CLionProjects\\IonEngine\\ionEngine\\sdk\\IonEngine\\obj\\",
+      "outputPath": "C:\\Users\\alikg\\CLionProjects\\IonEditor\\external\\ionEngine\\sdk\\IonEngine\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\alikg\\AppData\\Roaming\\NuGet\\NuGet.Config",

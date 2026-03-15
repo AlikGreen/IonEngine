@@ -2,7 +2,6 @@
 
 #include "consoleWindowSink.h"
 #include "graphicsSystem.h"
-#include "imnodes.h"
 #include "components/camera.h"
 #include "core/sceneManager.h"
 #include "events/rhiWindowEvent.h"
@@ -31,7 +30,6 @@ namespace ion
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        ImNodes::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
 
         io.Fonts->Clear();

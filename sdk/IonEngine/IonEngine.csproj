@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <Reference Include="Coral.Managed">
-      <HintPath>../../dependencies/coral/Coral.Managed/bin/Debug/net9.0/Coral.Managed.dll</HintPath>
+      <HintPath>../../external/coral/Coral.Managed/bin/Debug/net9.0/Coral.Managed.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>
