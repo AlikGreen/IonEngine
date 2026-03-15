@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.29)
 project(ionEngine)
 set(CMAKE_CXX_STANDARD 23)
 
-set(DEPS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/dependencies")
+set(DEPS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external")
 
 set(TINYGLTF_HEADER_ONLY OFF CACHE BOOL "Build tinygltf as a library" FORCE)
 add_subdirectory(${DEPS_DIR}/tinygltf)
@@ -10,9 +10,6 @@ add_subdirectory(${DEPS_DIR}/miniaudio)
 add_subdirectory(${DEPS_DIR}/urhi)
 add_subdirectory(${DEPS_DIR}/entis)
 add_subdirectory(${DEPS_DIR}/coral)
-
-set(IMNODES_IMGUI_TARGET_NAME urhi::imgui)
-add_subdirectory(${DEPS_DIR}/imnodes)
 
 file(GLOB_RECURSE
         SRC_FILES
@@ -42,6 +39,5 @@ target_link_libraries(ionEngine PUBLIC
         urhi
         entis
         urhi::imgui
-        imnodes
         miniaudio
         Coral.Native)

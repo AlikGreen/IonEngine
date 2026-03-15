@@ -1,0 +1,16 @@
+[submodule "external/coral"]
+	path = external/coral
+	url = https://github.com/AlikGreen/Coral.git
+[submodule "external/entis"]
+	path = external/entis
+	url = https://github.com/AlikGreen/entis.git
+[submodule "external/miniaudio"]
+	path = external/miniaudio
+	url = https://github.com/mackron/miniaudio.git
+[submodule "external/tinygltf"]
+	path = external/tinygltf
+	url = https://github.com/syoyo/tinygltf.git
+[submodule "external/urhi"]
+	path = external/urhi
+	url = https://github.com/AlikGreen/urhi.git
+	branch = vulkan
