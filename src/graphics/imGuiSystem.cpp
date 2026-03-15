@@ -1,6 +1,8 @@
 #include "imGuiSystem.h"
 
+#include "consoleWindowSink.h"
 #include "graphicsSystem.h"
+#include "imnodes.h"
 #include "components/camera.h"
 #include "core/sceneManager.h"
 #include "events/rhiWindowEvent.h"
@@ -25,8 +27,11 @@ namespace ion
         m_device = m_graphicsSystem->getDevice();
         m_window = m_graphicsSystem->getWindow();
 
+        clogr::getDefaultLogger()->addSink<ConsoleWindowSink>();
+
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
+        ImNodes::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
 
         io.Fonts->Clear();
@@ -149,6 +154,11 @@ namespace ion
         renderCallbacks.push_back(callback);
     }
 
+    void ImGuiSystem::onMessage(clogr::Level level, const std::string& message)
+    {
+        consoleMessages.emplace_back(level, message);
+    }
+
     void ImGuiSystem::drawDockSpace()
     {
         ImGuiIO &io = ImGui::GetIO();
@@ -218,15 +228,5 @@ namespace ion
         {
             urhi::ImGuiController::processEvent(rhiWindowEvent->event);
         }
-    }
-
-    void ImGuiSystem::handle(const std::string_view msg, clogr::Level level, const std::string_view loggerName, const clogr::Pattern &pattern)
-    {
-        consoleMessages.emplace_back(level, pattern.format(msg, loggerName, level));
-    }
-
-    bool ImGuiSystem::shouldLog(clogr::Level level)
-    {
-        return true;
     }
 }

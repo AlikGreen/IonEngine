@@ -9,7 +9,7 @@
 
 namespace ion
 {
-class ImGuiSystem final : public System, clogr::Sink
+class ImGuiSystem final : public System
 {
 public:
     void preStartup() override;
@@ -17,15 +17,13 @@ public:
     void render() override;
 
     void addRenderCallback(const std::function<void()> &callback);
+    void onMessage(clogr::Level level, const std::string& message);
 
     void event(Event *event) override;
 
     bool shouldDrawDockSpace = false;
     bool shouldDrawConsole = false;
     bool shouldDrawStats = false;
-
-    void handle(std::string_view msg, clogr::Level level, std::string_view loggerName, const clogr::Pattern &pattern) override;
-    bool shouldLog(clogr::Level level) override;
 
     static ImFont* headingFont;
     static ImFont* subheadingFont;
@@ -34,7 +32,7 @@ public:
 private:
     static void drawDockSpace();
     void drawConsole();
-private:
+
     std::vector<std::pair<clogr::Level, std::string>> consoleMessages{};
     std::vector<std::function<void()>> renderCallbacks{};
 
