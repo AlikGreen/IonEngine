@@ -6,30 +6,18 @@
 
 namespace ion
 {
-    std::string AssetManager::getFullPath(const std::string &filePath)
-    {
-        for (const auto& dir: Engine::getConfig().resourcePaths)
-        {
-            auto filepath = grl::Path::join(dir, filePath);
-            if(grl::Path::exists(filepath))
-            {
-                return filepath;
-            }
-        }
-        return filePath;
-    }
-
     AssetId AssetManager::generateID()
     {
-        {
-            return AssetId(nextHandle++);
-        }
+        return AssetId(nextHandle++);
     }
 
     bool AssetManager::isValid(const AssetId id) const
     {
         return id.handle() > 0 && id.handle() < nextHandle;
     }
+
+    AssetManager::AssetManager(ResourceFS& resourceFS)
+        : resourceFS(resourceFS) {  }
 
     std::vector<AssetId> AssetManager::getAllAssetIDs()
     {

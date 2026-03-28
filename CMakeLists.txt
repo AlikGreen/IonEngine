@@ -10,6 +10,7 @@ add_subdirectory(${DEPS_DIR}/miniaudio)
 add_subdirectory(${DEPS_DIR}/urhi)
 add_subdirectory(${DEPS_DIR}/entis)
 add_subdirectory(${DEPS_DIR}/coral)
+add_subdirectory(${DEPS_DIR}/jsoncons)
 
 file(GLOB_RECURSE
         SRC_FILES
@@ -40,4 +41,5 @@ target_link_libraries(ionEngine PUBLIC
         entis
         urhi::imgui
         miniaudio
+        jsoncons
         Coral.Native)

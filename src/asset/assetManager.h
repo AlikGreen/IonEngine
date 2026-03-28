@@ -8,6 +8,8 @@
 #include "assetSerializer.h"
 #include <clogr.h>
 
+#include "core/resourceFS.h"
+
 namespace ion
 {
 
@@ -24,7 +26,7 @@ class AssetRef;
 class AssetManager
 {
 public:
-    AssetManager() = default;
+    explicit AssetManager(ResourceFS& resourceFS);
 
     AssetManager (const AssetManager&) = delete;
     AssetManager& operator= (const AssetManager&) = delete;
@@ -39,7 +41,7 @@ public:
     AssetRef<T> getAsset(AssetId assetHandle);
 
     template<typename T>
-    bool assetIsType(const AssetId assetID) const
+    [[nodiscard]] bool assetIsType(const AssetId assetID) const
     {
         return assetsMetadata.at(assetID).type == typeid(T);
     }
@@ -47,7 +49,7 @@ public:
     template<typename T>
     grl::Box<T> loadUnmanaged(const std::string& filepath)
     {
-        const std::filesystem::path fullPath = getFullPath(filepath);
+        const std::filesystem::path fullPath = resourceFS.resolve(filepath);
 
         clogr::ensure(exists(fullPath), "File was not found\n{}", filepath);
         clogr::ensure(importers.contains(typeid(T)), "Cannot load object of type {}", typeid(T).name());
@@ -84,9 +86,7 @@ public:
     std::vector<AssetId> getAllAssetIDs();
     AssetMetadata getMetadata(AssetId handle);
     AssetId generateID();
-    bool isValid(AssetId id) const;
-
-    static std::string getFullPath(const std::string& filePath);
+    [[nodiscard]] bool isValid(AssetId id) const;
 private:
     template <typename T>
     friend class AssetRef;
@@ -99,6 +99,7 @@ private:
     }
 
     uint64_t nextHandle = 1;
+    ResourceFS &resourceFS;
 
     std::unordered_map<std::type_index, grl::Box<AssetSerializer>> serializers;
     std::unordered_map<std::type_index, grl::Rc<AssetImporter>> importers;

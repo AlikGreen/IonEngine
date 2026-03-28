@@ -23,6 +23,7 @@ namespace ion
     grl::Box<AssetManager> Engine::assetManager;
     grl::Box<AudioManager> Engine::audioManager;
     grl::Box<SceneManager> Engine::sceneManager;
+    grl::Box<ResourceFS>   Engine::resourceFS;
 
     bool Engine::running = false;
     float Engine::deltaTime = 0.0f;
@@ -33,7 +34,8 @@ namespace ion
     {
         Engine::config = config;
         eventManager = grl::makeBox<EventManager>();
-        assetManager = grl::makeBox<AssetManager>();
+        resourceFS   = grl::makeBox<ResourceFS>();
+        assetManager = grl::makeBox<AssetManager>(*resourceFS);
         audioManager = grl::makeBox<AudioManager>();
         sceneManager = grl::makeBox<SceneManager>();
 
@@ -86,6 +88,11 @@ namespace ion
     SceneManager& Engine::getSceneManager()
     {
         return *sceneManager;
+    }
+
+    ResourceFS& Engine::getResourceFS()
+    {
+        return *resourceFS;
     }
 
     float Engine::getDeltaTime()

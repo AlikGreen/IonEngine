@@ -14,3 +14,6 @@
 	path = external/urhi
 	url = https://github.com/AlikGreen/urhi.git
 	branch = vulkan
+[submodule "external/jsoncons"]
+	path = external/jsoncons
+	url = https://github.com/danielaparker/jsoncons.git

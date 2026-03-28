@@ -13,28 +13,9 @@ class AssetStream
 {
 public:
     AssetStream() = default;
-    explicit AssetStream(std::vector<uint8_t> bytes)
-        : buffer(std::move(bytes))
-        {  }
+    explicit AssetStream(std::span<const uint8_t> bytes);
 
-    bool write(const void* data, const size_t size)
-    {
-        if(m_cursor >= 128000)
-            return false;
-
-        auto* byteData = static_cast<const uint8_t*>(data);
-        const size_t writeEnd = m_cursor + size;
-
-        if (writeEnd > buffer.size())
-        {
-            buffer.reserve(static_cast<float>(buffer.size()) * 1.5f);
-            buffer.resize(writeEnd);
-        }
-
-        std::copy(byteData, byteData + size, buffer.begin() + m_cursor);
-        m_cursor += size;
-        return true;
-    }
+    bool write(const void* data, size_t size);
 
     template<typename T>
     requires (std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>)
@@ -44,6 +25,7 @@ public:
     }
 
     template<typename T>
+    requires std::is_trivially_copyable_v<T>
     bool write(std::vector<T> vector)
     {
         if(!write<uint32_t>(vector.size()))
@@ -62,26 +44,19 @@ public:
         return true;
     }
 
-    bool write(const std::string &string)
+    bool write(const std::string &string);
+
+    void writeAt(const uint64_t offset, auto value)
     {
-        if(!write<uint32_t>(string.size()))
-            return false;
-
-        if(!write(string.data(), string.size()))
-            return false;
-
-        return true;
+        const uint64_t saved = getCursor();
+        setCursor(offset);
+        write(value);
+        setCursor(saved);
     }
 
-    bool read(void* data, const size_t size)
-    {
-        if(m_cursor + size > buffer.size())
-            return false;
+    void writeZeroes(uint64_t count);
 
-        memcpy(data, buffer.data() + m_cursor, size);
-        m_cursor += size;
-        return true;
-    }
+    bool read(void* data, size_t size);
 
     template<typename T>
     requires (std::is_trivially_copyable_v<T> && !std::is_pointer_v<T>)
@@ -101,38 +76,22 @@ public:
     }
 
     template<typename T>
+    requires std::is_trivially_copyable_v<T>
     bool read(std::vector<T>& vector)
     {
         uint32_t size = 0;
         if(!read<uint32_t>(size))
             return false;
 
-        void* data = nullptr;
-        if(!read(&data, sizeof(T)*size))
-            return false;
-
         vector.resize(size);
-        vector.assign(data, data + size);
 
-        return true;
-    }
-
-    bool read(std::string& string)
-    {
-        uint32_t size = 0;
-        if(!read<uint32_t>(size))
+        if(!read(vector.data(), sizeof(T) * size))
             return false;
 
-        string.resize(size);
-
-        if(size > 0)
-        {
-            if(!read(string.data(), size))
-                return false;
-        }
-
         return true;
     }
+
+    bool read(std::string& string);
 
     template<typename T>
     void skip()
@@ -140,27 +99,15 @@ public:
         m_cursor += sizeof(T);
     }
 
-    void skip(const uint32_t bytes)
-    {
-        m_cursor += bytes;
-    }
+    void skip(uint32_t bytes);
 
-    [[nodiscard]] size_t getCursorPos() const
-    {
-        return m_cursor;
-    }
+    [[nodiscard]] size_t getCursor() const;
+    void setCursor(size_t pos);
 
-    void setCursorPos(const size_t pos)
-    {
-        m_cursor = pos;
-    }
-
-    [[nodiscard]] std::vector<uint8_t> getBuffer() const
-    {
-        return buffer;
-    }
+    [[nodiscard]] std::vector<uint8_t> buffer() const;
+    [[nodiscard]] size_t size() const;
 private:
     size_t m_cursor = 0;
-    std::vector<uint8_t> buffer{};
+    std::vector<uint8_t> m_buffer{};
 };
 }

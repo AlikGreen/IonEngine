@@ -25,7 +25,7 @@ namespace ion
 
     void GraphicsSystem::preStartup()
     {
-        clogr::getDefaultLogger()->addSink<clogr::FileSink>(R"(C:\Users\alikg\Downloads\log.log)");
+        clogr::defaultLogger()->addSink<clogr::FileSink>(R"(C:\Users\alikg\Downloads\log.log)");
         m_context = urhi::Context::create(urhi::BackendAPI::Vulkan);
 
 

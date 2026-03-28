@@ -4,6 +4,8 @@
 #include <vector>
 
 #include <urhi/urhi.h>
+
+#include "resourceFs.h"
 #include "core/system.h"
 #include "descriptions/windowDesc.h"
 
@@ -16,7 +18,6 @@ namespace ion
 
     struct EngineConfig
     {
-        std::vector<std::string> resourcePaths{};
         urhi::WindowDesc windowOptions;
     };
 
@@ -56,6 +57,7 @@ namespace ion
         static AssetManager& getAssetManager();
         static AudioManager& getAudioManager();
         static SceneManager& getSceneManager();
+        static ResourceFS& getResourceFS();
 
         static float getDeltaTime();
     private:
@@ -63,6 +65,7 @@ namespace ion
         static grl::Box<AssetManager> assetManager;
         static grl::Box<AudioManager> audioManager;
         static grl::Box<SceneManager> sceneManager;
+        static grl::Box<ResourceFS>   resourceFS;
 
         static std::vector<grl::Box<System>> registeredSystems;
         static EngineConfig config;

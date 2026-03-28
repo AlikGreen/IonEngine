@@ -109,7 +109,7 @@ AssetRef<T> AssetManager::addAsset(T asset, std::string name)
 template<typename T>
 AssetRef<T> AssetManager::import(const std::string& filepath)
 {
-    const std::filesystem::path fullPath = getFullPath(filepath);
+    const std::filesystem::path fullPath = resourceFS.resolve(filepath);
 
     clogr::ensure(exists(fullPath), "File was not found\n{}", filepath);
 

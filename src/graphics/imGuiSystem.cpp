@@ -2,6 +2,7 @@
 
 #include "consoleWindowSink.h"
 #include "graphicsSystem.h"
+#include "imGuiStyleSerializer.h"
 #include "components/camera.h"
 #include "core/sceneManager.h"
 #include "events/rhiWindowEvent.h"
@@ -17,7 +18,7 @@ namespace ion
     void setNeonImGuiStyle()
     {
         ImGuiStyle &style = ImGui::GetStyle();
-        ImGui::LoadStyle(AssetManager::getFullPath("style.yaml"), style);
+        ImGuiStyleSerializer::deserialize(Engine::getResourceFS().resolve("style.json"), style);
     }
 
    void ImGuiSystem::preStartup()
@@ -26,7 +27,7 @@ namespace ion
         m_device = m_graphicsSystem->getDevice();
         m_window = m_graphicsSystem->getWindow();
 
-        clogr::getDefaultLogger()->addSink<ConsoleWindowSink>();
+        clogr::defaultLogger()->addSink<ConsoleWindowSink>();
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -49,7 +50,7 @@ namespace ion
 
         auto addFontChecked = [&](const char* relPath, float size, ImFontConfig* cfg) -> ImFont*
         {
-            const std::string fullPath = AssetManager::getFullPath(relPath);
+            const std::string fullPath = Engine::getResourceFS().resolve(relPath).string();
 
             std::error_code ec{};
             if (!std::filesystem::exists(fullPath, ec) || std::filesystem::file_size(fullPath, ec) <= 100)
@@ -61,7 +62,7 @@ namespace ion
             return io.Fonts->AddFontFromFileTTF(fullPath.c_str(), size, cfg, rangesAllBMP);
         };
 
-        auto addFontWithSymbols = [&](const char* baseFontPath, float size) -> ImFont*
+        auto addFontWithSymbols = [&](const char* baseFontPath, const float size) -> ImFont*
         {
             ImFont* font = addFontChecked(baseFontPath, size, &baseCfg);
             if (font == nullptr)
@@ -167,11 +168,9 @@ namespace ion
 
         const ImGuiViewport *viewport = ImGui::GetMainViewport();
 
-        // Make host window + dockspace background transparent
         ImGui::PushStyleColor(ImGuiCol_WindowBg,      ImVec4(0, 0, 0, 0));
         ImGui::PushStyleColor(ImGuiCol_DockingEmptyBg,ImVec4(0, 0, 0, 0));
 
-        // dockspace_id = 0 → ImGui will generate one
         ImGui::DockSpaceOverViewport(
             0,
             viewport,
