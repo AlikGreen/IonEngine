@@ -7,6 +7,7 @@
 #include "core/sceneManager.h"
 #include "events/rhiWindowEvent.h"
 #include "imgui/imGuiExtensions.h"
+#include "util/ansiParser.h"
 
 namespace ion
 {
@@ -153,9 +154,9 @@ namespace ion
         renderCallbacks.push_back(callback);
     }
 
-    void ImGuiSystem::onMessage(clogr::Level level, const std::string& message)
+    void ImGuiSystem::onMessage(const ConsoleMessage &message)
     {
-        consoleMessages.emplace_back(level, message);
+        consoleMessages.push_back(message);
     }
 
     void ImGuiSystem::drawDockSpace()
@@ -183,22 +184,84 @@ namespace ion
 
     void ImGuiSystem::drawConsole()
     {
-        ImGui::Begin("Console");
+        ImGui::Begin("Console", nullptr, ImGuiWindowFlags_MenuBar);
+
+        if(ImGui::BeginMenuBar())
+        {
+            if(ImGui::Button("Clear"))
+            {
+                consoleMessages.clear();
+            }
+            ImGui::EndMenuBar();
+        }
+
         std::optional<size_t> pendingDeleteIndex;
 
         for (size_t i = 0; i < consoleMessages.size(); ++i)
         {
-            const auto& [level, msg] = consoleMessages[i];
+            const auto& message = consoleMessages[i];
 
             ImGui::PushID(static_cast<int>(i));
 
-            ImGui::Selectable(msg.c_str());
+            // float wrapWidth = ImGui::GetContentRegionAvail().x;
+            // ImVec2 textSize = ImGui::CalcTextSize(msg.c_str(), nullptr, false, wrapWidth);
+            // ImVec2 selectablePos = ImGui::GetCursorPos();
+            // ImGui::Selectable("##message", false, 0, ImVec2(0.0f, textSize.y));
+
+            auto styledText = AnsiParser::parse(message.formatted);
+
+            const float maxWidth = ImGui::GetContentRegionAvail().x;
+            ImDrawList* dl = ImGui::GetWindowDrawList();
+
+            const ImVec2 pos = ImGui::GetCursorScreenPos();
+            const float lineHeight = ImGui::GetTextLineHeightWithSpacing();
+
+            float x = 0.0f;
+            float y = 0.0f;
+
+            for (const auto& segment : styledText)
+            {
+                std::string remaining = segment.text;
+
+                while (!remaining.empty())
+                {
+                    auto split = splitStringByMaxWidth(remaining, maxWidth - x);
+
+                    if (split.first.empty())
+                    {
+                        x = 0.0f;
+                        y += lineHeight;
+                        continue;
+                    }
+
+                    dl->AddText(
+                        ImVec2(pos.x + x, pos.y + y),
+                        ImGui::ColorConvertFloat4ToU32(
+                            ImVec4(segment.style.fg.x, segment.style.fg.y, segment.style.fg.z, segment.style.fg.w)
+                        ),
+                        split.first.c_str()
+                    );
+
+                    x += ImGui::CalcTextSize(split.first.c_str()).x;
+                    remaining = split.second;
+
+                    if (!remaining.empty())
+                    {
+                        x = 0.0f;
+                        y += lineHeight;
+                    }
+                }
+            }
+
+
+            ImGui::Selectable("##log_message", false, 0 , ImVec2(maxWidth, y + ImGui::GetTextLineHeight()));
+
 
             if (ImGui::BeginPopupContextItem("MessageContext"))
             {
                 if (ImGui::MenuItem("Copy"))
                 {
-                    ImGui::SetClipboardText(msg.c_str());
+                    ImGui::SetClipboardText(message.unformatted.c_str());
                 }
 
                 if (ImGui::MenuItem("Delete"))
@@ -217,6 +280,39 @@ namespace ion
             consoleMessages.erase(consoleMessages.begin() + static_cast<std::ptrdiff_t>(*pendingDeleteIndex));
         }
         ImGui::End();
+    }
+
+    std::pair<std::string, std::string> ImGuiSystem::splitStringByMaxWidth(const std::string& input, float maxWidth)
+    {
+        if (input.empty())
+        {
+            return { "", "" };
+        }
+
+        if (maxWidth <= 0.0f)
+        {
+            return { input.substr(0, 1), input.substr(1) };
+        }
+
+        size_t lastGood = 0;
+
+        for (size_t i = 1; i <= input.size(); ++i)
+        {
+            std::string candidate = input.substr(0, i);
+            if (ImGui::CalcTextSize(candidate.c_str()).x > maxWidth)
+            {
+                break;
+            }
+
+            lastGood = i;
+        }
+
+        if (lastGood == 0)
+        {
+            return { input.substr(0, 1), input.substr(1) };
+        }
+
+        return { input.substr(0, lastGood), input.substr(lastGood) };
     }
 
     void ImGuiSystem::event(Event *event)

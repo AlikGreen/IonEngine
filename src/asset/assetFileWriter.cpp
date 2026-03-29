@@ -2,7 +2,10 @@
 
 namespace ion
 {
-    void AssetFileWriter::writeSection(const uint64_t id, std::span<const uint8_t> data)
+    AssetFileWriter::AssetFileWriter(const AssetId assetId)
+        : m_assetId(assetId) {  }
+
+    void AssetFileWriter::addSection(const uint64_t id, std::span<const std::byte> data)
     {
         SectionData s;
         s.entry.id   = id;
@@ -11,7 +14,19 @@ namespace ion
         m_sections.push_back(std::move(s));
     }
 
-    std::vector<uint8_t> AssetFileWriter::finalize(const AssetId assetId) const
+    void AssetFileWriter::removeSection(const uint64_t id)
+    {
+        for(auto it = m_sections.begin(); it != m_sections.end(); ++it)
+        {
+            if(it->entry.id == id)
+            {
+                m_sections.erase(it);
+                break;
+            }
+        }
+    }
+
+    void AssetFileWriter::write(const std::filesystem::path &path) const
     {
         AssetStream stream;
 
@@ -22,7 +37,7 @@ namespace ion
         header.magic[3] = 'E';
 
         header.version = 0;
-        header.assetId = assetId.handle();
+        header.assetId = m_assetId.handle();
         header.flags = 0;
 
         header.sectionCount = m_sections.size();
@@ -54,33 +69,17 @@ namespace ion
 
         stream.write(m_bodyStream.buffer());
 
-        return stream.buffer();
+        std::fstream file (path, std::ios::out  | std::ios::binary);
+        file.write(reinterpret_cast<const char*>(stream.buffer().data()), static_cast<int64_t>(stream.buffer().size()));
+        file.close();
     }
 
-    AssetFileReader::AssetFileReader(std::span<const uint8_t> fileData)
+    AssetFileReader AssetFileReader::open(const std::filesystem::path &path)
     {
-        AssetStream stream(fileData);
-        stream.read(m_header);
-        if (!isValid()) return;
-
-        for (uint32_t i = 0; i < m_header.sectionCount; i++)
-        {
-            SectionEntry entry{};
-            stream.read(entry);
-            m_sectionTable[entry.id] = entry;
-        }
-
-        for (auto& [id, entry] : m_sectionTable)
-        {
-            std::vector<uint8_t> data(entry.size);
-            stream.setCursor(entry.offset);
-            stream.read(data);
-            m_sectionData[id] = std::move(data);
-        }
-
-        m_bodyData.resize(m_header.bodySize);
-        stream.setCursor(m_header.bodyOffset);
-        stream.read(m_bodyData.data(), m_bodyData.size());
+        AssetFileReader reader{};
+        reader.m_file.open(path, std::ios::in | std::ios::binary);
+        reader.m_file.read(reinterpret_cast<char*>(&reader.m_header), sizeof(AssetHeader));
+        return reader;
     }
 
     const AssetHeader& AssetFileReader::header() const
@@ -90,28 +89,66 @@ namespace ion
 
     bool AssetFileReader::isValid() const
     {
-        return m_header.magic[0] == 'I' && m_header.magic[0] == 'O' && m_header.magic[0] == 'N' && m_header.magic[0] == 'E';
+        return m_header.magic[0] == 'I' &&
+                m_header.magic[1] == 'O' &&
+                m_header.magic[2] == 'N' &&
+                m_header.magic[3] == 'E' &&
+                m_header.version == 0 &&
+                m_header.assetId != 0;
     }
 
-    bool AssetFileReader::hasSection(const uint64_t id) const
+    std::optional<std::vector<std::byte>> AssetFileReader::readSection(const uint64_t id)
     {
-        return m_sectionTable.contains(id);
+        sections();
+        if(!m_sectionMap.contains(id)) return std::nullopt;
+
+        const SectionEntry entry = m_sectionMap.at(id);
+        m_file.seekg(static_cast<int64_t>(entry.offset));
+
+        std::vector<std::byte> result;
+        result.resize(entry.size);
+
+        m_file.read(reinterpret_cast<char*>(result.data()), static_cast<int64_t>(entry.size));
+        return result;
     }
 
-    std::optional<std::span<const uint8_t>> AssetFileReader::readSection(const uint64_t id) const
+    std::vector<SectionEntry> AssetFileReader::sections()
     {
-        if(!m_sectionData.contains(id)) return std::nullopt;
+        if(!m_sections.empty() || m_header.sectionCount == 0) return m_sections;
 
-        return m_sectionData.at(id);
+        m_file.seekg(sizeof(AssetHeader), std::ios::beg);
+
+        for(size_t i = 0; i < m_header.sectionCount; i++)
+        {
+            SectionEntry entry{};
+            m_file.read(reinterpret_cast<char*>(&entry), sizeof(SectionEntry));
+            m_sections.push_back(entry);
+            m_sectionMap.emplace(entry.id, entry);
+        }
+
+        return m_sections;
     }
 
-    std::span<const uint8_t> AssetFileReader::bodyBytes() const
+
+    std::vector<std::byte> AssetFileReader::readBody()
     {
-        return m_bodyData;
+        std::vector<std::byte> bodyData;
+        bodyData.resize(m_header.bodySize);
+
+        m_file.seekg(static_cast<int64_t>(m_header.bodyOffset), std::ios::beg);
+        m_file.read(reinterpret_cast<char*>(bodyData.data()), static_cast<int64_t>(m_header.bodySize));
+
+        return bodyData;
     }
 
-    AssetStream AssetFileReader::bodyStream() const
+    AssetFileWriter AssetFileReader::toWriter()
     {
-        return AssetStream(m_bodyData);
+        AssetFileWriter writer(AssetId(m_header.assetId));
+        for(const auto section : m_sections)
+        {
+            writer.addSection(section.id, readSection(section.id).value_or(std::vector<std::byte>{}));
+        }
+        writer.bodyStream() = AssetStream{readBody()};
+        return writer;
     }
 }

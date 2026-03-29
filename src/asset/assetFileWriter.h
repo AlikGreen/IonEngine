@@ -8,33 +8,38 @@ namespace ion
 class AssetFileWriter
 {
 public:
+    explicit AssetFileWriter(AssetId assetId);
+
+    void addSection(uint64_t id, std::span<const std::byte> data);
+    void removeSection(uint64_t id);
     AssetStream& bodyStream() { return m_bodyStream; }
-    void writeSection(uint64_t id, std::span<const uint8_t> data);
-    [[nodiscard]] std::vector<uint8_t> finalize(AssetId assetId) const;
+
+    void write(const std::filesystem::path& path) const;
 private:
-    struct SectionData{ SectionEntry entry; std::vector<uint8_t> data; };
+    struct SectionData{ SectionEntry entry; std::vector<std::byte> data; };
     AssetStream m_bodyStream;
     std::vector<SectionData> m_sections;
+    AssetId m_assetId;
 };
 
 class AssetFileReader
 {
 public:
-    explicit AssetFileReader(std::span<const uint8_t> fileData);
+    static AssetFileReader open(const std::filesystem::path& path);
 
     [[nodiscard]] const AssetHeader& header() const;
     [[nodiscard]] bool isValid() const;
+    std::optional<std::vector<std::byte>> readSection(uint64_t id);
+    std::vector<SectionEntry> sections();
+    std::vector<std::byte> readBody();
 
-    [[nodiscard]] bool hasSection(uint64_t id) const;
-    [[nodiscard]] std::optional<std::span<const uint8_t>> readSection(uint64_t id) const;
-
-    [[nodiscard]] std::span<const uint8_t> bodyBytes() const;
-    [[nodiscard]] AssetStream bodyStream() const;
-
+    AssetFileWriter toWriter();
 private:
-    AssetHeader m_header;
-    std::vector<uint8_t> m_bodyData;
-    std::unordered_map<uint64_t, SectionEntry> m_sectionTable;
-    std::unordered_map<uint64_t, std::vector<uint8_t>> m_sectionData;
+    AssetFileReader() = default;
+    std::fstream m_file;
+
+    AssetHeader m_header{};
+    std::vector<SectionEntry> m_sections;
+    std::unordered_map<uint64_t, SectionEntry> m_sectionMap;
 };
 }

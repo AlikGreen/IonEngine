@@ -13,7 +13,9 @@
 #include "graphics/importers/shaderImporter.h"
 #include "graphics/importers/textureImporter.h"
 #include "core/serializers/sceneSerializer.h"
+#include "serializers/componentSerializers/meshRendererSerializer.h"
 #include "serializers/componentSerializers/parentSerializer.h"
+#include "serializers/componentSerializers/pointLightSerializer.h"
 #include "serializers/componentSerializers/tagSerializer.h"
 #include "serializers/componentSerializers/transformSerializer.h"
 
@@ -48,6 +50,8 @@ namespace ion
         assetManager->registerSerializer<TagSerializer, Tag>();
         assetManager->registerSerializer<TransformSerializer, Transform>();
         assetManager->registerSerializer<ParentSerializer, Parent>();
+        assetManager->registerSerializer<MeshRendererSerializer, MeshRenderer>();
+        assetManager->registerSerializer<PointLightSerializer, PointLight>();
 
         auto& sceneSerializer = assetManager->registerSerializer<SceneSerializer, Scene>();
         sceneSerializer.registerComponentSerializer<Tag>(1);

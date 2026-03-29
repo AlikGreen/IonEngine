@@ -5,6 +5,12 @@ namespace ion
     AssetStream::AssetStream(std::span<const uint8_t> bytes): m_buffer(bytes.begin(), bytes.end())
     {  }
 
+    AssetStream::AssetStream(const std::span<const std::byte> bytes)
+    : m_buffer(reinterpret_cast<const uint8_t*>(bytes.data()),
+               reinterpret_cast<const uint8_t*>(bytes.data()) + bytes.size())
+    {
+    }
+
     bool AssetStream::write(const void *data, const size_t size)
     {
         if(m_cursor >= 128000)

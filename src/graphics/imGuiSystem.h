@@ -12,12 +12,19 @@ namespace ion
 class ImGuiSystem final : public System
 {
 public:
+    struct ConsoleMessage
+    {
+        std::string unformatted;
+        std::string formatted;
+        clogr::Level level;
+    };
+
     void preStartup() override;
     void update() override;
     void render() override;
 
     void addRenderCallback(const std::function<void()> &callback);
-    void onMessage(clogr::Level level, const std::string& message);
+    void onMessage(const ConsoleMessage &message);
 
     void event(Event *event) override;
 
@@ -33,7 +40,9 @@ private:
     static void drawDockSpace();
     void drawConsole();
 
-    std::vector<std::pair<clogr::Level, std::string>> consoleMessages{};
+    static std::pair<std::string, std::string> splitStringByMaxWidth(const std::string &input, float maxWidth);
+
+    std::vector<ConsoleMessage> consoleMessages{};
     std::vector<std::function<void()>> renderCallbacks{};
 
     grl::Box<urhi::ImGuiController> m_imGuiController{};

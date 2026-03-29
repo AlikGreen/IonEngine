@@ -98,7 +98,6 @@ private:
         return *static_cast<T*>(assets.at(id));
     }
 
-    uint64_t nextHandle = 1;
     ResourceFS &resourceFS;
 
     std::unordered_map<std::type_index, grl::Box<AssetSerializer>> serializers;

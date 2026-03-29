@@ -14,6 +14,7 @@ class AssetStream
 public:
     AssetStream() = default;
     explicit AssetStream(std::span<const uint8_t> bytes);
+    explicit AssetStream(std::span<const std::byte> bytes);
 
     bool write(const void* data, size_t size);
 
