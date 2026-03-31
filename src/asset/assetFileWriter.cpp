@@ -2,8 +2,8 @@
 
 namespace ion
 {
-    AssetFileWriter::AssetFileWriter(const AssetId assetId)
-        : m_assetId(assetId) {  }
+    AssetFileWriter::AssetFileWriter(const AssetId assetId, const uint64_t typeId)
+        : m_assetId(assetId), m_typeId(typeId) {  }
 
     void AssetFileWriter::addSection(const uint64_t id, std::span<const std::byte> data)
     {
@@ -37,7 +37,8 @@ namespace ion
         header.magic[3] = 'E';
 
         header.version = 0;
-        header.assetId = m_assetId.handle();
+        header.assetId = m_assetId;
+        header.typeId = m_typeId;
         header.flags = 0;
 
         header.sectionCount = m_sections.size();
@@ -94,7 +95,7 @@ namespace ion
                 m_header.magic[2] == 'N' &&
                 m_header.magic[3] == 'E' &&
                 m_header.version == 0 &&
-                m_header.assetId != 0;
+                m_header.assetId.isValid();
     }
 
     std::optional<std::vector<std::byte>> AssetFileReader::readSection(const uint64_t id)
@@ -143,7 +144,7 @@ namespace ion
 
     AssetFileWriter AssetFileReader::toWriter()
     {
-        AssetFileWriter writer(AssetId(m_header.assetId));
+        AssetFileWriter writer(m_header.assetId, m_header.typeId);
         for(const auto section : m_sections)
         {
             writer.addSection(section.id, readSection(section.id).value_or(std::vector<std::byte>{}));

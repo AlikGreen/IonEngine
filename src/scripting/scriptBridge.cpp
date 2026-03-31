@@ -119,7 +119,7 @@ namespace ion::Scripting::ExportedAPI
     {
         entis::TypeErasedRegistry* getSceneRegistry()
         {
-            return &Engine::getSceneManager().getCurrentScene().getRegistry().asTypeErased();
+            return &Engine::sceneManager().getCurrentScene().registry().asTypeErased();
         }
     }
 

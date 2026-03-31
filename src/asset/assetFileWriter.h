@@ -1,6 +1,5 @@
 #pragma once
 #include "assetHeader.h"
-#include "assetManager.h"
 #include "assetStream.h"
 
 namespace ion
@@ -8,7 +7,7 @@ namespace ion
 class AssetFileWriter
 {
 public:
-    explicit AssetFileWriter(AssetId assetId);
+    explicit AssetFileWriter(AssetId assetId, uint64_t typeId);
 
     void addSection(uint64_t id, std::span<const std::byte> data);
     void removeSection(uint64_t id);
@@ -20,6 +19,7 @@ private:
     AssetStream m_bodyStream;
     std::vector<SectionData> m_sections;
     AssetId m_assetId;
+    uint64_t m_typeId;
 };
 
 class AssetFileReader

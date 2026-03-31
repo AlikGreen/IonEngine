@@ -1,30 +1,27 @@
 #pragma once
-#include "asset/assetSerializer.h"
+
 #include "asset/assetStream.h"
-#include "core/components/transformComponent.h"
 #include "graphics/components/meshRenderer.h"
 
 namespace ion
 {
-class MeshRendererSerializer final : public AssetSerializer
+class MeshRendererSerializer final : public ComponentSerializer<MeshRenderer>
 {
 public:
-    void serialize(AssetStream &assetStream, AssetManager &assetManager, void *asset) override
+    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const MeshRenderer& renderer) override
     {
-        const MeshRenderer& renderer = *static_cast<MeshRenderer*>(asset);
-
         assetStream.write<uint32_t>(renderer.materials.size());
-        for(const auto material : renderer.materials)
+        for(const auto& material : renderer.materials)
         {
-            assetStream.write(material);
+            assetStream.write(material.id());
         }
 
-        assetStream.write(renderer.mesh);
+        assetStream.write(renderer.mesh.id());
     }
 
-    void* deserialize(AssetStream &assetStream, AssetManager &assetManager) override
+    MeshRenderer deserialize(AssetStream &assetStream, AssetRegistry &assetRegistry) override
     {
-        auto* renderer = new MeshRenderer();
+        MeshRenderer renderer;
         std::vector<AssetRef<MaterialShader>> materials;
         uint32_t materialCount = 0;
         assetStream.read(materialCount);
@@ -32,10 +29,14 @@ public:
 
         for(size_t i = 0; i < materialCount; i++)
         {
-            assetStream.read(materials[i]);
+            AssetId id;
+            assetStream.read(id);
+            renderer.materials[i] = assetRegistry.load<MaterialShader>(id);
         }
 
-        assetStream.read(renderer->mesh);
+        AssetId id;
+        assetStream.read(id);
+        renderer.mesh = assetRegistry.load<Mesh>(id);
 
         return renderer;
     }

@@ -1,18 +1,26 @@
 #pragma once
+#include "assetId.h"
 
 namespace ion
 {
-struct  AssetHeader
+enum Compression : uint8_t
 {
-    uint8_t   magic[4];
-    uint32_t  version;
-    uint64_t  assetId;
-    uint32_t  flags;
+    None, Zstd
+};
 
-    uint32_t  sectionCount;
+struct AssetHeader
+{
+    uint8_t   magic[4]{};
+    uint32_t  version{};
+    AssetId  assetId{};
+    uint64_t typeId{};
+    Compression compression{};
+    uint32_t  flags{};
 
-    uint64_t  bodyOffset;
-    uint64_t  bodySize;
+    uint32_t  sectionCount{};
+
+    uint64_t  bodyOffset{};
+    uint64_t  bodySize{};
 };
 
 struct SectionEntry

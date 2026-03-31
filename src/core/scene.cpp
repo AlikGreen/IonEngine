@@ -7,14 +7,19 @@
 namespace ion
 {
 
-    entis::Registry& Scene::getRegistry()
+    entis::Registry& Scene::registry()
     {
-        return registry;
+        return m_registry;
+    }
+
+    const entis::Registry& Scene::registry() const
+    {
+        return m_registry;
     }
 
     entis::Entity Scene::createEntity(const std::string& name)
     {
-        entis::Entity entity = registry.createEntity();
+        entis::Entity entity = m_registry.createEntity();
 
         entity.emplace<Transform>();
         entity.emplace<Tag>(name);
@@ -25,7 +30,7 @@ namespace ion
 
     entis::Entity Scene::import(Scene& scene)
     {
-        const std::vector<entis::Entity> newEntities = registry.merge(scene.getRegistry());
+        const std::vector<entis::Entity> newEntities = m_registry.merge(scene.registry());
 
         const entis::Entity parent = createEntity(scene.name);
 

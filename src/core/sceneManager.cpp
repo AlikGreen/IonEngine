@@ -1,10 +1,12 @@
 #include "sceneManager.h"
 
+#include "asset/assetRegistry.h"
+
 namespace ion
 {
     SceneManager::SceneManager()
     {
-        currentScene = Engine::getAssetManager().addAsset(new Scene());
+        currentScene = Engine::assetRegistry().create<Scene>();
     }
 
     void SceneManager::setScene(std::string name)

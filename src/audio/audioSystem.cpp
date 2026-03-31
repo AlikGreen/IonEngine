@@ -11,13 +11,13 @@ namespace ion
 {
     void AudioSystem::postUpdate()
     {
-        entis::Registry& registry = Engine::getSceneManager().getCurrentScene().getRegistry();
+        entis::Registry& registry = Engine::sceneManager().getCurrentScene().registry();
 
         auto& audioSources = registry.view<AudioSource, Transform>();
 
-        AudioManager& audioManager = Engine::getAudioManager();
+        AudioManager& audioManager = Engine::audioManager();
 
-        for (auto [entity, audioSource, transform] : audioSources)
+        for (const auto& [entity, audioSource, transform] : audioSources)
         {
             const bool isPlaying = sounds.contains(audioSource.clip.id());
             if(audioSource.isPlaying && !isPlaying)

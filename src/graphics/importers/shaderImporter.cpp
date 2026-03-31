@@ -6,16 +6,21 @@
 
 namespace ion
 {
-    void* ShaderImporter::load(const std::string &filepath)
+    grl::Box<std::vector<urhi::ShaderEntryPoint>> ShaderImporter::import(const std::filesystem::path &src)
     {
-        const std::string dir = grl::Path::directory(filepath);
+        const std::string dir = grl::Path::directory(src.string());
 
         urhi::ShaderCompileDesc compileDesc{};
-        compileDesc.path = filepath;
-        compileDesc.source = grl::File::read(filepath).value();
+        compileDesc.path = src.string();
+        compileDesc.source = grl::File::read(src.string()).value();
         compileDesc.includePaths.push_back(dir);
 
         auto entryPoints = urhi::ShaderCompiler::compile(compileDesc);
-        return new std::vector(std::move(entryPoints));
+        return grl::makeBox<std::vector<urhi::ShaderEntryPoint>>(std::move(entryPoints));
+    }
+
+    bool ShaderImporter::canImport(const std::filesystem::path &src) const
+    {
+        return src.extension() == ".slang" || src.extension() == ".shader";
     }
 }

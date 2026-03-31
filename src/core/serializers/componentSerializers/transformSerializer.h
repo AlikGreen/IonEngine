@@ -1,29 +1,26 @@
 #pragma once
-#include "asset/assetSerializer.h"
 #include "asset/assetStream.h"
 #include "core/components/transformComponent.h"
 
 namespace ion
 {
-class TransformSerializer final : public AssetSerializer
+class TransformSerializer final : public ComponentSerializer<Transform>
 {
 public:
-    void serialize(AssetStream &assetStream, AssetManager &assetManager, void *asset) override
+    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const Transform &transform) override
     {
-        const Transform& transform = *static_cast<Transform*>(asset);
-
         assetStream.write(transform.position);
         assetStream.write(transform.rotation);
         assetStream.write(transform.scale);
     }
 
-    void* deserialize(AssetStream &assetStream, AssetManager &assetManager) override
+    Transform deserialize(AssetStream &assetStream, AssetRegistry &assetRegistry) override
     {
-        auto* transform = new Transform();
+        Transform transform;
 
-        assetStream.read(transform->position);
-        assetStream.read(transform->rotation);
-        assetStream.read(transform->scale);
+        assetStream.read(transform.position);
+        assetStream.read(transform.rotation);
+        assetStream.read(transform.scale);
 
         return transform;
     }

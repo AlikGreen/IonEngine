@@ -49,7 +49,6 @@ namespace ion
         void unmount(std::string_view prefix);
         void unmount(std::string_view prefix, const std::filesystem::path &physicalRoot);
 
-
         [[nodiscard]] std::vector<MountPoint> mounts() const;
         [[nodiscard]] std::filesystem::path resolve(std::string_view virtualPath) const;
         [[nodiscard]] std::vector<std::filesystem::path> resolveAll(std::string_view virtualPath) const;

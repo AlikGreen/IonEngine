@@ -1,24 +1,21 @@
 #include "sceneSerializer.h"
 
-#include "asset/assetManager.h"
 #include "asset/assetStream.h"
 #include "core/scene.h"
 #include "core/components/parentComponent.h"
 #include "core/components/tagComponent.h"
-#include "core/components/transformComponent.h"
 
 namespace ion
 {
-    void SceneSerializer::serialize(AssetStream &assetStream, AssetManager &assetManager, void *asset)
+    void SceneSerializer::serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const Scene& scene)
     {
-        auto* scene = static_cast<Scene*>(asset);
-        assetStream.write(scene->name);
+        assetStream.write(scene.name);
 
-        auto& registry = scene->getRegistry();
+        auto& registry = scene.registry();
         auto& view = registry.view<Tag>();
 
         const uint32_t entityCountCursor = assetStream.getCursor();
-        assetStream.write<uint32_t>(0); // entity count placeholder
+        assetStream.write<uint32_t>(0);
 
         uint32_t entityCount = 0;
 
@@ -35,13 +32,13 @@ namespace ion
             uint32_t componentCount = 0;
 
             // Serialize each component type
-            for(auto& [typeId, serializer] : m_componentSerializers)
+            for(auto& [typeId, serializer] : m_componentSerializerFuncs)
             {
                 const uint32_t componentStartCursor = assetStream.getCursor();
                 assetStream.write<uint32_t>(0);
                 assetStream.write<uint32_t>(typeId);
 
-                serializer(assetManager, assetStream, entity);
+                serializer(assetRegistry, assetStream, entity);
                 const uint32_t afterComponentData = assetStream.getCursor();
 
                 const uint32_t componentSize = afterComponentData - componentStartCursor;
@@ -61,12 +58,12 @@ namespace ion
         assetStream.writeAt(entityCountCursor, entityCount);
     }
 
-    void* SceneSerializer::deserialize(AssetStream &assetStream, AssetManager &assetManager)
+    grl::Rc<Scene> SceneSerializer::deserialize(AssetStream &assetStream, AssetRegistry& assetRegistry)
     {
-        auto* scene = new Scene();
+        auto scene = grl::makeRc<Scene>();
         assetStream.read(scene->name);
 
-        auto& registry = scene->getRegistry();
+        auto& registry = scene->registry();
 
         uint32_t entityCount = 0;
         assetStream.read(entityCount);
@@ -95,10 +92,10 @@ namespace ion
                 assetStream.read(typeId);
 
                 // Find and execute the deserializer
-                auto it = m_componentDeserializers.find(typeId);
-                if(it != m_componentDeserializers.end())
+                auto it = m_componentDeserializerFuncs.find(typeId);
+                if(it != m_componentDeserializerFuncs.end())
                 {
-                    it->second(assetManager, assetStream, entity, registry);
+                    it->second(assetRegistry, assetStream, entity, registry);
                 }
                 else
                 {

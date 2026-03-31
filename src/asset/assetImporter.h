@@ -1,13 +1,16 @@
 #pragma once
 
+#include <filesystem>
+
 namespace ion
 {
+template<typename T>
 class AssetImporter
 {
 public:
     virtual ~AssetImporter() = default;
 
-    virtual bool isFileSupported(const std::string &filepath) { return true; }
-    virtual void* load(const std::string &filepath) = 0;
+    virtual grl::Box<T> import(const std::filesystem::path& src) = 0;
+    [[nodiscard]] virtual bool canImport(const std::filesystem::path& src) const = 0;
 };
 }

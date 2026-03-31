@@ -9,7 +9,7 @@ namespace ion
     CulledRenderables Renderer::performCulling(Scene &scene, entis::Entity camEntity)
     {
         const auto& camera = camEntity.get<Camera>();
-        const auto& meshRenderers = scene.getRegistry().view<MeshRenderer, Transform>();
+        const auto& meshRenderers = scene.registry().view<MeshRenderer, Transform>();
         std::vector<Renderable> renderables;
         renderables.reserve(meshRenderers.size());
         std::vector<Renderable> opaqueRenderables;
@@ -89,7 +89,7 @@ namespace ion
     {
         PointLightsUniformData pointLightsData{};
 
-        auto& lightsView = scene.getRegistry().view<PointLight, Transform>();
+        auto& lightsView = scene.registry().view<PointLight, Transform>();
 
         int index = 0;
         for(auto [entity, light, transform] : lightsView)

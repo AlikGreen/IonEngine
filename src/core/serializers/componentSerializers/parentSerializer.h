@@ -1,28 +1,26 @@
 #pragma once
-#include "asset/assetSerializer.h"
+
 #include "asset/assetStream.h"
 #include "core/components/parentComponent.h"
 
 namespace ion
 {
-class ParentSerializer final : public AssetSerializer
+class ParentSerializer final : public ComponentSerializer<Parent>
 {
 public:
-    void serialize(AssetStream &assetStream, AssetManager &assetManager, void *asset) override
+    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const Parent &parent) override
     {
-        const Parent& parent = *static_cast<Parent*>(asset);
-
         assetStream.write<uint32_t>(parent.getParent().id());
     }
 
-    void * deserialize(AssetStream &assetStream, AssetManager &assetManager) override
+    Parent deserialize(AssetStream &assetStream, AssetRegistry &assetRegistry) override
     {
         entis::EntityId entityId = 0;
         assetStream.read<uint32_t>(entityId);
         const auto entity = entis::Entity(nullptr, entityId);
 
-        auto* parent = new Parent();
-        parent->setParent(entity);
+        Parent parent;
+        parent.setParent(entity);
         return parent;
     }
 };

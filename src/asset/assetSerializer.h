@@ -3,17 +3,18 @@
 namespace ion
 {
     class AssetStream;
-    class AssetManager;
+    class AssetRegistry;
 }
 
 namespace ion
 {
+template<typename T>
 class AssetSerializer
 {
 public:
     virtual ~AssetSerializer() = default;
 
-    virtual void serialize(AssetStream& assetStream, AssetManager& assetManager, void* asset) = 0;
-    virtual void* deserialize(AssetStream& assetStream, AssetManager& assetManager) = 0;
+    virtual void serialize(AssetStream& assetStream, AssetRegistry& assetRegistry, const T& asset) = 0;
+    virtual grl::Rc<T> deserialize(AssetStream& assetStream, AssetRegistry& assetRegistry) = 0;
 };
 }

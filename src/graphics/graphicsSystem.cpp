@@ -57,7 +57,7 @@ namespace ion
     {
         std::vector<urhi::Event> events = m_window->pollEvents();
 
-        EventManager& eventManager = Engine::getEventManager();
+        EventManager& eventManager = Engine::eventManager();
 
         for(const auto& event : events)
         {

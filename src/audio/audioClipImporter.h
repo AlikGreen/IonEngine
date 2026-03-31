@@ -1,11 +1,13 @@
 #pragma once
+#include "audioClip.h"
 #include "asset/assetImporter.h"
 
 namespace ion
 {
-class AudioClipImporter final : public AssetImporter
+class AudioClipImporter final : public AssetImporter<AudioClip>
 {
 public:
-    void* load(const std::string &filepath) override;
+    grl::Box<AudioClip> import(const std::filesystem::path& filepath) override;
+    [[nodiscard]] bool canImport(const std::filesystem::path &src) const override;
 };
 }

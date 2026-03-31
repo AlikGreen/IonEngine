@@ -3,39 +3,51 @@
 
 #include <entis/entis.h>
 
-#include "asset/assetManager.h"
+#include "asset/assetRegistry.h"
 #include "asset/assetSerializer.h"
+#include "componentSerializers/componentSerializer.h"
+#include "core/scene.h"
+#include "grl/error.h"
 
 namespace ion
 {
-class SceneSerializer final : public AssetSerializer
+class SceneSerializer final : public AssetSerializer<Scene>
 {
 public:
-    void serialize(AssetStream &assetStream, AssetManager &assetManager, void *asset) override;
-    void* deserialize(AssetStream &assetStream, AssetManager &assetManager) override;
+    static constexpr uint64_t typeId = grl::hash64("ion::Scene");
+    void serialize(AssetStream &assetStream, AssetRegistry& assetRegistry, const Scene& asset) override;
+    grl::Rc<Scene> deserialize(AssetStream &assetStream, AssetRegistry& assetRegistry) override;
 
-    template<typename T>
-    void registerComponentSerializer(const uint32_t typeId)
+    template<typename T, typename Serializer, typename... Args>
+    requires std::is_constructible_v<Serializer, Args...> && std::is_base_of_v<ComponentSerializer<T>, Serializer>
+    void registerComponentSerializer(uint64_t typeId, Args&&... args)
     {
-        m_componentSerializers[typeId] = [](AssetManager &assetManager, AssetStream &assetStream, entis::Entity entity)
+        m_componentSerializers[typeId] = grl::makeBox<Serializer>(std::forward<Args>(args)...);
+
+        m_componentSerializerFuncs[typeId] = [typeId, this](AssetRegistry& assetRegistry, AssetStream &assetStream, entis::Entity entity)
         {
             if(!entity.has<T>()) return;
 
-            T& component = entity.get<T>();
-            assetManager.serialize<T>(assetStream, component);
+            const T& component = entity.get<T>();
+            auto serializer = static_cast<Serializer*>(m_componentSerializers[typeId].get());
+            serializer->serialize(assetStream, assetRegistry, component);
         };
 
-        m_componentDeserializers[typeId] = [](AssetManager &assetManager, AssetStream &assetStream, entis::Entity entity, entis::Registry& registry)
+        m_componentDeserializerFuncs[typeId] = [this, typeId](AssetRegistry& assetRegistry, AssetStream &assetStream, const entis::Entity entity, entis::Registry& registry)
         {
-            auto component = assetManager.deserialize<T>(assetStream);
-            registry.assign<T>(entity, std::move(*component));
+            auto serializer = static_cast<Serializer*>(m_componentSerializers[typeId].get());
+            auto component = serializer->deserialize(assetStream, assetRegistry);
+
+            registry.assign<T>(entity, std::move(component));
         };
     }
-private:
-    using SerializerFunc = std::function<void(AssetManager&, AssetStream&, entis::Entity)>;
-    using DeserializerFunc = std::function<void(AssetManager&, AssetStream&, entis::Entity, entis::Registry&)>;
 
-    std::unordered_map<uint32_t, SerializerFunc> m_componentSerializers{};
-    std::unordered_map<uint32_t, DeserializerFunc> m_componentDeserializers{};
+private:
+    using SerializerFunc = std::function<void(AssetRegistry&, AssetStream&, entis::Entity)>;
+    using DeserializerFunc = std::function<void(AssetRegistry&, AssetStream&, entis::Entity, entis::Registry&)>;
+
+    std::unordered_map<uint64_t, SerializerFunc> m_componentSerializerFuncs{};
+    std::unordered_map<uint64_t, DeserializerFunc> m_componentDeserializerFuncs{};
+    std::unordered_map<uint64_t, grl::Box<ComponentSerializerBase>> m_componentSerializers{};
 };
 }

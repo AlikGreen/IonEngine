@@ -9,7 +9,7 @@
 
 namespace ion
 {
-    void* TextureImporter::load(const std::string &filepath)
+    grl::Box<TextureData> TextureImporter::import(const std::filesystem::path &filepath)
     {
         std::string ext = std::filesystem::path(filepath).extension().string();
         std::ranges::transform(ext, ext.begin(), tolower);
@@ -25,13 +25,13 @@ namespace ion
         const bool hdr = ext == "exr" || ext == "hdr";
 
         if (hdr)
-            pixels = stbi_loadf(filepath.c_str(), &w, &h, &channels, 4);
+            pixels = stbi_loadf(filepath.string().c_str(), &w, &h, &channels, 4);
         else
-            pixels = stbi_load(filepath.c_str(), &w, &h, &channels, 4);
+            pixels = stbi_load(filepath.string().c_str(), &w, &h, &channels, 4);
 
         clogr::ensure(pixels != nullptr, "Failed to load image {}\n", stbi_failure_reason());
 
-        auto* texData = new TextureData();
+        auto texData = grl::makeBox<TextureData>();
         texData->width = w;
         texData->height = h;
         texData->data = pixels;
@@ -41,5 +41,10 @@ namespace ion
             texData->pixelFormat = urhi::PixelFormat::RGBA8UNorm;
 
         return texData;
+    }
+
+    bool TextureImporter::canImport(const std::filesystem::path &src) const
+    {
+        return src.extension() == ".png" || src.extension() == ".hdr" || src.extension() == ".jpg";
     }
 }

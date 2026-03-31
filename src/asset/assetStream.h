@@ -1,11 +1,8 @@
 #pragma once
 #include <cstdint>
-#include <cstring>
-#include <utility>
 #include <vector>
 
-#include "assetManager.h"
-#include "assetRef.h"
+#include "assetId.h"
 
 namespace ion
 {
@@ -38,10 +35,9 @@ public:
         return true;
     }
 
-    template<typename T>
-    bool write(AssetRef<T> assetRef)
+    bool write(const AssetId assetId)
     {
-        write<uint64_t>(assetRef.id().handle());
+        write<uint64_t>(assetId.handle());
         return true;
     }
 
@@ -66,13 +62,12 @@ public:
         return read(&out, sizeof(T));
     }
 
-    template<typename T>
-    bool read(AssetRef<T>& assetRef)
+    bool read(AssetId& assetId)
     {
         uint64_t id = 0;
         read<uint64_t>(id);
+        assetId = AssetId(id);
 
-        assetRef = Engine::getAssetManager().getAsset<T>(AssetId(id));
         return true;
     }
 

@@ -1,27 +1,25 @@
 #pragma once
-#include "asset/assetSerializer.h"
+
 #include "asset/assetStream.h"
-#include "core/components/transformComponent.h"
 #include "graphics/components/pointLight.h"
 
 namespace ion
 {
-class PointLightSerializer final : public AssetSerializer
+class PointLightSerializer final : public ComponentSerializer<PointLight>
 {
 public:
-    void serialize(AssetStream &assetStream, AssetManager &assetManager, void *asset) override
+    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const PointLight &light) override
     {
-        const PointLight& light = *static_cast<PointLight*>(asset);
         assetStream.write(light.power);
         assetStream.write(light.color);
     }
 
-    void* deserialize(AssetStream &assetStream, AssetManager &assetManager) override
+    PointLight deserialize(AssetStream &assetStream, AssetRegistry &assetRegistry) override
     {
-        auto* light = new PointLight();
+        PointLight light;
 
-        assetStream.read(light->power);
-        assetStream.read(light->color);
+        assetStream.read(light.power);
+        assetStream.read(light.color);
 
         return light;
     }

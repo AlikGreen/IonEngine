@@ -11,7 +11,7 @@
 #include "graphics/components/camera.h"
 #include "graphics/components/pointLight.h"
 
-#include "asset/assetManager.h"
+#include "asset/assetRegistry.h"
 #include "audio/audioManager.h"
 #include "core/sceneManager.h"
 #include "core/eventManager.h"

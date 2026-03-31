@@ -10,6 +10,7 @@
 #include <clogr.h>
 
 
+#include "asset/assetRegistry.h"
 #include "core/scene.h"
 #include "core/components/transformComponent.h"
 #include "graphics/graphicsSystem.h"
@@ -17,23 +18,28 @@
 
 namespace ion
 {
-    void* GLBSceneImporter::load(const std::string& filePath)
+    grl::Box<Scene> GLBSceneImporter::import(const std::filesystem::path& filePath)
     {
         tinygltf::Model model;
-        if (!loadModel(model, filePath))
+        if (!loadModel(model, filePath.string()))
         {
             return nullptr;
         }
 
-        const auto scene = new Scene();
+        auto scene = grl::makeBox<Scene>();
         entis::Entity rootEntity = scene->createEntity();
-        scene->name = grl::Path::stem(filePath);
+        scene->name = filePath.stem().string();
 
         const auto materials = processMaterials(model);
-        const AssetRef<MaterialShader> defaultMaterial = Engine::getAssetManager().addAsset(MaterialShader::createPBR(), "Default Material");
+        const AssetRef<MaterialShader> defaultMaterial = Engine::assetRegistry().adopt(MaterialShader::createPBR());
         processNodes(model, *scene, materials, defaultMaterial);
 
         return scene;
+    }
+
+    bool GLBSceneImporter::canImport(const std::filesystem::path &src) const
+    {
+        return src.extension() == ".glb" || src.extension() == ".gltf";
     }
 
     bool isGlbFile(std::filesystem::path const& path)
@@ -96,10 +102,10 @@ namespace ion
             if (node.mesh < 0) continue;
 
             const tinygltf::Mesh& mesh = model.meshes[node.mesh];
-            const auto nMesh = createMesh(mesh, model);
+            const auto nMesh = grl::Rc<Mesh>(createMesh(mesh, model));
             if (!nMesh) continue;
 
-            const auto meshHandle = Engine::getAssetManager().addAsset(nMesh, mesh.name);
+            const auto meshHandle = Engine::assetRegistry().add(nMesh);
             entis::Entity entity = scene.createEntity();
 
             setupTransform(entity, node);
@@ -129,7 +135,7 @@ namespace ion
         }
     }
 
-    void GLBSceneImporter::setupMeshRenderer(entis::Entity& entity, const AssetRef<Mesh> meshHandle, const tinygltf::Mesh& mesh, const AssetRef<MaterialShader>& defaultMaterial, const std::vector<AssetRef<MaterialShader>>& materials)
+    void GLBSceneImporter::setupMeshRenderer(entis::Entity& entity, const AssetRef<Mesh>& meshHandle, const tinygltf::Mesh& mesh, const AssetRef<MaterialShader>& defaultMaterial, const std::vector<AssetRef<MaterialShader>>& materials)
     {
         auto& meshRenderer = entity.emplace<MeshRenderer>();
         meshRenderer.mesh = meshHandle;
@@ -157,7 +163,7 @@ namespace ion
         setupTextureProperties(mat, material, model);
         setupMaterialFlags(mat, material);
 
-        return Engine::getAssetManager().addAsset(mat, material.name);
+        return Engine::assetRegistry().adopt(mat);
     }
 
     void GLBSceneImporter::setupPBRProperties(MaterialShader& mat, const tinygltf::Material& material, const tinygltf::Model& model)
@@ -333,8 +339,6 @@ namespace ion
         const grl::Rc<urhi::Texture>& tex = device->createTexture(textureDescription);
         const grl::Rc<urhi::Sampler>& sampler = device->createSampler(samplerDescription);
 
-        AssetManager& assetManager = Engine::getAssetManager();
-
         urhi::TextureUploadDesc uploadDesc{};
         uploadDesc.texture = tex;
         uploadDesc.data = data.data();
@@ -348,7 +352,7 @@ namespace ion
         cmd->generateMipmaps(tex);
         device->submit(cmd);
 
-        return assetManager.addAsset(Image(tex, sampler), texture.name);
+        return Engine::assetRegistry().create<Image>(tex, sampler);
     }
 
     Mesh* GLBSceneImporter::createMesh(const tinygltf::Mesh& mesh, const tinygltf::Model& model)

@@ -9,19 +9,18 @@
 
 namespace ion
 {
-class GLBSceneImporter final : public AssetImporter
+class GLBSceneImporter final : public AssetImporter<Scene>
 {
 public:
-    void* load(const std::string& filePath) override;
-
+    grl::Box<Scene> import(const std::filesystem::path& filePath) override;
+    [[nodiscard]] bool canImport(const std::filesystem::path &src) const override;
 private:
-
     static bool loadModel(tinygltf::Model& model, const std::string& filePath);
     static std::vector<AssetRef<MaterialShader>> processMaterials(const tinygltf::Model& model);
     static void processNodes(const tinygltf::Model& model, Scene& scene, const std::vector<AssetRef<MaterialShader>>& materials, const AssetRef<MaterialShader>& defaultMaterial);
 
     static void setupTransform(entis::Entity& entity, const tinygltf::Node& node);
-    static void setupMeshRenderer(entis::Entity& entity, AssetRef<Mesh> meshHandle, const tinygltf::Mesh& mesh, const AssetRef<MaterialShader>& defaultMaterial, const std::vector<AssetRef<MaterialShader>>& materials);
+    static void setupMeshRenderer(entis::Entity& entity, const AssetRef<Mesh> &meshHandle, const tinygltf::Mesh& mesh, const AssetRef<MaterialShader>& defaultMaterial, const std::vector<AssetRef<MaterialShader>>& materials);
     static void setupPBRProperties(MaterialShader& mat, const tinygltf::Material& material, const tinygltf::Model& model);
     static void setupTextureProperties(MaterialShader& mat, const tinygltf::Material& material, const tinygltf::Model& model);
     static void setupMaterialFlags(MaterialShader& mat, const tinygltf::Material& material);

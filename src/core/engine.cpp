@@ -7,8 +7,10 @@
 
 #include "eventManager.h"
 #include "sceneManager.h"
+#include "resourceFS.h"
+#include "asset/assetImportPipeline.h"
+#include "asset/assetRegistry.h"
 #include "audio/audioManager.h"
-#include "asset/assetManager.h"
 #include "graphics/importers/glbSceneImporter.h"
 #include "graphics/importers/shaderImporter.h"
 #include "graphics/importers/textureImporter.h"
@@ -21,11 +23,12 @@
 
 namespace ion
 {
-    grl::Box<EventManager> Engine::eventManager;
-    grl::Box<AssetManager> Engine::assetManager;
-    grl::Box<AudioManager> Engine::audioManager;
-    grl::Box<SceneManager> Engine::sceneManager;
-    grl::Box<ResourceFS>   Engine::resourceFS;
+    grl::Box<EventManager> Engine::m_eventManager;
+    grl::Box<AudioManager> Engine::m_audioManager;
+    grl::Box<SceneManager> Engine::m_sceneManager;
+    grl::Box<ResourceFS>   Engine::m_resourceFS;
+    grl::Box<AssetRegistry> Engine::m_assetRegistry;
+    grl::Box<AssetImportPipeline> Engine::m_assetImportPipeline;
 
     bool Engine::running = false;
     float Engine::deltaTime = 0.0f;
@@ -35,28 +38,26 @@ namespace ion
     void Engine::initialize(const EngineConfig &config)
     {
         Engine::config = config;
-        eventManager = grl::makeBox<EventManager>();
-        resourceFS   = grl::makeBox<ResourceFS>();
-        assetManager = grl::makeBox<AssetManager>(*resourceFS);
-        audioManager = grl::makeBox<AudioManager>();
-        sceneManager = grl::makeBox<SceneManager>();
 
-        assetManager->registerImporter<GLBSceneImporter, Scene>();
-        assetManager->registerImporter<TextureImporter, TextureData>();
-        assetManager->registerImporter<ShaderImporter, std::vector<urhi::ShaderEntryPoint>>();
-        assetManager->registerImporter<AudioClipImporter, AudioClip>();
+        m_resourceFS = grl::makeBox<ResourceFS>();
+        m_assetRegistry = grl::makeBox<AssetRegistry>();
+        m_assetImportPipeline = grl::makeBox<AssetImportPipeline>(*m_assetRegistry, *m_resourceFS);
 
-        // component serializers
-        assetManager->registerSerializer<TagSerializer, Tag>();
-        assetManager->registerSerializer<TransformSerializer, Transform>();
-        assetManager->registerSerializer<ParentSerializer, Parent>();
-        assetManager->registerSerializer<MeshRendererSerializer, MeshRenderer>();
-        assetManager->registerSerializer<PointLightSerializer, PointLight>();
+        m_eventManager = grl::makeBox<EventManager>();
+        m_audioManager = grl::makeBox<AudioManager>();
+        m_sceneManager = grl::makeBox<SceneManager>();
 
-        auto& sceneSerializer = assetManager->registerSerializer<SceneSerializer, Scene>();
-        sceneSerializer.registerComponentSerializer<Tag>(1);
-        sceneSerializer.registerComponentSerializer<Transform>(2);
-        sceneSerializer.registerComponentSerializer<Parent>(3);
+        m_assetImportPipeline->registerImporter<Scene, GLBSceneImporter>();
+        m_assetImportPipeline->registerImporter<TextureData, TextureImporter>();
+        m_assetImportPipeline->registerImporter<std::vector<urhi::ShaderEntryPoint>, ShaderImporter>();
+        m_assetImportPipeline->registerImporter<AudioClip, AudioClipImporter>();
+
+        auto& sceneSerializer = m_assetRegistry->registerSerializer<Scene, SceneSerializer>();
+        sceneSerializer.registerComponentSerializer<Tag, TagSerializer>(grl::hash64("ion::Tag"));
+        sceneSerializer.registerComponentSerializer<Transform, TransformSerializer>(grl::hash64("ion::Transform"));
+        sceneSerializer.registerComponentSerializer<Parent, ParentSerializer>(grl::hash64("ion::Parent"));
+        sceneSerializer.registerComponentSerializer<MeshRenderer, MeshRendererSerializer>(grl::hash64("ion::MeshRenderer"));
+        sceneSerializer.registerComponentSerializer<PointLight, PointLightSerializer>(grl::hash64("ion::PointLight"));
     }
 
     void Engine::quit()
@@ -74,29 +75,35 @@ namespace ion
         return registeredSystems;
     }
 
-    EventManager& Engine::getEventManager()
+    EventManager& Engine::eventManager()
     {
-        return *eventManager;
+        return *m_eventManager;
     }
 
-    AssetManager& Engine::getAssetManager()
+
+    AudioManager& Engine::audioManager()
     {
-        return *assetManager;
+        return *m_audioManager;
     }
 
-    AudioManager& Engine::getAudioManager()
+    SceneManager& Engine::sceneManager()
     {
-        return *audioManager;
+        return *m_sceneManager;
     }
 
-    SceneManager& Engine::getSceneManager()
+    ResourceFS& Engine::resourceFS()
     {
-        return *sceneManager;
+        return *m_resourceFS;
     }
 
-    ResourceFS& Engine::getResourceFS()
+    AssetRegistry& Engine::assetRegistry()
     {
-        return *resourceFS;
+        return *m_assetRegistry;
+    }
+
+    AssetImportPipeline& Engine::assetImportPipeline()
+    {
+        return *m_assetImportPipeline;
     }
 
     float Engine::getDeltaTime()
@@ -113,7 +120,7 @@ namespace ion
         {
             auto start = std::chrono::high_resolution_clock::now();
 
-            eventManager->handleEvents();
+            m_eventManager->handleEvents();
 
             for (const auto& system: registeredSystems)
             {

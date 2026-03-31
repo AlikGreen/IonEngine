@@ -6,7 +6,7 @@
 
 namespace ion
 {
-    void* AudioClipImporter::load(const std::string &filepath)
+    grl::Box<AudioClip> AudioClipImporter::import(const std::filesystem::path& filepath)
     {
         ma_decoder_config config = ma_decoder_config_init(
             ma_format_f32,
@@ -17,15 +17,20 @@ namespace ion
         void* pData = nullptr;
         ma_uint64 frameCount = 0;
 
-        const ma_result result = ma_decode_file(filepath.c_str(), &config, &frameCount, &pData);
+        const ma_result result = ma_decode_file(filepath.string().c_str(), &config, &frameCount, &pData);
         clogr::ensure(result == MA_SUCCESS, "Failed to load audio: {}", filepath);
 
-        auto* clip = new AudioClip();
+        auto clip = grl::makeBox<AudioClip>();
         clip->data = pData;
         clip->totalFrames = frameCount;
         clip->channels = 2;
         clip->sampleRate = 44100;
 
         return clip;
+    }
+
+    bool AudioClipImporter::canImport(const std::filesystem::path &src) const
+    {
+        return src.extension() == ".wav" || src.extension() == ".mp3";
     }
 }

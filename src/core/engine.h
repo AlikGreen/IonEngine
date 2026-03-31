@@ -1,20 +1,20 @@
 #pragma once
-#include <chrono>
 #include <memory>
 #include <vector>
 
 #include <urhi/urhi.h>
 
-#include "resourceFs.h"
 #include "core/system.h"
 #include "descriptions/windowDesc.h"
 
 namespace ion
 {
     class EventManager;
-    class AssetManager;
     class AudioManager;
     class SceneManager;
+    class ResourceFS;
+    class AssetImportPipeline;
+    class AssetRegistry;
 
     struct EngineConfig
     {
@@ -53,19 +53,21 @@ namespace ion
         static EngineConfig getConfig();
         static const std::vector<grl::Box<System>>& getSystems();
 
-        static EventManager& getEventManager();
-        static AssetManager& getAssetManager();
-        static AudioManager& getAudioManager();
-        static SceneManager& getSceneManager();
-        static ResourceFS& getResourceFS();
+        static EventManager&  eventManager();
+        static AudioManager&  audioManager();
+        static SceneManager&  sceneManager();
+        static ResourceFS&    resourceFS();
+        static AssetRegistry& assetRegistry();
+        static AssetImportPipeline& assetImportPipeline();
 
         static float getDeltaTime();
     private:
-        static grl::Box<EventManager> eventManager;
-        static grl::Box<AssetManager> assetManager;
-        static grl::Box<AudioManager> audioManager;
-        static grl::Box<SceneManager> sceneManager;
-        static grl::Box<ResourceFS>   resourceFS;
+        static grl::Box<EventManager> m_eventManager;
+        static grl::Box<AssetRegistry> m_assetRegistry;
+        static grl::Box<AudioManager> m_audioManager;
+        static grl::Box<SceneManager> m_sceneManager;
+        static grl::Box<ResourceFS>   m_resourceFS;
+        static grl::Box<AssetImportPipeline>   m_assetImportPipeline;
 
         static std::vector<grl::Box<System>> registeredSystems;
         static EngineConfig config;

@@ -1,23 +1,22 @@
 #pragma once
-#include "asset/assetSerializer.h"
+
 #include "asset/assetStream.h"
 #include "core/components/tagComponent.h"
 
 namespace ion
 {
-class TagSerializer final : public AssetSerializer
+class TagSerializer final : public ComponentSerializer<Tag>
 {
 public:
-    void serialize(AssetStream& assetStream, AssetManager& assetManager, void* component) override
+    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const Tag &tag) override
     {
-        const auto* tag = static_cast<Tag*>(component);
-        assetStream.write(tag->name);
+        assetStream.write(tag.name);
     }
 
-    void* deserialize(AssetStream& assetStream, AssetManager& assetManager) override
+    Tag deserialize(AssetStream &assetStream, AssetRegistry &assetRegistry) override
     {
-        auto* tag = new Tag();
-        assetStream.read(tag->name);
+        Tag tag;
+        assetStream.read(tag.name);
         return tag;
     }
 };

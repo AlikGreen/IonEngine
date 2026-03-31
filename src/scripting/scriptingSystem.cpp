@@ -29,7 +29,7 @@ namespace ion
 
     void ScriptingSystem::startup()
     {
-        auto& registry = Engine::getSceneManager().getCurrentScene().getRegistry().asTypeErased();
+        auto& registry = Engine::sceneManager().getCurrentScene().registry().asTypeErased();
         registry.registerType<Transform>();
         registry.registerType<Camera>();
         registry.registerType<Tag>();

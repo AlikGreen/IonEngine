@@ -4,6 +4,7 @@
 #include "graphicsSystem.h"
 #include "imGuiStyleSerializer.h"
 #include "components/camera.h"
+#include "core/resourceFS.h"
 #include "core/sceneManager.h"
 #include "events/rhiWindowEvent.h"
 #include "imgui/imGuiExtensions.h"
@@ -19,7 +20,7 @@ namespace ion
     void setNeonImGuiStyle()
     {
         ImGuiStyle &style = ImGui::GetStyle();
-        ImGuiStyleSerializer::deserialize(Engine::getResourceFS().resolve("style.json"), style);
+        ImGuiStyleSerializer::deserialize(Engine::resourceFS().resolve("style.json"), style);
     }
 
    void ImGuiSystem::preStartup()
@@ -51,7 +52,7 @@ namespace ion
 
         auto addFontChecked = [&](const char* relPath, float size, ImFontConfig* cfg) -> ImFont*
         {
-            const std::string fullPath = Engine::getResourceFS().resolve(relPath).string();
+            const std::string fullPath = Engine::resourceFS().resolve(relPath).string();
 
             std::error_code ec{};
             if (!std::filesystem::exists(fullPath, ec) || std::filesystem::file_size(fullPath, ec) <= 100)
