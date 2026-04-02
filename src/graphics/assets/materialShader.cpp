@@ -2,8 +2,8 @@
 
 #include <ranges>
 #include <utility>
+#include <asset/assetImportPipeline.h>
 
-#include "asset/assetImportPipeline.h"
 #include "graphics/graphicsSystem.h"
 
 namespace ion
@@ -180,7 +180,7 @@ namespace ion
     MaterialShader MaterialShader::createBillboard()
     {
         AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-        const auto shaders = importPipeline.import<std::vector<urhi::ShaderEntryPoint>>("shaders/billboard.slang", "assets/shaders");
+        const auto shaders = importPipeline.import<std::vector<urhi::ShaderEntryPoint>>("shaders/billboard.slang");
 
         MaterialDescription desc{};
         desc.name = "Billboard";
@@ -200,7 +200,7 @@ namespace ion
     MaterialShader MaterialShader::createPBR()
     {
         AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-        const auto shaders = importPipeline.import<std::vector<urhi::ShaderEntryPoint>>("shaders/pbr.slang", "assets/shaders");
+        const auto shaders = importPipeline.import<std::vector<urhi::ShaderEntryPoint>>("shaders/pbr.slang");
 
         MaterialDescription desc{};
         desc.name = "PBR";
@@ -216,7 +216,7 @@ namespace ion
     MaterialShader MaterialShader::createEquirectangularSkybox()
     {
         AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-        const auto shaders = importPipeline.import<std::vector<urhi::ShaderEntryPoint>>("shaders/skybox.slang", "assets/shaders");
+        const auto shaders = importPipeline.import<std::vector<urhi::ShaderEntryPoint>>("shaders/skybox.slang");
 
         MaterialDescription desc{};
         desc.name = "Skybox equirectangular";

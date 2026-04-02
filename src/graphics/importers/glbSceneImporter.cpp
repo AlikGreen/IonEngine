@@ -174,9 +174,9 @@ namespace ion
         if (pbr.baseColorTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.baseColorTexture.index], model, true);
-            grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture));
+            grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
             mat.setTexture("albedoTexture", view);
-            mat.setSampler("albedoSampler", imageRef->sampler);
+            mat.setSampler("albedoSampler", imageRef->sampler());
         }
 
         const auto& baseColor = pbr.baseColorFactor;
@@ -187,9 +187,9 @@ namespace ion
         if (pbr.metallicRoughnessTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.metallicRoughnessTexture.index], model, false);
-            const grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture));
+            const grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
             mat.setTexture("metallicRoughnessTexture", view);
-            mat.setSampler("metallicRoughnessSampler", imageRef->sampler);
+            mat.setSampler("metallicRoughnessSampler", imageRef->sampler());
         }
     }
 
@@ -200,9 +200,9 @@ namespace ion
         if (material.normalTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.normalTexture.index], model, false);
-            grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture));
+            grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
             mat.setTexture("normalTexture", view);
-            mat.setSampler("normalSampler", imageRef->sampler);
+            mat.setSampler("normalSampler", imageRef->sampler());
 
             // mat.setProperty("normalTextureStrength", static_cast<float>(material.normalTexture.scale));
         }
@@ -210,9 +210,9 @@ namespace ion
         if (material.occlusionTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.occlusionTexture.index], model, false);
-            const grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture));
+            const grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
             mat.setTexture("occlusionTexture", view);
-            mat.setSampler("occlusionSampler", imageRef->sampler);
+            mat.setSampler("occlusionSampler", imageRef->sampler());
 
             mat.setProperty("occlusionTextureStrength", static_cast<float>(material.occlusionTexture.strength));
         }
@@ -220,9 +220,9 @@ namespace ion
         if (material.emissiveTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.emissiveTexture.index], model, false);
-            const grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture));
+            const grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
             mat.setTexture("emissionTexture", view);
-            mat.setSampler("emissionSampler", imageRef->sampler);
+            mat.setSampler("emissionSampler", imageRef->sampler());
         }
 
         const auto& emission = material.emissiveFactor;

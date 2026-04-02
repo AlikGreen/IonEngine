@@ -13,9 +13,24 @@ class Image
 {
 public:
     Image(const grl::Rc<urhi::Texture>& texture, const grl::Rc<urhi::Sampler>& sampler);
-    explicit Image(const AssetRef<TextureData> &data, grl::Rc<urhi::Sampler> sampler = nullptr);
+    explicit Image(const TextureData &data, const grl::Rc<urhi::Sampler> &sampler = nullptr);
 
-    grl::Rc<urhi::Texture> texture;
-    grl::Rc<urhi::Sampler> sampler;
+    grl::Rc<urhi::Texture> texture();
+    grl::Rc<urhi::Sampler> sampler();
+
+    [[nodiscard]] std::vector<uint8_t> pixels() const;
+    [[nodiscard]] uint32_t width() const;
+    [[nodiscard]] uint32_t height() const;
+private:
+    [[nodiscard]] uint32_t sizeInBytes() const;
+    void upload();
+
+    uint32_t m_width  = 0;
+    uint32_t m_height = 0;
+    urhi::PixelFormat m_format = urhi::PixelFormat::RGBA8UNorm;
+    std::vector<uint8_t> m_pixels;
+
+    grl::Rc<urhi::Texture> m_texture;
+    grl::Rc<urhi::Sampler> m_sampler;
 };
 }

@@ -21,8 +21,6 @@ namespace ion
 
         for(const auto& [entity, tag] : view)
         {
-            const uint32_t startOfEntity = assetStream.getCursor();
-            assetStream.write<uint32_t>(0); // entity size placeholder
             assetStream.write<uint32_t>(entity.id());
 
             // Write component count
@@ -34,23 +32,25 @@ namespace ion
             // Serialize each component type
             for(auto& [typeId, serializer] : m_componentSerializerFuncs)
             {
-                const uint32_t componentStartCursor = assetStream.getCursor();
-                assetStream.write<uint32_t>(0);
+                const uint32_t beforeWrite = assetStream.getCursor();
+                assetStream.write<uint32_t>(0);      // size placeholder
                 assetStream.write<uint32_t>(typeId);
 
+                const uint32_t beforeData = assetStream.getCursor();
                 serializer(assetRegistry, assetStream, entity);
-                const uint32_t afterComponentData = assetStream.getCursor();
+                const uint32_t afterData = assetStream.getCursor();
 
-                const uint32_t componentSize = afterComponentData - componentStartCursor;
-                assetStream.writeAt(componentStartCursor, componentSize);
+                if (afterData == beforeData)
+                {
+                    assetStream.setCursor(beforeWrite);
+                    continue;
+                }
+
+                assetStream.writeAt(beforeWrite, afterData - beforeWrite);
                 componentCount++;
             }
 
-            const uint32_t endOfEntity = assetStream.getCursor();
             assetStream.writeAt(componentCountCursor, componentCount);
-
-            const uint32_t totalWritten = endOfEntity - startOfEntity;
-            assetStream.writeAt(startOfEntity, totalWritten);
 
             entityCount++;
         }
@@ -70,9 +70,6 @@ namespace ion
 
         for (uint32_t i = 0; i < entityCount; ++i)
         {
-            uint32_t entitySize = 0;
-            assetStream.read(entitySize);
-
             uint32_t entityId = 0;
             assetStream.read(entityId);
 
@@ -84,8 +81,9 @@ namespace ion
             // Deserialize each component
             for(uint32_t j = 0; j < componentCount; ++j)
             {
-                uint32_t componentSize = 0;
                 const uint32_t componentStartCursor = assetStream.getCursor();
+
+                uint32_t componentSize = 0;
                 assetStream.read(componentSize);
 
                 uint32_t typeId = 0;

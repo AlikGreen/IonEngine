@@ -13,8 +13,8 @@
 #include "audio/audioManager.h"
 #include "graphics/importers/glbSceneImporter.h"
 #include "graphics/importers/shaderImporter.h"
-#include "graphics/importers/textureImporter.h"
 #include "core/serializers/sceneSerializer.h"
+#include "graphics/importers/imageImporter.h"
 #include "serializers/componentSerializers/meshRendererSerializer.h"
 #include "serializers/componentSerializers/parentSerializer.h"
 #include "serializers/componentSerializers/pointLightSerializer.h"
@@ -48,16 +48,16 @@ namespace ion
         m_sceneManager = grl::makeBox<SceneManager>();
 
         m_assetImportPipeline->registerImporter<Scene, GLBSceneImporter>();
-        m_assetImportPipeline->registerImporter<TextureData, TextureImporter>();
+        m_assetImportPipeline->registerImporter<Image, ImageImporter>();
         m_assetImportPipeline->registerImporter<std::vector<urhi::ShaderEntryPoint>, ShaderImporter>();
         m_assetImportPipeline->registerImporter<AudioClip, AudioClipImporter>();
 
         auto& sceneSerializer = m_assetRegistry->registerSerializer<Scene, SceneSerializer>();
-        sceneSerializer.registerComponentSerializer<Tag, TagSerializer>(grl::hash64("ion::Tag"));
-        sceneSerializer.registerComponentSerializer<Transform, TransformSerializer>(grl::hash64("ion::Transform"));
-        sceneSerializer.registerComponentSerializer<Parent, ParentSerializer>(grl::hash64("ion::Parent"));
-        sceneSerializer.registerComponentSerializer<MeshRenderer, MeshRendererSerializer>(grl::hash64("ion::MeshRenderer"));
-        sceneSerializer.registerComponentSerializer<PointLight, PointLightSerializer>(grl::hash64("ion::PointLight"));
+        sceneSerializer.registerComponentSerializer<Tag, TagSerializer>(grl::hash32("ion::Tag"));
+        sceneSerializer.registerComponentSerializer<Transform, TransformSerializer>(grl::hash32("ion::Transform"));
+        sceneSerializer.registerComponentSerializer<Parent, ParentSerializer>(grl::hash32("ion::Parent"));
+        sceneSerializer.registerComponentSerializer<MeshRenderer, MeshRendererSerializer>(grl::hash32("ion::MeshRenderer"));
+        sceneSerializer.registerComponentSerializer<PointLight, PointLightSerializer>(grl::hash32("ion::PointLight"));
     }
 
     void Engine::quit()

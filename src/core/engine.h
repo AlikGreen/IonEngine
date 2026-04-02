@@ -66,8 +66,8 @@ namespace ion
         static grl::Box<AssetRegistry> m_assetRegistry;
         static grl::Box<AudioManager> m_audioManager;
         static grl::Box<SceneManager> m_sceneManager;
-        static grl::Box<ResourceFS>   m_resourceFS;
-        static grl::Box<AssetImportPipeline>   m_assetImportPipeline;
+        static grl::Box<ResourceFS> m_resourceFS;
+        static grl::Box<AssetImportPipeline> m_assetImportPipeline;
 
         static std::vector<grl::Box<System>> registeredSystems;
         static EngineConfig config;

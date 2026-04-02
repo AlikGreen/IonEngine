@@ -66,9 +66,10 @@ namespace ion
         }
 
         for(const auto& section : m_sections)
-            stream.write(section.data);
+            stream.write(section.data.data(), section.data.size());
 
-        stream.write(m_bodyStream.buffer());
+        auto buf = m_bodyStream.buffer();
+        stream.write(buf.data(), buf.size());
 
         std::fstream file (path, std::ios::out  | std::ios::binary);
         file.write(reinterpret_cast<const char*>(stream.buffer().data()), static_cast<int64_t>(stream.buffer().size()));

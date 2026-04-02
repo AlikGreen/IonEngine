@@ -9,6 +9,6 @@ class TextureData
 public:
   uint32_t width, height;
   urhi::PixelFormat pixelFormat;
-  void* data;
+  std::vector<uint8_t> data;
 };
 }

@@ -66,23 +66,29 @@ public:
     }
 
     template<typename T>
+    requires std::is_constructible_v<std::decay_t<T>, T&&>
     AssetRef<std::decay_t<T>> adopt(T&& asset, const AssetId id = AssetId::invalid())
     {
-        return add<std::decay_t<T>>(grl::makeRc<std::decay_t<T>>(std::forward<T>(asset)), id);
+        return add<std::decay_t<T>>(
+            grl::makeRc<std::decay_t<T>>(std::forward<T>(asset)),
+            id
+        );
     }
-
     template<typename T>
     AssetRef<T> load(AssetId id)
     {
         const auto it = m_assets.find(id);
         if(it != m_assets.end())
-            return AssetRef<T>(std::static_pointer_cast<T>(it->second.asset), id);
+        {
+            if(const auto shared = it->second.asset.lock())
+                return AssetRef<T>(std::static_pointer_cast<T>(shared), id);
+        }
 
         for (const auto& loader : m_loaders)
         {
             if (!loader->canLoad(id)) continue;
             auto bytes = loader->load(id);
-            if (!bytes.empty()) return {};
+            if (bytes.empty()) continue;
             auto serializer = m_serializers.find<T>();
             auto stream = AssetStream(bytes);
 
@@ -142,7 +148,7 @@ public:
 private:
     struct AssetEntry
     {
-        grl::Rc<void> asset;
+        grl::Weak<void> asset;
         std::type_index runtimeType;
         uint64_t stableType;
 

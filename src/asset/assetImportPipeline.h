@@ -30,35 +30,20 @@ public:
     }
 
     template<typename T>
-    AssetRef<T> import(const std::filesystem::path& srcPath, const std::filesystem::path& dstDir)
+    AssetRef<T> import(const std::filesystem::path& srcPath)
     {
         namespace fs = std::filesystem;
-        if(!m_importers.contains(typeid(T))) return nullptr;
-
-        const auto dir = m_rfs.resolve(dstDir.string());
+        if (!m_importers.contains(typeid(T))) return nullptr;
 
         auto src = m_rfs.resolve(srcPath.string());
-        if(src.empty()) src = fs::path(srcPath);
-        if(!exists(src)) return nullptr;
+        if (src.empty()) src = fs::path(srcPath);
+        if (!exists(src)) return nullptr;
 
-        auto importer = dynamic_cast<ImporterWrapper<T>*>(m_importers.at(typeid(T)).get());
-        if(importer == nullptr) return nullptr;
+        auto* importer = dynamic_cast<ImporterWrapper<T>*>(m_importers.at(typeid(T)).get());
+        if (importer == nullptr) return nullptr;
 
         auto data = importer->inner->import(src);
-        if (!data) return nullptr;
-
-        const AssetId id = AssetId::random();
-        AssetFileWriter writer(id, m_assetRegistry.stableId<T>());
-
-        m_assetRegistry.serialize(writer.bodyStream(), *data);
-        if(writer.bodyStream().size() != 0)
-        {
-            const auto dstPath = dir / (srcPath.stem().string() + ".ion");
-            writer.write(dstPath);
-        }
-
-        grl::Rc<T> rc(data.release());
-        return m_assetRegistry.add(std::move(rc), id);
+        return m_assetRegistry.add<T>(grl::Rc<T>(data.release()));
     }
 
     template<typename T>

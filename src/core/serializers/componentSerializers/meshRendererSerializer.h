@@ -22,10 +22,9 @@ public:
     MeshRenderer deserialize(AssetStream &assetStream, AssetRegistry &assetRegistry) override
     {
         MeshRenderer renderer;
-        std::vector<AssetRef<MaterialShader>> materials;
         uint32_t materialCount = 0;
         assetStream.read(materialCount);
-        materials.resize(materialCount);
+        renderer.materialsepen.resize(materialCount);
 
         for(size_t i = 0; i < materialCount; i++)
         {

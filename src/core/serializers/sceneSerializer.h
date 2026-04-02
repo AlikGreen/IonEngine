@@ -20,7 +20,7 @@ public:
 
     template<typename T, typename Serializer, typename... Args>
     requires std::is_constructible_v<Serializer, Args...> && std::is_base_of_v<ComponentSerializer<T>, Serializer>
-    void registerComponentSerializer(uint64_t typeId, Args&&... args)
+    void registerComponentSerializer(uint32_t typeId, Args&&... args)
     {
         m_componentSerializers[typeId] = grl::makeBox<Serializer>(std::forward<Args>(args)...);
 
@@ -46,8 +46,8 @@ private:
     using SerializerFunc = std::function<void(AssetRegistry&, AssetStream&, entis::Entity)>;
     using DeserializerFunc = std::function<void(AssetRegistry&, AssetStream&, entis::Entity, entis::Registry&)>;
 
-    std::unordered_map<uint64_t, SerializerFunc> m_componentSerializerFuncs{};
-    std::unordered_map<uint64_t, DeserializerFunc> m_componentDeserializerFuncs{};
-    std::unordered_map<uint64_t, grl::Box<ComponentSerializerBase>> m_componentSerializers{};
+    std::unordered_map<uint32_t, SerializerFunc> m_componentSerializerFuncs{};
+    std::unordered_map<uint32_t, DeserializerFunc> m_componentDeserializerFuncs{};
+    std::unordered_map<uint32_t, grl::Box<ComponentSerializerBase>> m_componentSerializers{};
 };
 }
