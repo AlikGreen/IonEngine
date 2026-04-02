@@ -24,7 +24,7 @@ public:
         MeshRenderer renderer;
         uint32_t materialCount = 0;
         assetStream.read(materialCount);
-        renderer.materialsepen.resize(materialCount);
+        renderer.materials.resize(materialCount);
 
         for(size_t i = 0; i < materialCount; i++)
         {
