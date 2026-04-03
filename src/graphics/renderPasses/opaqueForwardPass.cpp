@@ -8,16 +8,8 @@ namespace ion
     struct ModelUniforms
     {
         glm::mat4 model{};
+        glm::mat4 normalMatrix{};
     };
-
-    struct MaterialUniforms
-    {
-        float roughness;
-        float metalness;
-        alignas(16) glm::vec4 albedo;
-        int useAlbedoTexture;
-    };
-
 
     void OpaqueForwardPass::execute(const grl::Rc<urhi::CommandList>& cmd, RenderContext &ctx)
     {
@@ -51,20 +43,21 @@ namespace ion
 
         for (const auto& renderable: renderables)
         {
-            ModelUniforms modelUniforms = { renderable.worldMatrix };
+            glm::mat4 normalMatrix = glm::transpose(glm::inverse(renderable.worldMatrix));
+            ModelUniforms modelUniforms = { renderable.worldMatrix, normalMatrix };
 
-            pass->setPipeline(renderable.material->getPipeline());
+            pass->setPipeline(renderable.material->materialTemplate()->pipeline());
 
             pass->setUniformBuffer("camera", cameraBuffer);
             pass->setUniformBuffer("pointLights", pointLightsBuffer);
             pass->pushConstants(modelUniforms);
 
-            renderable.material->bindUniforms(cmd, pass);
+            renderable.material->bind(cmd, pass);
 
-            const Primitive primitive = renderable.mesh->getPrimitives().at(renderable.submeshIndex);
+            const Primitive primitive = renderable.mesh->primitives().at(renderable.submeshIndex);
 
-            pass->setVertexBuffer(0, renderable.mesh->getVertexBuffer());
-            pass->setIndexBuffer(renderable.mesh->getIndexBuffer(), urhi::IndexFormat::UInt32);
+            pass->setVertexBuffer(0, renderable.mesh->vertexBuffer());
+            pass->setIndexBuffer(renderable.mesh->indexBuffer(), urhi::IndexFormat::UInt32);
             pass->drawIndexed(primitive.indexCount, 1, primitive.indexStart);
         }
 

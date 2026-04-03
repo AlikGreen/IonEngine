@@ -7,7 +7,7 @@ namespace ion
 class TransformSerializer final : public ComponentSerializer<Transform>
 {
 public:
-    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const Transform &transform) override
+    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const Transform &transform) override
     {
         assetStream.write(transform.position);
         assetStream.write(transform.rotation);

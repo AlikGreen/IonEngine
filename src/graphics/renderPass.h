@@ -5,8 +5,10 @@
 #include <entis/entis.h>
 
 #include "frustum.h"
-#include "assets/materialShader.h"
-#include "assets/mesh.h"
+#include "materialInstance.h"
+#include "mesh.h"
+
+#include "frustum.h"
 
 namespace ion
 {
@@ -24,14 +26,15 @@ struct CameraUniformData
 struct PointLightUniformData
 {
     glm::vec3 position;
-    float radius;
+    float power;
     glm::vec3 color;
-    float intensity;
+    float radius;
 };
 
-struct PointLightsUniformData
+struct alignas(16) PointLightsUniformData
 {
     int count;
+    int padding[3];
     PointLightUniformData lights[64];
 };
 
@@ -40,7 +43,7 @@ struct Renderable
     glm::mat4 worldMatrix{};
 
     Mesh* mesh{};
-    MaterialShader* material{};
+    MaterialInstance* material{};
     size_t submeshIndex{};
 
     float distanceToCamera{};

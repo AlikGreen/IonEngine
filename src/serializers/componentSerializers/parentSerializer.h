@@ -8,7 +8,7 @@ namespace ion
 class ParentSerializer final : public ComponentSerializer<Parent>
 {
 public:
-    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const Parent &parent) override
+    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const Parent &parent) override
     {
         assetStream.write<uint32_t>(parent.getParent().id());
     }

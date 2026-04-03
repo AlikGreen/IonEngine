@@ -8,8 +8,12 @@ namespace ion
 class MeshRendererSerializer final : public ComponentSerializer<MeshRenderer>
 {
 public:
-    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const MeshRenderer& renderer) override
+    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const MeshRenderer& renderer) override
     {
+        deps.require(renderer.mesh);
+        for (const auto& mat : renderer.materials)
+            deps.require(mat);
+        
         assetStream.write<uint32_t>(renderer.materials.size());
         for(const auto& material : renderer.materials)
         {
@@ -30,7 +34,7 @@ public:
         {
             AssetId id;
             assetStream.read(id);
-            renderer.materials[i] = assetRegistry.load<MaterialShader>(id);
+            renderer.materials[i] = assetRegistry.load<MaterialInstance>(id);
         }
 
         AssetId id;

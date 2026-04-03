@@ -31,7 +31,7 @@ namespace ion
         scene->name = filePath.stem().string();
 
         const auto materials = processMaterials(model);
-        const AssetRef<MaterialShader> defaultMaterial = Engine::assetRegistry().adopt(MaterialShader::createPBR());
+        const AssetRef<MaterialInstance> defaultMaterial = Engine::assetRegistry().create<MaterialInstance>(MaterialTemplates::pbr());
         processNodes(model, *scene, materials, defaultMaterial);
 
         return scene;
@@ -82,9 +82,9 @@ namespace ion
         return success;
     }
 
-    std::vector<AssetRef<MaterialShader>> GLBSceneImporter::processMaterials(const tinygltf::Model& model)
+    std::vector<AssetRef<MaterialInstance>> GLBSceneImporter::processMaterials(const tinygltf::Model& model)
     {
-        std::vector<AssetRef<MaterialShader>> materials;
+        std::vector<AssetRef<MaterialInstance>> materials;
         materials.reserve(model.materials.size());
 
         for (const auto& material : model.materials)
@@ -95,7 +95,7 @@ namespace ion
         return materials;
     }
 
-    void GLBSceneImporter::processNodes(const tinygltf::Model& model, Scene& scene, const std::vector<AssetRef<MaterialShader>>& materials, const AssetRef<MaterialShader>& defaultMaterial)
+    void GLBSceneImporter::processNodes(const tinygltf::Model& model, Scene& scene, const std::vector<AssetRef<MaterialInstance>>& materials, const AssetRef<MaterialInstance>& defaultMaterial)
     {
         for (const auto& node : model.nodes)
         {
@@ -135,11 +135,10 @@ namespace ion
         }
     }
 
-    void GLBSceneImporter::setupMeshRenderer(entis::Entity& entity, const AssetRef<Mesh>& meshHandle, const tinygltf::Mesh& mesh, const AssetRef<MaterialShader>& defaultMaterial, const std::vector<AssetRef<MaterialShader>>& materials)
+    void GLBSceneImporter::setupMeshRenderer(entis::Entity& entity, const AssetRef<Mesh>& meshHandle, const tinygltf::Mesh& mesh, const AssetRef<MaterialInstance>& defaultMaterial, const std::vector<AssetRef<MaterialInstance>>& materials)
     {
         auto& meshRenderer = entity.emplace<MeshRenderer>();
         meshRenderer.mesh = meshHandle;
-        meshRenderer.mesh->apply();
 
         if (mesh.primitives.empty() || mesh.primitives[0].material < 0)
         {
@@ -154,9 +153,9 @@ namespace ion
         }
     }
 
-    AssetRef<MaterialShader> GLBSceneImporter::processMaterial(const tinygltf::Material& material, const tinygltf::Model& model)
+    AssetRef<MaterialInstance> GLBSceneImporter::processMaterial(const tinygltf::Material& material, const tinygltf::Model& model)
     {
-        auto mat = MaterialShader::createPBR();
+        auto mat = MaterialInstance(MaterialTemplates::pbr());
         // mat.name = material.name;
 
         setupPBRProperties(mat, material, model);
@@ -166,7 +165,7 @@ namespace ion
         return Engine::assetRegistry().adopt(mat);
     }
 
-    void GLBSceneImporter::setupPBRProperties(MaterialShader& mat, const tinygltf::Material& material, const tinygltf::Model& model)
+    void GLBSceneImporter::setupPBRProperties(MaterialInstance& mat, const tinygltf::Material& material, const tinygltf::Model& model)
     {
         const grl::Rc<urhi::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
         const auto& pbr = material.pbrMetallicRoughness;
@@ -175,34 +174,30 @@ namespace ion
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.baseColorTexture.index], model, true);
             grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
-            mat.setTexture("albedoTexture", view);
-            mat.setSampler("albedoSampler", imageRef->sampler());
+            mat.setImage("albedo", imageRef);
         }
 
         const auto& baseColor = pbr.baseColorFactor;
-        mat.setProperty("albedo", glm::vec4(baseColor[0], baseColor[1], baseColor[2], baseColor[3]));
+        mat.set("albedo", glm::vec4(baseColor[0], baseColor[1], baseColor[2], baseColor[3]));
         // mat.setProperty("matMetalness", static_cast<float>(pbr.metallicFactor));
-        mat.setProperty("roughness", static_cast<float>(pbr.roughnessFactor));
+        mat.set("roughness", static_cast<float>(pbr.roughnessFactor));
 
         if (pbr.metallicRoughnessTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.metallicRoughnessTexture.index], model, false);
-            const grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
-            mat.setTexture("metallicRoughnessTexture", view);
-            mat.setSampler("metallicRoughnessSampler", imageRef->sampler());
+            mat.setImage("metallicRoughness", imageRef);
+
         }
     }
 
-    void GLBSceneImporter::setupTextureProperties(MaterialShader& mat, const tinygltf::Material& material, const tinygltf::Model& model)
+    void GLBSceneImporter::setupTextureProperties(MaterialInstance& mat, const tinygltf::Material& material, const tinygltf::Model& model)
     {
         const grl::Rc<urhi::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
 
         if (material.normalTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.normalTexture.index], model, false);
-            grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
-            mat.setTexture("normalTexture", view);
-            mat.setSampler("normalSampler", imageRef->sampler());
+            mat.setImage("normal", imageRef);
 
             // mat.setProperty("normalTextureStrength", static_cast<float>(material.normalTexture.scale));
         }
@@ -210,26 +205,22 @@ namespace ion
         if (material.occlusionTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.occlusionTexture.index], model, false);
-            const grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
-            mat.setTexture("occlusionTexture", view);
-            mat.setSampler("occlusionSampler", imageRef->sampler());
+            mat.setImage("occlusion", imageRef);
 
-            mat.setProperty("occlusionTextureStrength", static_cast<float>(material.occlusionTexture.strength));
+            mat.set("occlusionTextureStrength", static_cast<float>(material.occlusionTexture.strength));
         }
 
         if (material.emissiveTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.emissiveTexture.index], model, false);
-            const grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
-            mat.setTexture("emissionTexture", view);
-            mat.setSampler("emissionSampler", imageRef->sampler());
+            mat.setImage("emission", imageRef);
         }
 
         const auto& emission = material.emissiveFactor;
         // mat.setProperty("emission", glm::vec3(emission[0], emission[1], emission[2]));
     }
 
-    void GLBSceneImporter::setupMaterialFlags(MaterialShader& mat, const tinygltf::Material& material)
+    void GLBSceneImporter::setupMaterialFlags(MaterialInstance& mat, const tinygltf::Material& material)
     {
         // mat.setProperty("alphaCutoff", static_cast<float>(material.alphaCutoff));
         // mat.setProperty<int>("doubleSided", material.doubleSided);
@@ -410,8 +401,8 @@ namespace ion
             }
         }
 
-        nMesh->setIndices(meshIndices);
-        nMesh->setVertices(vertices);
+        nMesh->indices(meshIndices);
+        nMesh->vertices(vertices);
         return nMesh.release();
     }
 

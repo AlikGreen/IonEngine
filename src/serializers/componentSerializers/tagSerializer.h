@@ -8,7 +8,7 @@ namespace ion
 class TagSerializer final : public ComponentSerializer<Tag>
 {
 public:
-    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const Tag &tag) override
+    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const Tag &tag) override
     {
         assetStream.write(tag.name);
     }

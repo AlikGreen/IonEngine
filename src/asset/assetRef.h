@@ -30,6 +30,11 @@ namespace ion
             return m_data.get();
         }
 
+        grl::Rc<T> ref() const
+        {
+            return m_data;
+        }
+
         [[nodiscard]] AssetId id() const
         {
             return m_id;

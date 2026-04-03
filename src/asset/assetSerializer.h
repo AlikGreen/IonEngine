@@ -4,6 +4,7 @@ namespace ion
 {
     class AssetStream;
     class AssetRegistry;
+    class AssetDeps;
 }
 
 namespace ion
@@ -14,7 +15,7 @@ class AssetSerializer
 public:
     virtual ~AssetSerializer() = default;
 
-    virtual void serialize(AssetStream& assetStream, AssetRegistry& assetRegistry, const T& asset) = 0;
+    virtual void serialize(AssetStream& assetStream, AssetRegistry& assetRegistry, AssetDeps& deps, const T& asset) = 0;
     virtual grl::Rc<T> deserialize(AssetStream& assetStream, AssetRegistry& assetRegistry) = 0;
 };
 }

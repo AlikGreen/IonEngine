@@ -4,8 +4,8 @@
 #include "sampler.h"
 #include "spirv_common.hpp"
 #include "texture.h"
+#include "textureData.h"
 #include "asset/assetRef.h"
-#include "assets/textureData.h"
 
 namespace ion
 {
@@ -16,6 +16,7 @@ public:
     explicit Image(const TextureData &data, const grl::Rc<urhi::Sampler> &sampler = nullptr);
 
     grl::Rc<urhi::Texture> texture();
+    grl::Rc<urhi::TextureView> textureView();
     grl::Rc<urhi::Sampler> sampler();
 
     [[nodiscard]] std::vector<uint8_t> pixels() const;
@@ -31,6 +32,7 @@ private:
     std::vector<uint8_t> m_pixels;
 
     grl::Rc<urhi::Texture> m_texture;
+    grl::Rc<urhi::TextureView> m_textureView;
     grl::Rc<urhi::Sampler> m_sampler;
 };
 }

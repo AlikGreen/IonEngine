@@ -23,9 +23,9 @@ namespace ion
 
             const glm::mat4 worldMat = Transform::getWorldMatrix(entity);
             glm::mat4 cameraMat = Transform::getWorldMatrix(camEntity);
-            if(camera.getFrustum(glm::inverse(cameraMat)).intersects(meshRenderer.mesh->getBounds()))
+            if(camera.getFrustum(glm::inverse(cameraMat)).intersects(meshRenderer.mesh->bounds()))
             {
-                for(size_t i = 0; i < meshRenderer.mesh->getPrimitives().size(); i++)
+                for(size_t i = 0; i < meshRenderer.mesh->primitives().size(); i++)
                 {
                     Renderable renderable{};
                     renderable.entity = entity;
@@ -46,7 +46,7 @@ namespace ion
 
                     renderables.emplace_back(renderable);
 
-                    if(renderable.material->isOpaque())
+                    if(renderable.material->materialTemplate()->isOpaque())
                         opaqueRenderables.emplace_back(renderable);
                     else
                         transparentRenderables.emplace_back(renderable);
@@ -97,7 +97,7 @@ namespace ion
             PointLightUniformData pointLightData{};
             pointLightData.color = light.color;
             pointLightData.position = transform.position;
-            pointLightData.intensity = light.power;
+            pointLightData.power = light.power;
             pointLightData.radius = 0.0f; // not used yet
 
             pointLightsData.lights[index] = pointLightData;

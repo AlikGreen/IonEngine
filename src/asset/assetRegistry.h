@@ -74,6 +74,7 @@ public:
             id
         );
     }
+
     template<typename T>
     AssetRef<T> load(AssetId id)
     {
@@ -106,11 +107,30 @@ public:
         return nullptr;
     }
 
+    bool isLoaded(const AssetId id) const
+    {
+        const auto it = m_assets.find(id);
+        if(it == m_assets.end())
+            return false;
+
+        return !it->second.asset.expired();
+    }
+
+    bool canLoad(const AssetId id) const
+    {
+        for(const auto& loader : m_loaders)
+        {
+            if(loader->canLoad(id))
+                return true;
+        }
+        return false;
+    }
+
     template<typename T>
-    void serialize(AssetStream& stream, const T& asset)
+    void serialize(AssetStream& stream, AssetDeps& deps, const T& asset)
     {
         auto* serializer = m_serializers.find<T>();
-        if (serializer) serializer->serialize(stream, *this, asset);
+        if (serializer) serializer->serialize(stream, *this, deps, asset);
     }
 
     template<typename T>

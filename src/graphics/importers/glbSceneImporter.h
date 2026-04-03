@@ -4,8 +4,8 @@
 #include "asset/assetImporter.h"
 #include "core/scene.h"
 #include "graphics/image.h"
-#include "graphics/assets/materialShader.h"
-#include "graphics/assets/mesh.h"
+#include "graphics/materialInstance.h"
+#include "graphics/mesh.h"
 
 namespace ion
 {
@@ -16,16 +16,16 @@ public:
     [[nodiscard]] bool canImport(const std::filesystem::path &src) const override;
 private:
     static bool loadModel(tinygltf::Model& model, const std::string& filePath);
-    static std::vector<AssetRef<MaterialShader>> processMaterials(const tinygltf::Model& model);
-    static void processNodes(const tinygltf::Model& model, Scene& scene, const std::vector<AssetRef<MaterialShader>>& materials, const AssetRef<MaterialShader>& defaultMaterial);
+    static std::vector<AssetRef<MaterialInstance>> processMaterials(const tinygltf::Model& model);
+    static void processNodes(const tinygltf::Model& model, Scene& scene, const std::vector<AssetRef<MaterialInstance>>& materials, const AssetRef<MaterialInstance>& defaultMaterial);
 
     static void setupTransform(entis::Entity& entity, const tinygltf::Node& node);
-    static void setupMeshRenderer(entis::Entity& entity, const AssetRef<Mesh> &meshHandle, const tinygltf::Mesh& mesh, const AssetRef<MaterialShader>& defaultMaterial, const std::vector<AssetRef<MaterialShader>>& materials);
-    static void setupPBRProperties(MaterialShader& mat, const tinygltf::Material& material, const tinygltf::Model& model);
-    static void setupTextureProperties(MaterialShader& mat, const tinygltf::Material& material, const tinygltf::Model& model);
-    static void setupMaterialFlags(MaterialShader& mat, const tinygltf::Material& material);
+    static void setupMeshRenderer(entis::Entity& entity, const AssetRef<Mesh> &meshHandle, const tinygltf::Mesh& mesh, const AssetRef<MaterialInstance>& defaultMaterial, const std::vector<AssetRef<MaterialInstance>>& materials);
+    static void setupPBRProperties(MaterialInstance& mat, const tinygltf::Material& material, const tinygltf::Model& model);
+    static void setupTextureProperties(MaterialInstance& mat, const tinygltf::Material& material, const tinygltf::Model& model);
+    static void setupMaterialFlags(MaterialInstance& mat, const tinygltf::Material& material);
 
-    static AssetRef<MaterialShader> processMaterial(const tinygltf::Material& material, const tinygltf::Model& model);
+    static AssetRef<MaterialInstance> processMaterial(const tinygltf::Material& material, const tinygltf::Model& model);
     static Mesh* createMesh(const tinygltf::Mesh &mesh, const tinygltf::Model &model);
 
     static std::vector<glm::vec3> extractVertexPositions(const tinygltf::Primitive& primitive, const tinygltf::Model& model);

@@ -15,7 +15,7 @@ class SceneSerializer final : public AssetSerializer<Scene>
 {
 public:
     static constexpr uint64_t typeId = grl::hash64("ion::Scene");
-    void serialize(AssetStream &assetStream, AssetRegistry& assetRegistry, const Scene& asset) override;
+    void serialize(AssetStream &assetStream, AssetRegistry& assetRegistry, AssetDeps& deps, const Scene& scene) override;
     grl::Rc<Scene> deserialize(AssetStream &assetStream, AssetRegistry& assetRegistry) override;
 
     template<typename T, typename Serializer, typename... Args>
@@ -24,13 +24,13 @@ public:
     {
         m_componentSerializers[typeId] = grl::makeBox<Serializer>(std::forward<Args>(args)...);
 
-        m_componentSerializerFuncs[typeId] = [typeId, this](AssetRegistry& assetRegistry, AssetStream &assetStream, entis::Entity entity)
+        m_componentSerializerFuncs[typeId] = [typeId, this](AssetRegistry& assetRegistry, AssetStream &assetStream, AssetDeps& deps, entis::Entity entity)
         {
             if(!entity.has<T>()) return;
 
             const T& component = entity.get<T>();
             auto serializer = static_cast<Serializer*>(m_componentSerializers[typeId].get());
-            serializer->serialize(assetStream, assetRegistry, component);
+            serializer->serialize(assetStream, assetRegistry, deps, component);
         };
 
         m_componentDeserializerFuncs[typeId] = [this, typeId](AssetRegistry& assetRegistry, AssetStream &assetStream, const entis::Entity entity, entis::Registry& registry)
@@ -43,7 +43,7 @@ public:
     }
 
 private:
-    using SerializerFunc = std::function<void(AssetRegistry&, AssetStream&, entis::Entity)>;
+    using SerializerFunc = std::function<void(AssetRegistry&, AssetStream&, AssetDeps&, entis::Entity)>;
     using DeserializerFunc = std::function<void(AssetRegistry&, AssetStream&, entis::Entity, entis::Registry&)>;
 
     std::unordered_map<uint32_t, SerializerFunc> m_componentSerializerFuncs{};

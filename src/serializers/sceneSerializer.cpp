@@ -7,7 +7,7 @@
 
 namespace ion
 {
-    void SceneSerializer::serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const Scene& scene)
+    void SceneSerializer::serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const Scene& scene)
     {
         assetStream.write(scene.name);
 
@@ -37,7 +37,7 @@ namespace ion
                 assetStream.write<uint32_t>(typeId);
 
                 const uint32_t beforeData = assetStream.getCursor();
-                serializer(assetRegistry, assetStream, entity);
+                serializer(assetRegistry, assetStream, deps, entity);
                 const uint32_t afterData = assetStream.getCursor();
 
                 if (afterData == beforeData)

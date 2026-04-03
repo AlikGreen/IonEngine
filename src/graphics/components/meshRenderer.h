@@ -1,16 +1,16 @@
 #pragma once
 #include "asset/assetRef.h"
-#include "graphics/assets/materialShader.h"
-#include "graphics/assets/mesh.h"
+#include "graphics/materialInstance.h"
+#include "graphics/mesh.h"
 
 namespace ion
 {
 struct MeshRenderer
 {
-    std::vector<AssetRef<MaterialShader>> materials{};
+    std::vector<AssetRef<MaterialInstance>> materials{};
     AssetRef<Mesh> mesh{};
 
-    void setMaterial(const AssetRef<MaterialShader>& material)
+    void setMaterial(const AssetRef<MaterialInstance>& material)
     {
         if(materials.empty())
             materials.push_back(material);
@@ -18,7 +18,7 @@ struct MeshRenderer
             materials[0] = material;
     }
 
-    AssetRef<MaterialShader> getMaterial() const
+    [[nodiscard]] AssetRef<MaterialInstance> getMaterial() const
     {
         if(materials.empty()) return nullptr;
         return materials[0];

@@ -8,7 +8,7 @@ namespace ion
 class PointLightSerializer final : public ComponentSerializer<PointLight>
 {
 public:
-    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const PointLight &light) override
+    void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const PointLight &light) override
     {
         assetStream.write(light.power);
         assetStream.write(light.color);

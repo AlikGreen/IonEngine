@@ -28,14 +28,13 @@ namespace ion
         clogr::defaultLogger()->addSink<clogr::FileSink>(R"(C:\Users\alikg\Downloads\log.log)");
         m_context = urhi::Context::create(urhi::BackendAPI::Vulkan);
 
-
         m_window = m_context->createWindow(m_windowDesc);
         m_device = m_context->createDevice({ m_window });
 
         urhi::SwapchainDesc swapchainDesc{};
         swapchainDesc.window = m_window;
         swapchainDesc.device = m_device;
-        swapchainDesc.presentMode = urhi::PresentMode::NoVSync;
+        swapchainDesc.presentMode = urhi::PresentMode::VSync;
 
         m_swapchain = m_context->createSwapchain(swapchainDesc);
 
@@ -49,8 +48,15 @@ namespace ion
 
         const grl::Rc<urhi::Texture> texture = m_device->createTexture(desc);
 
-        const auto viewDesc = urhi::TextureViewDesc(texture);
-        m_defaultTexture = m_device->createTextureView(viewDesc);
+        const auto cmd = m_device->acquireCommandList(urhi::QueueType::Graphics);
+        cmd->begin();
+        urhi::TextureUploadDesc uploadDesc;
+        uploadDesc.data = new uint8_t[]{ 255, 255, 255, 255 };
+        uploadDesc.texture = texture;
+        cmd->updateTexture(uploadDesc);
+        m_device->submit(cmd);
+
+        m_defaultTexture = m_device->createTextureView(texture);
     }
 
     void GraphicsSystem::preUpdate()

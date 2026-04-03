@@ -3,7 +3,7 @@
 #include "asset/assetRef.h"
 #include "glm/glm.hpp"
 #include "graphics/frustum.h"
-#include "graphics/assets/materialShader.h"
+#include "graphics/materialInstance.h"
 #include "graphics/renderTarget.h"
 
 namespace ion
@@ -29,7 +29,7 @@ public:
     [[nodiscard]] const glm::mat4& getProjectionMatrix() const;
 
     grl::Rc<RenderTarget> renderTarget{};
-    AssetRef<MaterialShader> skyboxMaterial{};
+    AssetRef<MaterialInstance> skyboxMaterial{};
 private:
     float fov = 60.0f;
     float nearClip = 0.1f;

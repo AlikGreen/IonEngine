@@ -35,6 +35,20 @@ namespace ion
         return m_texture;
     }
 
+    grl::Rc<urhi::TextureView> Image::textureView()
+    {
+        if(m_textureView == nullptr)
+        {
+            if(m_texture == nullptr)
+                upload();
+
+            const grl::Rc<urhi::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
+            m_textureView = device->createTextureView(m_texture);
+        }
+
+        return m_textureView;
+    }
+
     grl::Rc<urhi::Sampler> Image::sampler()
     {
         return m_sampler;

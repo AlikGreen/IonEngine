@@ -13,8 +13,9 @@
 #include "audio/audioManager.h"
 #include "graphics/importers/glbSceneImporter.h"
 #include "graphics/importers/shaderImporter.h"
-#include "core/serializers/sceneSerializer.h"
+#include "serializers/sceneSerializer.h"
 #include "graphics/importers/imageImporter.h"
+#include "serializers/meshSerializer.h"
 #include "serializers/componentSerializers/meshRendererSerializer.h"
 #include "serializers/componentSerializers/parentSerializer.h"
 #include "serializers/componentSerializers/pointLightSerializer.h"
@@ -58,6 +59,8 @@ namespace ion
         sceneSerializer.registerComponentSerializer<Parent, ParentSerializer>(grl::hash32("ion::Parent"));
         sceneSerializer.registerComponentSerializer<MeshRenderer, MeshRendererSerializer>(grl::hash32("ion::MeshRenderer"));
         sceneSerializer.registerComponentSerializer<PointLight, PointLightSerializer>(grl::hash32("ion::PointLight"));
+
+        m_assetRegistry->registerSerializer<Mesh, MeshSerializer>();
     }
 
     void Engine::quit()

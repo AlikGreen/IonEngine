@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../../../asset/assetRegistry.h"
+#include "asset/assetDeps.h"
+#include "asset/assetRegistry.h"
 
 namespace ion
 {
@@ -13,7 +14,7 @@ public:
 template<typename T>
 class ComponentSerializer : public ComponentSerializerBase
 {
-    virtual void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, const T& component) = 0;
+    virtual void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const T& component) = 0;
     virtual T deserialize(AssetStream& assetStream, AssetRegistry& assetRegistry) = 0;
 };
 }
