@@ -8,7 +8,6 @@
 #include "materialInstance.h"
 #include "mesh.h"
 
-#include "frustum.h"
 
 namespace ion
 {

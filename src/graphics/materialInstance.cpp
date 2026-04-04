@@ -19,23 +19,6 @@ namespace ion
         }
     }
 
-    bool MaterialInstance::setImage(const std::string &name, const AssetRef<Image> &image)
-    {
-        if (!image)
-            return false;
-
-        const auto& resources = m_template->resources();
-        if (!resources.contains(name + "Texture"))
-            return false;
-
-        m_textures[name + "Texture"] = image;
-
-        if(resources.contains(name + "Sampler"))
-            m_samplers[name + "Sampler"] = image;
-
-        return true;
-    }
-
     bool MaterialInstance::setTexture(const std::string &name, const AssetRef<Image> &image)
     {
         const auto& resources = m_template->resources();

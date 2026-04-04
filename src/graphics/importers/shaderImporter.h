@@ -1,13 +1,13 @@
 #pragma once
+#include "shaderSet.h"
 #include "asset/assetImporter.h"
-#include "descriptions/shaderEntryPoint.h"
 
 namespace ion
 {
-class ShaderImporter final : public AssetImporter<std::vector<urhi::ShaderEntryPoint>>
+class ShaderImporter final : public AssetImporter<urhi::ShaderSet>
 {
 public:
-    grl::Box<std::vector<urhi::ShaderEntryPoint>> import(const std::filesystem::path &src) override;
+    grl::Box<urhi::ShaderSet> import(const std::filesystem::path &src, ImportOptions<urhi::ShaderSet> options) override;
     [[nodiscard]] bool canImport(const std::filesystem::path &src) const override;
 };
 }

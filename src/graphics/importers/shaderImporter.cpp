@@ -1,22 +1,27 @@
 #include "shaderImporter.h"
 
-#include "shaderCompiler.h"
+#include <slangCompiler.h>
+
 #include "core/engine.h"
 #include "graphics/graphicsSystem.h"
 
 namespace ion
 {
-    grl::Box<std::vector<urhi::ShaderEntryPoint>> ShaderImporter::import(const std::filesystem::path &src)
+    grl::Box<urhi::ShaderSet> ShaderImporter::import(const std::filesystem::path &src, ImportOptions<urhi::ShaderSet> options)
     {
         const std::string dir = grl::Path::directory(src.string());
 
-        urhi::ShaderCompileDesc compileDesc{};
-        compileDesc.path = src.string();
-        compileDesc.source = grl::File::read(src.string()).value();
+        urhi::SlangCompileDesc compileDesc{};
+        compileDesc.modules.push_back(
+        {
+                src.stem().string(),
+                src.string(),
+                grl::File::read(src.string()).value(),
+        });
         compileDesc.includePaths.push_back(dir);
 
-        auto entryPoints = urhi::ShaderCompiler::compile(compileDesc);
-        return grl::makeBox<std::vector<urhi::ShaderEntryPoint>>(std::move(entryPoints));
+        auto entryPoints = urhi::SlangCompiler::compile(compileDesc);
+        return grl::makeBox<urhi::ShaderSet>(std::move(entryPoints));
     }
 
     bool ShaderImporter::canImport(const std::filesystem::path &src) const

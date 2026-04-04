@@ -48,7 +48,6 @@ public:
         return out;
     }
 
-    bool setImage(const std::string& name, const AssetRef<Image>& image);
     bool setTexture(const std::string& name, const AssetRef<Image>& image);
     bool setSampler(const std::string& name, const AssetRef<Image>& image);
 
@@ -62,6 +61,14 @@ public:
     const std::vector<uint8_t>& cpuBuffer() const { return m_cpuBuffer; }
 
     void setPropertyBuffer(const std::vector<uint8_t>& data);
+
+    const std::string& name() const { return m_template->name(); }
+    bool isOpaque() const { return m_template->isOpaque(); }
+
+    const grl::Rc<urhi::Pipeline>& pipeline() const { return m_template->pipeline(); }
+
+    const auto& resources() const { return m_template->resources(); }
+    const auto& properties() const { return m_template->properties(); }
 private:
     AssetRef<MaterialTemplate> m_template;
 

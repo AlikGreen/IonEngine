@@ -46,7 +46,7 @@ namespace ion
             glm::mat4 normalMatrix = glm::transpose(glm::inverse(renderable.worldMatrix));
             ModelUniforms modelUniforms = { renderable.worldMatrix, normalMatrix };
 
-            pass->setPipeline(renderable.material->materialTemplate()->pipeline());
+            pass->setPipeline(renderable.material->pipeline());
 
             pass->setUniformBuffer("camera", cameraBuffer);
             pass->setUniformBuffer("pointLights", pointLightsBuffer);

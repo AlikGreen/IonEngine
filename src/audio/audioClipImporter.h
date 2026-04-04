@@ -7,7 +7,7 @@ namespace ion
 class AudioClipImporter final : public AssetImporter<AudioClip>
 {
 public:
-    grl::Box<AudioClip> import(const std::filesystem::path& filepath) override;
+    grl::Box<AudioClip> import(const std::filesystem::path& filepath, ImportOptions<AudioClip> options) override;
     [[nodiscard]] bool canImport(const std::filesystem::path &src) const override;
 };
 }

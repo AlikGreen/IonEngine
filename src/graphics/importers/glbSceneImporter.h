@@ -9,10 +9,10 @@
 
 namespace ion
 {
-class GLBSceneImporter final : public AssetImporter<Scene>
+    class GLBSceneImporter final : public AssetImporter<Scene>
 {
 public:
-    grl::Box<Scene> import(const std::filesystem::path& filePath) override;
+    grl::Box<Scene> import(const std::filesystem::path& filePath, ImportOptions<Scene> options) override;
     [[nodiscard]] bool canImport(const std::filesystem::path &src) const override;
 private:
     static bool loadModel(tinygltf::Model& model, const std::string& filePath);
@@ -21,9 +21,9 @@ private:
 
     static void setupTransform(entis::Entity& entity, const tinygltf::Node& node);
     static void setupMeshRenderer(entis::Entity& entity, const AssetRef<Mesh> &meshHandle, const tinygltf::Mesh& mesh, const AssetRef<MaterialInstance>& defaultMaterial, const std::vector<AssetRef<MaterialInstance>>& materials);
-    static void setupPBRProperties(MaterialInstance& mat, const tinygltf::Material& material, const tinygltf::Model& model);
-    static void setupTextureProperties(MaterialInstance& mat, const tinygltf::Material& material, const tinygltf::Model& model);
-    static void setupMaterialFlags(MaterialInstance& mat, const tinygltf::Material& material);
+    static void setupPBRProperties(const AssetRef<MaterialInstance> &mat, const tinygltf::Material& material, const tinygltf::Model& model);
+    static void setupTextureProperties(const AssetRef<MaterialInstance> &mat, const tinygltf::Material& material, const tinygltf::Model& model);
+    static void setupMaterialFlags(AssetRef<MaterialInstance> mat, const tinygltf::Material& material);
 
     static AssetRef<MaterialInstance> processMaterial(const tinygltf::Material& material, const tinygltf::Model& model);
     static Mesh* createMesh(const tinygltf::Mesh &mesh, const tinygltf::Model &model);

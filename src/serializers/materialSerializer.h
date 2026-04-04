@@ -7,8 +7,7 @@ namespace ion
 class MaterialSerializer final : public AssetSerializer<MaterialInstance>
 {
 public:
-    static constexpr uint64_t typeId = grl::hash64("ion::MaterialShader");
-
+    static constexpr uint64_t typeId = grl::hash64("ion::MaterialInstance");
 
     void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const MaterialInstance &material) override;
     grl::Rc<MaterialInstance> deserialize(AssetStream &assetStream, AssetRegistry &assetRegistry) override;

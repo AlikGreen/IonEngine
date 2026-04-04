@@ -9,6 +9,7 @@ namespace ion
     std::unordered_map<MouseButton, KeyState> Input::mouseButtonStates{};
     glm::vec2 Input::mousePosition{};
     glm::vec2 Input::mouseDelta{};
+    int Input::mouseScrollDelta{};
 
     bool Input::isKeyHeld(const KeyCode key)
     {
@@ -48,6 +49,11 @@ namespace ion
     glm::vec2 Input::getMouseDelta()
     {
         return mouseDelta;
+    }
+
+    int Input::getMouseScrollDelta()
+    {
+        return mouseScrollDelta;
     }
 
     void Input::setCursorLocked(const bool locked)

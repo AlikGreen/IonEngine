@@ -1,7 +1,7 @@
 #pragma once
 #include "asset/assetRef.h"
-#include "graphics/materialInstance.h"
 #include "graphics/mesh.h"
+#include "graphics/materialInstance.h"
 
 namespace ion
 {

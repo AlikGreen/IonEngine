@@ -1,6 +1,7 @@
 #pragma once
 #include <urhi/urhi.h>
 
+#include "shaderSet.h"
 #include "asset/assetRef.h"
 
 namespace ion
@@ -8,7 +9,7 @@ namespace ion
 struct MaterialDescription
 {
     std::string name{};
-    AssetRef<std::vector<urhi::ShaderEntryPoint>> shaders{};
+    AssetRef<urhi::ShaderSet> shaders{};
     bool depthWrite{};
     bool depthTest{};
     bool blendEnabled{};

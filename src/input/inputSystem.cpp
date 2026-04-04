@@ -8,6 +8,7 @@
 #include "events/mouseButtonDownEvent.h"
 #include "events/mouseButtonUpEvent.h"
 #include "events/mouseMoveEvent.h"
+#include "events/mouseWheelEvent.h"
 
 namespace ion
 {
@@ -36,6 +37,9 @@ namespace ion
             const glm::vec2 newPos = {mouseMoveEvent->getX(), mouseMoveEvent->getY()};
             Input::mouseDelta += newPos-Input::mousePosition;
             Input::mousePosition = newPos;
+        }else if(const auto* mouseWheelEvent = dynamic_cast<MouseWheelEvent*>(event))
+        {
+            Input::mouseScrollDelta = mouseWheelEvent->getY();
         }
     }
 
@@ -54,5 +58,6 @@ namespace ion
         }
 
         Input::mouseDelta = glm::vec2(0.0f);
+        Input::mouseScrollDelta = 0;
     }
 }

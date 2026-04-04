@@ -51,7 +51,7 @@ namespace ion
         renderPassDesc.depthAttachment = depthAttachment;
         const auto pass = cmd->beginRenderPass(renderPassDesc);
 
-        pass->setPipeline(material.materialTemplate()->pipeline());
+        pass->setPipeline(material.pipeline());
 
         pass->setUniformBuffer("camera", cameraBuffer);
         material.bind(cmd, pass);

@@ -12,7 +12,7 @@ namespace ion
         m_device = Engine::getSystem<GraphicsSystem>()->getDevice();
 
         std::vector<grl::Rc<urhi::Shader>> shaderObjects;
-        for (const auto& ep : *desc.shaders)
+        for (const auto& ep : desc.shaders->stages())
         {
             shaderObjects.push_back(m_device->createShader(ep));
             for (const auto& res : ep.reflection.resources)
@@ -76,7 +76,7 @@ namespace ion
         if(s_pbr) return s_pbr;
 
         AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-        const auto shaders = importPipeline.import<std::vector<urhi::ShaderEntryPoint>>("shaders/pbr.slang");
+        const auto shaders = importPipeline.import<urhi::ShaderSet>("shaders/pbr.slang");
 
         MaterialDescription desc{};
         desc.name = "PBR";
@@ -95,7 +95,7 @@ namespace ion
         if(s_billboard) return s_billboard;
 
         AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-        const auto shaders = importPipeline.import<std::vector<urhi::ShaderEntryPoint>>("shaders/billboard.slang");
+        const auto shaders = importPipeline.import<urhi::ShaderSet>("shaders/billboard.slang");
 
         MaterialDescription desc{};
         desc.name = "Billboard";
@@ -118,7 +118,7 @@ namespace ion
         if(s_equirectangularSkybox) return s_equirectangularSkybox;
 
         AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-        const auto shaders = importPipeline.import<std::vector<urhi::ShaderEntryPoint>>("shaders/skybox.slang");
+        const auto shaders = importPipeline.import<urhi::ShaderSet>("shaders/skybox.slang");
 
         MaterialDescription desc{};
         desc.name = "Skybox equirectangular";

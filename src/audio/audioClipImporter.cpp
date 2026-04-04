@@ -6,7 +6,7 @@
 
 namespace ion
 {
-    grl::Box<AudioClip> AudioClipImporter::import(const std::filesystem::path& filepath)
+    grl::Box<AudioClip> AudioClipImporter::import(const std::filesystem::path& filepath,  ImportOptions<AudioClip> options)
     {
         ma_decoder_config config = ma_decoder_config_init(
             ma_format_f32,

@@ -25,6 +25,7 @@ public:
 
     static glm::vec2 getMousePosition();
     static glm::vec2 getMouseDelta();
+    static int getMouseScrollDelta();
 
     static void setCursorLocked(bool locked);
     static void setCursorVisible(bool visible);
@@ -34,5 +35,6 @@ private:
     static std::unordered_map<MouseButton, KeyState> mouseButtonStates;
     static glm::vec2 mousePosition;
     static glm::vec2 mouseDelta;
+    static int mouseScrollDelta;
 };
 }

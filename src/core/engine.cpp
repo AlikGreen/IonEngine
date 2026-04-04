@@ -50,7 +50,7 @@ namespace ion
 
         m_assetImportPipeline->registerImporter<Scene, GLBSceneImporter>();
         m_assetImportPipeline->registerImporter<Image, ImageImporter>();
-        m_assetImportPipeline->registerImporter<std::vector<urhi::ShaderEntryPoint>, ShaderImporter>();
+        m_assetImportPipeline->registerImporter<urhi::ShaderSet, ShaderImporter>();
         m_assetImportPipeline->registerImporter<AudioClip, AudioClipImporter>();
 
         auto& sceneSerializer = m_assetRegistry->registerSerializer<Scene, SceneSerializer>();

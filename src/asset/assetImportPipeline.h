@@ -30,7 +30,7 @@ public:
     }
 
     template<typename T>
-    AssetRef<T> import(const std::filesystem::path& srcPath)
+    AssetRef<T> import(const std::filesystem::path& srcPath, ImportOptions<T> options = {})
     {
         namespace fs = std::filesystem;
         if (!m_importers.contains(typeid(T))) return nullptr;
@@ -42,12 +42,12 @@ public:
         auto* importer = dynamic_cast<ImporterWrapper<T>*>(m_importers.at(typeid(T)).get());
         if (importer == nullptr) return nullptr;
 
-        auto data = importer->inner->import(src);
+        auto data = importer->inner->import(src, options);
         return m_assetRegistry.add<T>(grl::Rc<T>(data.release()));
     }
 
     template<typename T>
-    grl::Box<T> load(const std::filesystem::path& srcPath)
+    grl::Box<T> load(const std::filesystem::path& srcPath, ImportOptions<T> options = {})
     {
         namespace fs = std::filesystem;
         if (!m_importers.contains(typeid(T))) return nullptr;
@@ -59,7 +59,7 @@ public:
         auto* importer = dynamic_cast<ImporterWrapper<T>*>(m_importers.at(typeid(T)).get());
         if (importer == nullptr) return nullptr;
 
-        return importer->inner->import(src);
+        return importer->inner->import(src, options);
     }
 private:
     struct ImporterBase;

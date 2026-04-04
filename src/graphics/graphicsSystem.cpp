@@ -1,6 +1,5 @@
 #include "graphicsSystem.h"
 
-#include "shaderCompiler.h"
 #include "window.h"
 #include "core/engine.h"
 #include "core/eventManager.h"
