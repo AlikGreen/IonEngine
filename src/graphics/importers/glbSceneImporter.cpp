@@ -19,7 +19,7 @@
 
 namespace ion
 {
-    grl::Box<Scene> GLBSceneImporter::import(const std::filesystem::path& filePath, ImportOptions<Scene> options)
+    grl::Box<Scene> GLBSceneImporter::import(const std::filesystem::path& filePath, const NoOptions&)
     {
         tinygltf::Model model;
         if (!loadModel(model, filePath.string()))
@@ -175,19 +175,19 @@ namespace ion
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.baseColorTexture.index], model, true);
             grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
-            mat->setTexture("albedoTexture", imageRef);
+            mat->setTexture("albedoMap", imageRef);
             mat->setSampler("albedoSampler", imageRef);
         }
 
         const auto& baseColor = pbr.baseColorFactor;
-        mat->set("albedo", glm::vec4(baseColor[0], baseColor[1], baseColor[2], baseColor[3]));
+        mat->set("baseColor", glm::vec4(baseColor[0], baseColor[1], baseColor[2], baseColor[3]));
         // mat.setProperty("matMetalness", static_cast<float>(pbr.metallicFactor));
         mat->set("roughness", static_cast<float>(pbr.roughnessFactor));
 
         if (pbr.metallicRoughnessTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.metallicRoughnessTexture.index], model, false);
-            mat->setTexture("metallicRoughnessTexture", imageRef);
+            mat->setTexture("metallicRoughnessMap", imageRef);
             mat->setSampler("metallicRoughnessSampler", imageRef);
 
         }
@@ -200,8 +200,8 @@ namespace ion
         if (material.normalTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.normalTexture.index], model, false);
-            mat->setTexture("normalTexture", imageRef);
-            mat->setSampler("normalSampler", imageRef);
+            mat->setTexture("normalMap", imageRef);
+            // mat->setSampler("material.normalSampler", imageRef);
 
             // mat.setProperty("normalTextureStrength", static_cast<float>(material.normalTexture.scale));
         }
@@ -209,17 +209,17 @@ namespace ion
         if (material.occlusionTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.occlusionTexture.index], model, false);
-            mat->setTexture("occlusionTexture", imageRef);
-            mat->setSampler("occlusionSampler", imageRef);
-
-            mat->set("occlusionTextureStrength", static_cast<float>(material.occlusionTexture.strength));
+            // mat->setTexture("occlusionTexture", imageRef);
+            // mat->setSampler("occlusionSampler", imageRef);
+            //
+            // mat->set("occlusionTextureStrength", static_cast<float>(material.occlusionTexture.strength));
         }
 
         if (material.emissiveTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[material.emissiveTexture.index], model, false);
-            mat->setTexture("emissionTexture", imageRef);
-            mat->setSampler("emissionSampler", imageRef);
+            // mat->setTexture("emissionTexture", imageRef);
+            // mat->setSampler("emissionSampler", imageRef);
         }
 
         const auto& emission = material.emissiveFactor;

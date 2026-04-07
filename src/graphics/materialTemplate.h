@@ -9,7 +9,10 @@ namespace ion
 struct MaterialDescription
 {
     std::string name{};
-    AssetRef<urhi::ShaderSet> shaders{};
+
+    std::string matShaderPath{};
+    std::string matTypeName{};
+
     bool depthWrite{};
     bool depthTest{};
     bool blendEnabled{};
@@ -27,21 +30,22 @@ class MaterialTemplate
 public:
     explicit MaterialTemplate(const MaterialDescription& desc);
 
-    const grl::Rc<urhi::Pipeline>& pipeline() const { return m_pipeline; }
-    const grl::Rc<urhi::TextureView>& defaultTexture() const { return m_defaultTexture; }
-    const grl::Rc<urhi::Sampler>& defaultSampler() const { return m_defaultSampler; }
+    [[nodiscard]] const grl::Rc<urhi::Pipeline>& pipeline() const { return m_pipeline; }
+    [[nodiscard]] const grl::Rc<urhi::TextureView>& defaultTexture() const { return m_defaultTexture; }
+    [[nodiscard]] const grl::Rc<urhi::Sampler>& defaultSampler() const { return m_defaultSampler; }
 
-    const auto& resources() const { return m_resources; }
-    const auto& properties() const { return m_properties; }
+    [[nodiscard]] const auto& resources() const { return m_resources; }
+    [[nodiscard]] const auto& properties() const { return m_properties; }
 
-    uint32_t propertiesBufferSize() const { return m_propertiesSize; }
+    [[nodiscard]] uint32_t propertiesBufferSize() const { return m_propertiesSize; }
 
-    const std::string& name() const { return m_desc.name; }
-    bool isOpaque() const { return !m_desc.blendEnabled; }
+    [[nodiscard]] const std::string& name() const { return m_desc.name; }
+    [[nodiscard]] bool isOpaque() const { return !m_desc.blendEnabled; }
 
-    const MaterialDescription& description() const { return m_desc; }
+    [[nodiscard]] const MaterialDescription& description() const { return m_desc; }
 private:
     MaterialDescription m_desc;
+    AssetRef<urhi::ShaderSet> m_shaders;
 
     grl::Rc<urhi::Device> m_device;
     grl::Rc<urhi::Pipeline> m_pipeline;

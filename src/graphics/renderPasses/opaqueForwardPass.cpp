@@ -48,11 +48,11 @@ namespace ion
 
             pass->setPipeline(renderable.material->pipeline());
 
-            pass->setUniformBuffer("camera", cameraBuffer);
-            pass->setUniformBuffer("pointLights", pointLightsBuffer);
+            pass->setBuffer("camera", cameraBuffer);
+            // pass->setBuffer("pointLights", pointLightsBuffer);
             pass->pushConstants(modelUniforms);
 
-            renderable.material->bind(cmd, pass);
+            renderable.material->applyBindings(cmd, pass);
 
             const Primitive primitive = renderable.mesh->primitives().at(renderable.submeshIndex);
 

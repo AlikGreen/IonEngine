@@ -1,4 +1,4 @@
-import material;
+import "material.slang";
 
 struct PbrMaterial : IMaterial
 {
@@ -13,13 +13,13 @@ struct PbrMaterial : IMaterial
 
     bool hasNormalMap;
 
-    float3 baseColor = float3(1.0, 1.0, 1.0);
+    float4 baseColor = float4(1.0, 1.0, 1.0, 1.0);
     float  roughness = 0.5;
     float  metallic = 0.0;
     float  normalScale = 1.0;
     float  alphaCutoff = 0.5;
 
-    SurfaceOutput evaluateSurface(SurfaceInput i)
+    SurfaceOutput evaluate(SurfaceInput i)
     {
         float4 albedoSample = albedoMap.Sample(albedoSampler, i.uv);
 
@@ -34,7 +34,7 @@ struct PbrMaterial : IMaterial
         }
 
         SurfaceOutput o;
-        o.baseColor = baseColor * albedoSample.rgb;
+        o.baseColor = baseColor.rgb * albedoSample.rgb;
         o.normalWS = i.normalWS;
         o.roughness = saturate(roughness * mrSample.g);
         o.metallic = saturate(metallic * mrSample.b);

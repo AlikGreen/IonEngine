@@ -53,8 +53,8 @@ namespace ion
 
         pass->setPipeline(material.pipeline());
 
-        pass->setUniformBuffer("camera", cameraBuffer);
-        material.bind(cmd, pass);
+        material.applyBindings(cmd, pass);
+        pass->setBuffer("camera", cameraBuffer);
 
         pass->setVertexBuffer(0, m_screenMesh.vertexBuffer());
         pass->setIndexBuffer(m_screenMesh.indexBuffer(), urhi::IndexFormat::UInt32);

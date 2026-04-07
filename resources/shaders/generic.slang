@@ -1,4 +1,6 @@
-import material;
+import "material.slang";
+
+type_param TMaterial : IMaterial;
 
 static const int MAX_POINT_LIGHTS = 64;
 
@@ -35,7 +37,7 @@ struct ModelInfo
 };
 
 ConstantBuffer<Camera> camera;
-ParameterBlock<IMaterial> material;
+ParameterBlock<TMaterial> material;
 
 [[vk::push_constant]]
 ModelInfo model;

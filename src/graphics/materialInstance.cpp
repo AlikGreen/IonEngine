@@ -21,27 +21,30 @@ namespace ion
 
     bool MaterialInstance::setTexture(const std::string &name, const AssetRef<Image> &image)
     {
+        const std::string qualifiedName = "material."+name;
         const auto& resources = m_template->resources();
-        const auto it = resources.find(name);
+        const auto it = resources.find(qualifiedName);
         if (it == resources.end() || it->second.type != urhi::ShaderReflection::ResourceType::Texture)
             return false;
 
-        m_textures[name] = image;
+        m_textures[qualifiedName] = image;
         return true;
     }
 
     bool MaterialInstance::setSampler(const std::string &name, const AssetRef<Image> &image)
     {
+        const std::string qualifiedName = "material."+name;
         const auto& resources = m_template->resources();
-        const auto it = resources.find(name);
+        const auto it = resources.find(qualifiedName);
         if (it == resources.end() || it->second.type != urhi::ShaderReflection::ResourceType::Sampler)
             return false;
 
-        m_samplers[name] = image;
+        m_samplers[qualifiedName] = image;
         return true;
     }
 
-    void MaterialInstance::bind(const grl::Rc<urhi::CommandList> &cmd, const grl::Rc<urhi::RenderPass> &pass)
+
+    void MaterialInstance::applyBindings(const grl::Rc<urhi::CommandList> &cmd, const grl::Rc<urhi::RenderPass> &pass)
     {
         if (m_dirty && m_propertyBuffer && !m_cpuBuffer.empty())
         {
@@ -50,7 +53,7 @@ namespace ion
         }
 
         if (m_propertyBuffer)
-            pass->setUniformBuffer("properties", m_propertyBuffer);
+            pass->setBuffer("material", m_propertyBuffer);
 
         std::unordered_set<std::string> boundNames;
         for (const auto& [name, image] : m_textures)

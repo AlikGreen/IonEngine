@@ -12,7 +12,7 @@ namespace ion
     class GLBSceneImporter final : public AssetImporter<Scene>
 {
 public:
-    grl::Box<Scene> import(const std::filesystem::path& filePath, ImportOptions<Scene> options) override;
+    grl::Box<Scene> import(const std::filesystem::path& filePath, const NoOptions&) override;
     [[nodiscard]] bool canImport(const std::filesystem::path &src) const override;
 private:
     static bool loadModel(tinygltf::Model& model, const std::string& filePath);

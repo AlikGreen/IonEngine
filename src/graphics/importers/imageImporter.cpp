@@ -4,7 +4,7 @@
 
 namespace ion
 {
-    grl::Box<Image> ImageImporter::import(const std::filesystem::path &filepath, ImportOptions<Image> options)
+    grl::Box<Image> ImageImporter::import(const std::filesystem::path &filepath, const NoOptions&)
     {
         const std::string ext = std::filesystem::path(filepath).extension().string();
 

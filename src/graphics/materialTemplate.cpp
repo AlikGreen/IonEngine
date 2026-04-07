@@ -3,23 +3,32 @@
 #include "graphicsSystem.h"
 #include "asset/assetImportPipeline.h"
 #include "asset/assetRegistry.h"
+#include "importers/shaderImporter.h"
 
 namespace ion
 {
     MaterialTemplate::MaterialTemplate(const MaterialDescription &desc)
         : m_desc(desc)
     {
+        AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
+
+        ShaderImportOpts options;
+        options.additionalModulePaths.push_back(desc.matShaderPath);
+        options.typeSpecializations.push_back(desc.matTypeName);
+
+        m_shaders = importPipeline.import<urhi::ShaderSet>("shaders/generic.slang", options);
+
         m_device = Engine::getSystem<GraphicsSystem>()->getDevice();
 
         std::vector<grl::Rc<urhi::Shader>> shaderObjects;
-        for (const auto& ep : desc.shaders->stages())
+        for (const auto& ep : m_shaders->stages())
         {
             shaderObjects.push_back(m_device->createShader(ep));
             for (const auto& res : ep.reflection.resources)
             {
                 m_resources[res.name] = res;
                 if (res.type == urhi::ShaderReflection::ResourceType::ConstantBuffer
-                    && res.name == "properties")
+                    && res.name == "material")
                 {
                     for (const auto& mem : res.members)
                     {
@@ -67,20 +76,18 @@ namespace ion
         m_defaultSampler = m_device->createSampler(samplerDesc);
     }
 
-    AssetRef<MaterialTemplate> MaterialTemplates::s_pbr = nullptr;
-    AssetRef<MaterialTemplate> MaterialTemplates::s_billboard = nullptr;
-    AssetRef<MaterialTemplate> MaterialTemplates::s_equirectangularSkybox = nullptr;
+    AssetRef<MaterialTemplate> MaterialTemplates::s_pbr{};
+    AssetRef<MaterialTemplate> MaterialTemplates::s_billboard{};
+    AssetRef<MaterialTemplate> MaterialTemplates::s_equirectangularSkybox{};
 
     AssetRef<MaterialTemplate> MaterialTemplates::pbr()
     {
         if(s_pbr) return s_pbr;
 
-        AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-        const auto shaders = importPipeline.import<urhi::ShaderSet>("shaders/pbr.slang");
-
         MaterialDescription desc{};
         desc.name = "PBR";
-        desc.shaders = shaders;
+        desc.matShaderPath = "shaders/pbrMaterial.slang";
+        desc.matTypeName = "PbrMaterial";
         desc.cullMode = urhi::CullMode::Back;
         desc.blendEnabled = false;
         desc.depthTest = true;
@@ -99,7 +106,8 @@ namespace ion
 
         MaterialDescription desc{};
         desc.name = "Billboard";
-        desc.shaders = shaders;
+        desc.matShaderPath = "shaders/billboardMaterial.slang";
+        desc.matTypeName = "BillboardMaterial";
         desc.cullMode = urhi::CullMode::Back;
         desc.blendEnabled = true;
         desc.srcColorBlendFactor = urhi::BlendFactor::SrcAlpha;
@@ -117,12 +125,10 @@ namespace ion
     {
         if(s_equirectangularSkybox) return s_equirectangularSkybox;
 
-        AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-        const auto shaders = importPipeline.import<urhi::ShaderSet>("shaders/skybox.slang");
-
         MaterialDescription desc{};
         desc.name = "Skybox equirectangular";
-        desc.shaders = shaders;
+        desc.matShaderPath = "shaders/pbrMaterial.slang"; // TODO make skybox material
+        desc.matTypeName = "PbrMaterial";
         desc.cullMode = urhi::CullMode::Back;
         desc.blendEnabled = false;
         desc.depthTest = true;

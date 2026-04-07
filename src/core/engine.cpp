@@ -48,10 +48,10 @@ namespace ion
         m_audioManager = grl::makeBox<AudioManager>();
         m_sceneManager = grl::makeBox<SceneManager>();
 
-        m_assetImportPipeline->registerImporter<Scene, GLBSceneImporter>();
-        m_assetImportPipeline->registerImporter<Image, ImageImporter>();
-        m_assetImportPipeline->registerImporter<urhi::ShaderSet, ShaderImporter>();
-        m_assetImportPipeline->registerImporter<AudioClip, AudioClipImporter>();
+        m_assetImportPipeline->registerImporter<GLBSceneImporter>();
+        m_assetImportPipeline->registerImporter<ImageImporter>();
+        m_assetImportPipeline->registerImporter<ShaderImporter>();
+        m_assetImportPipeline->registerImporter<AudioClipImporter>();
 
         auto& sceneSerializer = m_assetRegistry->registerSerializer<Scene, SceneSerializer>();
         sceneSerializer.registerComponentSerializer<Tag, TagSerializer>(grl::hash32("ion::Tag"));

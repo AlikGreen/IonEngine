@@ -51,24 +51,23 @@ public:
     bool setTexture(const std::string& name, const AssetRef<Image>& image);
     bool setSampler(const std::string& name, const AssetRef<Image>& image);
 
-    void bind(const grl::Rc<urhi::CommandList>& cmd,
-              const grl::Rc<urhi::RenderPass>& pass);
+    void applyBindings(const grl::Rc<urhi::CommandList>& cmd, const grl::Rc<urhi::RenderPass>& pass);
 
-    const AssetRef<MaterialTemplate>& materialTemplate() const { return m_template; }
+    [[nodiscard]] const AssetRef<MaterialTemplate>& materialTemplate() const { return m_template; }
 
-    const std::unordered_map<std::string, AssetRef<Image>>& textures() const { return m_textures; }
-    const std::unordered_map<std::string, AssetRef<Image>>& samplers() const { return m_samplers; }
-    const std::vector<uint8_t>& cpuBuffer() const { return m_cpuBuffer; }
+    [[nodiscard]] const std::unordered_map<std::string, AssetRef<Image>>& textures() const { return m_textures; }
+    [[nodiscard]] const std::unordered_map<std::string, AssetRef<Image>>& samplers() const { return m_samplers; }
+    [[nodiscard]] const std::vector<uint8_t>& cpuBuffer() const { return m_cpuBuffer; }
 
     void setPropertyBuffer(const std::vector<uint8_t>& data);
 
-    const std::string& name() const { return m_template->name(); }
-    bool isOpaque() const { return m_template->isOpaque(); }
+    [[nodiscard]] const std::string& name() const { return m_template->name(); }
+    [[nodiscard]] bool isOpaque() const { return m_template->isOpaque(); }
 
-    const grl::Rc<urhi::Pipeline>& pipeline() const { return m_template->pipeline(); }
+    [[nodiscard]] const grl::Rc<urhi::Pipeline>& pipeline() const { return m_template->pipeline(); }
 
-    const auto& resources() const { return m_template->resources(); }
-    const auto& properties() const { return m_template->properties(); }
+    [[nodiscard]] const auto& resources() const { return m_template->resources(); }
+    [[nodiscard]] const auto& properties() const { return m_template->properties(); }
 private:
     AssetRef<MaterialTemplate> m_template;
 
