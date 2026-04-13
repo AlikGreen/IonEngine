@@ -23,7 +23,7 @@ namespace ion
         ImGuiStyleSerializer::deserialize(Engine::resourceFS().resolve("style.json"), style);
     }
 
-   void ImGuiSystem::preStartup()
+    void ImGuiSystem::preStartup()
     {
         m_graphicsSystem = Engine::getSystem<GraphicsSystem>();
         m_device = m_graphicsSystem->getDevice();
@@ -39,8 +39,8 @@ namespace ion
 
         static constexpr ImWchar rangesAllBMP[] =
         {
-            0x0020, 0xFFFF,
-            0
+            0x0020u,  0xFFFFu,
+            0u
         };
 
         ImFontConfig baseCfg{};

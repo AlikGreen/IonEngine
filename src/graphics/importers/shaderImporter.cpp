@@ -1,57 +1,32 @@
 #include "shaderImporter.h"
 
-#include <slangCompiler.h>
-
 #include "core/engine.h"
 #include "core/resourceFs.h"
 #include "graphics/graphicsSystem.h"
 
 namespace ion
 {
-    grl::Box<urhi::ShaderSet> ShaderImporter::import(
-    const std::filesystem::path& src,
-    const ShaderImportOpts& options)
+    grl::Box<urhi::slang::Module> ShaderImporter::import(
+        const std::filesystem::path& src,
+        const ShaderImportOpts& options)
     {
-        const std::string dir = grl::Path::directory(src.string());
+        auto source = grl::File::read(src.string());
+        clogr::ensure(source.has_value(), "Failed to read shader file: {}", src.string());
 
-        urhi::SlangCompileDesc compileDesc{};
+        urhi::slang::CompileDesc compileDesc{};
+        compileDesc.moduleName = src.stem().string();
+        compileDesc.modulePath = src.string();
 
-        // Check main file
-        auto mainContent = grl::File::read(src.string());
-        if (!mainContent.has_value()) {
-            throw std::runtime_error("Failed to read main shader: " + src.string());
-        }
-
-        compileDesc.modules.push_back({
-            src.stem().string(),
-            src.string(),
-            std::move(mainContent.value()),
-        });
-
-        const auto& rfs = Engine::resourceFS();
-
-        for (const auto& path : options.additionalModulePaths)
-        {
-            auto resolvedPath = rfs.resolve(path).string();
-            auto content = grl::File::read(resolvedPath);
-            if (!content.has_value())
-            {
-                throw std::runtime_error("Failed to read additional module: " + path);
-            }
-
-            compileDesc.modules.push_back({
-                grl::Path::stem(path),
-                resolvedPath,
-                std::move(content.value()),
-            });
-        }
-
+        compileDesc.optimize = true;
         compileDesc.includePaths = options.includeDirs;
-        compileDesc.includePaths.push_back(dir);
-        compileDesc.typeSpecializations = options.typeSpecializations;
+        compileDesc.includePaths.push_back(src.parent_path().string());
+        compileDesc.defines = options.defines;
 
-        auto entryPoints = urhi::SlangCompiler::compile(compileDesc);
-        return grl::makeBox<urhi::ShaderSet>(std::move(entryPoints));
+        compileDesc.moduleSource = source.value();
+
+        urhi::slang::Diagnostics diags;
+        auto module = urhi::slang::Compiler::compileModule(compileDesc, &diags);
+        return grl::makeBox<urhi::slang::Module>(std::move(module));
     }
 
     bool ShaderImporter::canImport(const std::filesystem::path &src) const

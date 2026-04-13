@@ -33,13 +33,13 @@ namespace ion
 
     bool Engine::running = false;
     float Engine::deltaTime = 0.0f;
+    double Engine::time = 0.0f;
+    uint64_t Engine::frames = 0;
+
     std::vector<grl::Box<System>> Engine::registeredSystems{};
-    EngineConfig Engine::config;
 
-    void Engine::initialize(const EngineConfig &config)
+    void Engine::initialize()
     {
-        Engine::config = config;
-
         m_resourceFS = grl::makeBox<ResourceFS>();
         m_assetRegistry = grl::makeBox<AssetRegistry>();
         m_assetImportPipeline = grl::makeBox<AssetImportPipeline>(*m_assetRegistry, *m_resourceFS);
@@ -66,11 +66,6 @@ namespace ion
     void Engine::quit()
     {
         running = false;
-    }
-
-    EngineConfig Engine::getConfig()
-    {
-        return config;
     }
 
     const std::vector<grl::Box<System>>& Engine::getSystems()
@@ -112,6 +107,16 @@ namespace ion
     float Engine::getDeltaTime()
     {
         return deltaTime;
+    }
+
+    double Engine::getTime()
+    {
+        return time;
+    }
+
+    uint64_t Engine::getFrames()
+    {
+        return frames;
     }
 
     void Engine::run()
@@ -158,6 +163,8 @@ namespace ion
             auto end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<float> diff = end - start;
             deltaTime = diff.count();
+            time += deltaTime;
+            frames++;
         }
 
         shutdown();

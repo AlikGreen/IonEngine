@@ -1,5 +1,6 @@
 #include "opaqueForwardPass.h"
 
+#include "asset/assetImportPipeline.h"
 #include "core/components/transformComponent.h"
 #include "graphics/components/camera.h"
 
@@ -11,13 +12,41 @@ namespace ion
         glm::mat4 normalMatrix{};
     };
 
+    OpaqueForwardPass::OpaqueForwardPass()
+    {
+        urhi::DepthState depthState{};
+        depthState.hasDepthTarget   = true;
+        depthState.enableDepthTest  = true;
+        depthState.enableDepthWrite = true;
+
+        urhi::RasterizerState rasterState{};
+        rasterState.cullMode = urhi::CullMode::Back;
+
+        urhi::BlendState blendState{};
+        blendState.enableBlend    = false;
+
+        urhi::ColorAttachmentDesc colorAttach{};
+        colorAttach.blend  = blendState;
+        colorAttach.format = urhi::PixelFormat::RGBA8UNorm;
+
+        m_pipelineDesc.depthState       = depthState;
+        m_pipelineDesc.rasterizerState  = rasterState;
+        m_pipelineDesc.colorAttachments = { colorAttach };
+
+        m_pipelineDesc.depthAttachmentFormat = urhi::PixelFormat::Depth32Float;
+
+        AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
+        m_shaderModule = importPipeline.import<urhi::slang::Module>("shaders/genericOpaqueForward.slang");
+    }
+
     void OpaqueForwardPass::execute(const grl::Rc<urhi::CommandList>& cmd, RenderContext &ctx)
     {
         if(!ctx.has("camera_buffer")
             || !ctx.has("opaque_renderables")
             || !ctx.has("point_lights_buffer")
             || !ctx.has("scene_color_texture")
-            || !ctx.has("scene_depth_texture"))
+            || !ctx.has("scene_depth_texture")
+            || !ctx.has("pass_data_buffer"))
         {
             return;
         }
@@ -26,6 +55,7 @@ namespace ion
         const auto pointLightsBuffer = ctx.get<grl::Rc<urhi::Buffer>>("point_lights_buffer");
         const auto sceneColorTexture = ctx.get<grl::Rc<urhi::TextureView>>("scene_color_texture");
         const auto sceneDepthTexture = ctx.get<grl::Rc<urhi::TextureView>>("scene_depth_texture");
+        const auto passDataBuffer = ctx.get<grl::Rc<urhi::Buffer>>("pass_data_buffer");
 
         urhi::ColorAttachment colorAttachment{};
         colorAttachment.target = sceneColorTexture;
@@ -39,17 +69,19 @@ namespace ion
         renderPassDesc.depthAttachment = depthAttachment;
         const auto pass = cmd->beginRenderPass(renderPassDesc);
 
-        auto& renderables = *ctx.get<std::vector<Renderable>*>("opaque_renderables");
+        const auto& renderables = *ctx.get<std::vector<Renderable>*>("opaque_renderables");
 
         for (const auto& renderable: renderables)
         {
-            glm::mat4 normalMatrix = glm::transpose(glm::inverse(renderable.worldMatrix));
+            const glm::mat4 normalMatrix = glm::transpose(glm::inverse(renderable.worldMatrix));
             ModelUniforms modelUniforms = { renderable.worldMatrix, normalMatrix };
 
-            pass->setPipeline(renderable.material->pipeline());
+            auto pipeline = renderable.material->materialTemplate()->getOrCreatePipeline(*m_shaderModule, m_pipelineDesc);
+            pass->setPipeline(pipeline);
 
             pass->setBuffer("camera", cameraBuffer);
-            // pass->setBuffer("pointLights", pointLightsBuffer);
+            pass->setBuffer("pass", passDataBuffer);
+            pass->setBuffer("pointLights", pointLightsBuffer);
             pass->pushConstants(modelUniforms);
 
             renderable.material->applyBindings(cmd, pass);

@@ -17,8 +17,11 @@
 #include "graphics/components/camera.h"
 #include "graphics/components/meshRenderer.h"
 #include "timers/scopeTimer.h"
-#include "scriptBridge.h"
 #include "Coral/HostInstance.hpp"
+#include "core/resourceFS.h"
+#include "modules/ecsScriptModule.h"
+#include "modules/inputScriptModule.h"
+#include "modules/loggingScriptModule.h"
 
 namespace ion
 {
@@ -44,41 +47,18 @@ namespace ion
             Coral::HostSettings settings;
             settings.CoralDirectory = coralDir;
             settings.ExceptionCallback = cSharpExceptionCallback;
-            Coral::HostInstance hostInstance;
-            Coral::CoralInitStatus status = hostInstance.Initialize(settings);
+            Coral::CoralInitStatus status = m_hostInstance.Initialize(settings);
 
-            clogr::ensure(status == Coral::CoralInitStatus::Success, "Coral Initialization Failed with Error: {}", (int)status);
+            clogr::ensure(status == Coral::CoralInitStatus::Success, "Coral Initialization Failed with Error: {}", static_cast<int>(status));
 
-            const auto managedDllPath = R"(C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\bin\Debug\net9.0)";
-            // std::string testDllPath = exeDir.parent_path().string() + ":" + exeDir.parent_path().parent_path().string();
-            auto loadContext = hostInstance.CreateAssemblyLoadContext("TestContext", managedDllPath);
+            m_loadContext = m_hostInstance.CreateAssemblyLoadContext("LoadContext");
 
-            auto assemblyPath = grl::Path::join(managedDllPath, "IonEngine.dll");
-            auto& assembly = loadContext.LoadAssembly(assemblyPath);
+            const auto managedDllPath = R"(C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\bin\Debug\net9.0\IonEngine.dll)";
+            loadAssembly(managedDllPath, "IonEngine");
 
-            assembly.AddInternalCall("IonEngine.Input", "isKeyHeldCall", reinterpret_cast<void*>(&Scripting::ExportedAPI::Input::isKeyHeld));
-            assembly.AddInternalCall("IonEngine.Input", "isKeyPressedCall", reinterpret_cast<void*>(&Scripting::ExportedAPI::Input::isKeyPressed));
-            assembly.AddInternalCall("IonEngine.Input", "isKeyReleasedCall", reinterpret_cast<void*>(&Scripting::ExportedAPI::Input::isKeyReleased));
-
-            assembly.AddInternalCall("IonEngine.Scene", "createViewCall", reinterpret_cast<void*>(&Scripting::ExportedAPI::EntitySystem::createView));
-            assembly.AddInternalCall("IonEngine.Scene", "registerTypeCall", reinterpret_cast<void*>(&Scripting::ExportedAPI::EntitySystem::registerComponentType));
-            assembly.AddInternalCall("IonEngine.Scene", "getTypeHash", reinterpret_cast<void*>(&Scripting::ExportedAPI::EntitySystem::getTypeHash));
-
-            assembly.AddInternalCall("IonEngine.SceneManager", "getCurrentRegistryCall", reinterpret_cast<void*>(&Scripting::ExportedAPI::SceneAccess::getSceneRegistry));
-
-            assembly.AddInternalCall("IonEngine.Tag", "getNameCall", reinterpret_cast<void*>(&Scripting::ExportedAPI::ComponentAccessors::Tag_getName));
-            assembly.AddInternalCall("IonEngine.Tag", "setNameCall", reinterpret_cast<void*>(&Scripting::ExportedAPI::ComponentAccessors::Tag_setName));
-
-            assembly.AddInternalCall("IonEngine.Log", "logInfoCall", reinterpret_cast<void*>(&Scripting::ExportedAPI::Log::logInfo));
-
-            assembly.AddInternalCall("IonEngine.ViewInterface", "getSizeCall", reinterpret_cast<void*>(&Scripting::ExportedAPI::EntitySystem::getViewSize));
-            assembly.AddInternalCall("IonEngine.ViewInterface", "getAtIndexCall", reinterpret_cast<void*>(&Scripting::ExportedAPI::EntitySystem::getViewEntry));
-
-            // RegisterTestInternalCalls(assembly);
-            assembly.UploadInternalCalls();
-
-            auto& inputClass = assembly.GetLocalType("IonEngine.Input");
-            inputClass.InvokeStaticMethod("Run");
+            registerModule<EcsScriptModule>("IonEngine");
+            registerModule<LoggingScriptModule>("IonEngine");
+            registerModule<InputScriptModule>("IonEngine");
         }
     }
 
@@ -90,5 +70,73 @@ namespace ion
     void ScriptingSystem::shutdown()
     {
 
+    }
+
+    ScriptAssembly ScriptingSystem::loadAssembly(std::filesystem::path path, const std::string& name)
+    {
+        const auto& rfs = Engine::resourceFS();
+        path = rfs.resolve(path.string()).string();
+
+        auto& assembly = m_loadContext.LoadAssembly(path.string());
+        auto scriptAssembly = ScriptAssembly(assembly, path, name);
+
+        m_assemblies.emplace(name, scriptAssembly);
+
+        for(const auto& module : m_assemblyModules[name])
+        {
+            module->registerInternalCalls(scriptAssembly);
+        }
+
+        scriptAssembly.uploadInternalCalls();
+
+        for(const auto& module : m_assemblyModules[name])
+        {
+            module->onAssemblyLoaded(scriptAssembly);
+        }
+
+        return scriptAssembly;
+    }
+
+
+    std::optional<ScriptAssembly> ScriptingSystem::getAssembly(const std::string &name)
+    {
+        const auto it = m_assemblies.find(name);
+        if(it != m_assemblies.end())
+            return it->second;
+
+        return std::nullopt;
+    }
+
+    bool ScriptingSystem::removeAssembly(const std::string &name)
+    {
+        const auto it = m_assemblies.find(name);
+        if(it == m_assemblies.end())
+            return false;
+
+        m_assemblies.erase(it);
+
+        return true;
+    }
+
+    void ScriptingSystem::reload()
+    {
+        m_hostInstance.UnloadAssemblyLoadContext(m_loadContext);
+        m_loadContext = m_hostInstance.CreateAssemblyLoadContext("LoadContext");
+
+        for(auto& [name, assembly] : m_assemblies)
+        {
+            assembly.set(m_loadContext.LoadAssembly(assembly.dllPath().string()));
+
+            for(const auto& module : m_assemblyModules[name])
+                module->registerInternalCalls(assembly);
+
+            assembly.uploadInternalCalls();
+        }
+
+        for(auto& [name, assembly] : m_assemblies)
+        {
+            for(const auto& module : m_assemblyModules[name])
+                module->onAssemblyLoaded(assembly);
+        }
     }
 }

@@ -11,7 +11,7 @@
 
 namespace ion
 {
-struct CameraUniformData
+struct CameraData
 {
     glm::mat4 view;
     glm::mat4 projection;
@@ -20,9 +20,21 @@ struct CameraUniformData
     glm::mat4 invView;
     glm::mat4 invProjection;
     glm::mat4 invViewProjection;
+
+    glm::vec3 position;
 };
 
-struct PointLightUniformData
+struct PassData
+{
+    float time;
+    float deltaTime;
+    uint32_t  frameCount;
+
+    glm::vec2 resolution;
+    glm::vec2 invResolution;
+};
+
+struct PointLightData
 {
     glm::vec3 position;
     float power;
@@ -30,11 +42,11 @@ struct PointLightUniformData
     float radius;
 };
 
-struct alignas(16) PointLightsUniformData
+struct alignas(16) PointLightsData
 {
     int count;
     int padding[3];
-    PointLightUniformData lights[64];
+    PointLightData lights[64];
 };
 
 struct Renderable

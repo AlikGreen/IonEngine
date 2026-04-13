@@ -19,9 +19,9 @@ public:
     Renderer() = default;
 
     static CulledRenderables performCulling(Scene& scene, entis::Entity camEntity);
-    static CameraUniformData getCameraUniformData(entis::Entity camEntity);
-
-    static PointLightsUniformData getPointLightsUniformData(Scene &scene);
+    static CameraData createCameraUniformData(entis::Entity camEntity);
+    static PointLightsData createPointLightsUniformData(Scene &scene);
+    static PassData createPassData(glm::vec2 resolution);
 
     void execute(const grl::Rc<urhi::CommandList> &cmd, RenderContext& ctx);
 

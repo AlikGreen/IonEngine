@@ -66,35 +66,38 @@ namespace ion
         return culledEntities;
     }
 
-    CameraUniformData Renderer::getCameraUniformData(entis::Entity camEntity)
+
+    CameraData Renderer::createCameraUniformData(entis::Entity camEntity)
     {
+        const auto worldMat = Transform::getWorldMatrix(camEntity);
         const glm::mat4 flip = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, -1));
-        const glm::mat4 invViewMat = Transform::getWorldMatrix(camEntity) * flip;
+        const glm::mat4 invViewMat = worldMat * flip;
         const glm::mat4 viewMat = glm::inverse(invViewMat);
         const glm::mat4 projMat = camEntity.get<Camera>().getProjectionMatrix();
         const glm::mat4 viewProjMat = projMat * viewMat;
 
-        CameraUniformData cameraUniformData{};
+        CameraData cameraUniformData{};
         cameraUniformData.view = viewMat;
         cameraUniformData.projection = projMat;
         cameraUniformData.viewProjection = viewProjMat;
         cameraUniformData.invView = invViewMat;
         cameraUniformData.invProjection = glm::inverse(projMat);
         cameraUniformData.invViewProjection = glm::inverse(viewProjMat);
+        cameraUniformData.position = xyz(worldMat[3]);
 
         return cameraUniformData;
     }
 
-    PointLightsUniformData Renderer::getPointLightsUniformData(Scene &scene)
+    PointLightsData Renderer::createPointLightsUniformData(Scene &scene)
     {
-        PointLightsUniformData pointLightsData{};
+        PointLightsData pointLightsData{};
 
         auto& lightsView = scene.registry().view<PointLight, Transform>();
 
         int index = 0;
-        for(auto [entity, light, transform] : lightsView)
+        for(const auto& [entity, light, transform] : lightsView)
         {
-            PointLightUniformData pointLightData{};
+            PointLightData pointLightData{};
             pointLightData.color = light.color;
             pointLightData.position = transform.position;
             pointLightData.power = light.power;
@@ -107,6 +110,18 @@ namespace ion
         pointLightsData.count = index;
 
         return pointLightsData;
+    }
+
+    PassData Renderer::createPassData(const glm::vec2 resolution)
+    {
+        PassData pass{};
+        constexpr double timeRepeatValue = glm::pi<double>() * 2 * 1024;
+        pass.time = static_cast<float>(glm::mod(Engine::getTime(), timeRepeatValue));
+        pass.deltaTime = Engine::getDeltaTime();
+        pass.frameCount = Engine::getFrames();
+        pass.resolution = resolution;
+        pass.invResolution = 1.0f / resolution;
+        return pass;
     }
 
     void Renderer::execute(const grl::Rc<urhi::CommandList> &cmd, RenderContext &ctx)

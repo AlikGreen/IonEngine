@@ -16,15 +16,11 @@ namespace ion
     class AssetImportPipeline;
     class AssetRegistry;
 
-    struct EngineConfig
-    {
-        urhi::WindowDesc windowOptions;
-    };
 
     class Engine
     {
     public:
-        static void initialize(const EngineConfig &config);
+        static void initialize();
         static void run();
 
         static void quit();
@@ -50,7 +46,6 @@ namespace ion
             return nullptr;
         }
 
-        static EngineConfig getConfig();
         static const std::vector<grl::Box<System>>& getSystems();
 
         static EventManager&  eventManager();
@@ -61,6 +56,10 @@ namespace ion
         static AssetImportPipeline& assetImportPipeline();
 
         static float getDeltaTime();
+        static double getTime();
+        static uint64_t getFrames();
+
+        static constexpr std::string version() { return "0.0.1"; }
     private:
         static grl::Box<EventManager> m_eventManager;
         static grl::Box<AssetRegistry> m_assetRegistry;
@@ -70,12 +69,13 @@ namespace ion
         static grl::Box<AssetImportPipeline> m_assetImportPipeline;
 
         static std::vector<grl::Box<System>> registeredSystems;
-        static EngineConfig config;
 
         static void shutdown();
         static void startup();
 
         static bool running;
         static float deltaTime;
+        static double time;
+        static uint64_t frames;
     };
 }

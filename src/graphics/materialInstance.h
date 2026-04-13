@@ -64,8 +64,6 @@ public:
     [[nodiscard]] const std::string& name() const { return m_template->name(); }
     [[nodiscard]] bool isOpaque() const { return m_template->isOpaque(); }
 
-    [[nodiscard]] const grl::Rc<urhi::Pipeline>& pipeline() const { return m_template->pipeline(); }
-
     [[nodiscard]] const auto& resources() const { return m_template->resources(); }
     [[nodiscard]] const auto& properties() const { return m_template->properties(); }
 private:

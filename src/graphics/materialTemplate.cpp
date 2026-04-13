@@ -7,73 +7,119 @@
 
 namespace ion
 {
+    AssetRef<urhi::slang::Module> MaterialTemplate::s_baseMaterialModule{};
+    AssetRef<urhi::slang::Module> MaterialTemplate::s_reflectionShader{};
+
     MaterialTemplate::MaterialTemplate(const MaterialDescription &desc)
         : m_desc(desc)
     {
         AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
 
-        ShaderImportOpts options;
-        options.additionalModulePaths.push_back(desc.matShaderPath);
-        options.typeSpecializations.push_back(desc.matTypeName);
+        if(!s_baseMaterialModule)
+            s_baseMaterialModule = importPipeline.import<urhi::slang::Module>("shaders/material.slang");
 
-        m_shaders = importPipeline.import<urhi::ShaderSet>("shaders/generic.slang", options);
+        if(!s_reflectionShader)
+            s_reflectionShader = importPipeline.import<urhi::slang::Module>("shaders/materialReflection.slang");
+
+        m_module = importPipeline.import<urhi::slang::Module>(desc.path);
 
         m_device = Engine::getSystem<GraphicsSystem>()->getDevice();
 
-        std::vector<grl::Rc<urhi::Shader>> shaderObjects;
-        for (const auto& ep : m_shaders->stages())
+
+        urhi::slang::LinkDesc linkDesc;
+        linkDesc.modules     = { *m_module, *s_reflectionShader, *s_baseMaterialModule };
+        linkDesc.typeSpecializations = { m_desc.name };
+
+        urhi::slang::Diagnostics diags;
+        const auto shaderSet = urhi::slang::Compiler::linkToShaderSet(linkDesc, &diags);
+
+        for (const auto& res : shaderSet.stages()[0].reflection.resources)
         {
-            shaderObjects.push_back(m_device->createShader(ep));
-            for (const auto& res : ep.reflection.resources)
+            m_resources[res.name] = res;
+
+            if (res.type == urhi::ShaderReflection::ResourceType::ConstantBuffer
+                && res.name == "material")
             {
-                m_resources[res.name] = res;
-                if (res.type == urhi::ShaderReflection::ResourceType::ConstantBuffer
-                    && res.name == "material")
+                for (const auto& mem : res.members)
                 {
-                    for (const auto& mem : res.members)
-                    {
-                        m_properties[mem.name] = mem;
-                        m_propertiesSize = std::max(m_propertiesSize, mem.offset + mem.size);
-                    }
+                    m_properties[mem.name] = mem;
+                    m_propertiesSize = std::max(m_propertiesSize, mem.offset + mem.size);
                 }
             }
         }
 
-        urhi::DepthState depthState{};
-        depthState.hasDepthTarget   = true;
-        depthState.enableDepthTest  = desc.depthTest;
-        depthState.enableDepthWrite = desc.depthWrite;
-
-        urhi::RasterizerState rasterState{};
-        rasterState.cullMode = desc.cullMode;
-
-        urhi::BlendState blendState{};
-        blendState.enableBlend    = desc.blendEnabled;
-        blendState.srcColorFactor = desc.srcColorBlendFactor;
-        blendState.dstColorFactor = desc.dstColorBlendFactor;
-        blendState.srcAlphaFactor = desc.srcAlphaBlendFactor;
-        blendState.dstAlphaFactor = desc.dstAlphaBlendFactor;
-
-        urhi::ColorAttachmentDesc colorAttach{};
-        colorAttach.blend  = blendState;
-        colorAttach.format = desc.colorAttachmentFormat;
-
-        urhi::GraphicsPipelineDesc pipelineDesc{};
-        pipelineDesc.shaders          = shaderObjects;
-        pipelineDesc.depthState       = depthState;
-        pipelineDesc.rasterizerState  = rasterState;
-        pipelineDesc.colorAttachments = { colorAttach };
-
-        if (desc.depthTest || desc.depthWrite)
-            pipelineDesc.depthAttachmentFormat = desc.depthAttachmentFormat;
-
-        m_pipeline = m_device->createPipeline(pipelineDesc);
         m_defaultTexture = Engine::getSystem<GraphicsSystem>()->getDefaultTexture();
 
         urhi::SamplerDesc samplerDesc{};
         samplerDesc.addressModeU = urhi::AddressMode::Repeat;
         samplerDesc.addressModeV = urhi::AddressMode::Repeat;
         m_defaultSampler = m_device->createSampler(samplerDesc);
+    }
+
+    grl::Rc<urhi::Pipeline> MaterialTemplate::getOrCreatePipeline(const urhi::slang::Module& passModule, urhi::GraphicsPipelineDesc pipelineDesc)
+    {
+        const size_t key = pipelineHash(passModule, pipelineDesc);
+
+        if (const auto it = m_pipelines.find(key); it != m_pipelines.end())
+            return it->second;
+
+        // TODO Check disk shader cache
+
+        urhi::slang::LinkDesc linkDesc;
+        linkDesc.modules     = { *m_module, passModule, *s_baseMaterialModule };
+        linkDesc.typeSpecializations = { m_desc.name };
+
+        urhi::slang::Diagnostics diags;
+        const auto shaderSet = urhi::slang::Compiler::linkToShaderSet(linkDesc, &diags);
+
+        std::vector<grl::Rc<urhi::Shader>> shaders;
+        for(const auto& ep : shaderSet.stages())
+        {
+            auto shader = m_device->createShader(ep);
+            shaders.push_back(shader);
+        }
+
+        pipelineDesc.shaders = shaders;
+        auto pipeline  = m_device->createPipeline(pipelineDesc);
+
+        m_pipelines[key] = pipeline;
+        return pipeline;
+    }
+
+    static void hashCombine(size_t& seed, const size_t hash)
+    {
+        seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+
+    static void hashBytes(size_t& seed, const void* data, const size_t size)
+    {
+        auto* p = static_cast<const uint8_t*>(data);
+        for (size_t i = 0; i < size; i++)
+            hashCombine(seed, std::hash<uint8_t>{}(p[i]));
+    }
+
+
+    size_t MaterialTemplate::pipelineHash(
+        const urhi::slang::Module& passModule,
+        const urhi::GraphicsPipelineDesc& desc)
+    {
+        size_t seed = 0;
+
+        hashBytes(seed, passModule.ir.data(),  passModule.ir.size());
+
+        hashBytes(seed, &desc.primitiveType,   sizeof(desc.primitiveType));
+        hashBytes(seed, &desc.rasterizerState, sizeof(desc.rasterizerState));
+        hashBytes(seed, &desc.depthState,      sizeof(desc.depthState));
+
+        for (const auto& att : desc.colorAttachments)
+            hashBytes(seed, &att, sizeof(att));
+
+        const bool hasDepth = desc.depthAttachmentFormat.has_value();
+        hashBytes(seed, &hasDepth, sizeof(hasDepth));
+        if (hasDepth)
+            hashBytes(seed, &*desc.depthAttachmentFormat, sizeof(urhi::PixelFormat));
+
+        return seed;
     }
 
     AssetRef<MaterialTemplate> MaterialTemplates::s_pbr{};
@@ -85,13 +131,9 @@ namespace ion
         if(s_pbr) return s_pbr;
 
         MaterialDescription desc{};
-        desc.name = "PBR";
-        desc.matShaderPath = "shaders/pbrMaterial.slang";
-        desc.matTypeName = "PbrMaterial";
-        desc.cullMode = urhi::CullMode::Back;
-        desc.blendEnabled = false;
-        desc.depthTest = true;
-        desc.depthWrite = true;
+        desc.name = "PbrMaterial";
+        desc.path = "shaders/pbrMaterial.slang";
+        desc.opaque = true;
 
         s_pbr = Engine::assetRegistry().create<MaterialTemplate>(desc);
         return s_pbr;
@@ -101,21 +143,10 @@ namespace ion
     {
         if(s_billboard) return s_billboard;
 
-        AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-        const auto shaders = importPipeline.import<urhi::ShaderSet>("shaders/billboard.slang");
-
         MaterialDescription desc{};
-        desc.name = "Billboard";
-        desc.matShaderPath = "shaders/billboardMaterial.slang";
-        desc.matTypeName = "BillboardMaterial";
-        desc.cullMode = urhi::CullMode::Back;
-        desc.blendEnabled = true;
-        desc.srcColorBlendFactor = urhi::BlendFactor::SrcAlpha;
-        desc.dstColorBlendFactor = urhi::BlendFactor::InvSrcAlpha;
-        desc.srcAlphaBlendFactor = urhi::BlendFactor::One;
-        desc.dstAlphaBlendFactor = urhi::BlendFactor::InvSrcAlpha;
-        desc.depthTest = false;
-        desc.depthWrite = false;
+        desc.name = "BillboardMaterial";
+        desc.path = "shaders/billboardMaterial.slang";
+        desc.opaque = false;
 
         s_billboard = Engine::assetRegistry().create<MaterialTemplate>(desc);
         return s_billboard;
@@ -126,13 +157,9 @@ namespace ion
         if(s_equirectangularSkybox) return s_equirectangularSkybox;
 
         MaterialDescription desc{};
-        desc.name = "Skybox equirectangular";
-        desc.matShaderPath = "shaders/pbrMaterial.slang"; // TODO make skybox material
-        desc.matTypeName = "PbrMaterial";
-        desc.cullMode = urhi::CullMode::Back;
-        desc.blendEnabled = false;
-        desc.depthTest = true;
-        desc.depthWrite = false;
+        desc.name = "EquirectangularSkyboxMaterial";
+        desc.path = "shaders/equirectangularSkyboxMaterial.slang";
+        desc.opaque = true;
 
         s_equirectangularSkybox = Engine::assetRegistry().create<MaterialTemplate>(desc);
         return s_equirectangularSkybox;

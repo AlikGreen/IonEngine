@@ -1,6 +1,4 @@
-import "material.slang";
-
-type_param TMaterial : IMaterial;
+import material;
 
 static const int MAX_POINT_LIGHTS = 64;
 
@@ -13,22 +11,11 @@ struct VertexInput
 
 struct VertexOutput
 {
-    float4 position : SV_Position;
-    float3 normal  : TEXCOORD1;
-    float2 uv      : TEXCOORD2;
-    float3 fragPos : TEXCOORD3;
+    float4 position  : SV_Position;
+    float3 clipPos  : TEXCOORD0;
+    float2 uv  : TEXCOORD1;
 };
 
-struct Camera
-{
-    float4x4 view;
-    float4x4 proj;
-    float4x4 viewProj;
-
-    float4x4 invView;
-    float4x4 invProj;
-    float4x4 invViewProj;
-}
 
 struct ModelInfo
 {
@@ -36,25 +23,20 @@ struct ModelInfo
     float4x4 normalMatrix;
 };
 
-ConstantBuffer<Camera> camera;
+type_param TMaterial : IMaterial;
 ParameterBlock<TMaterial> material;
 
 [[vk::push_constant]]
 ModelInfo model;
-
 
 [shader("vertex")]
 VertexOutput vertexMain(VertexInput input)
 {
     VertexOutput output;
 
-    output.normal = normalize(mul((float3x3)model.normalMatrix, input.normal));
+    output.position = float4(input.position, 1.0);
     output.uv = input.uv;
-
-    float4 fragPos = mul(model.matrix, float4(input.position, 1.0));
-    output.fragPos = fragPos.xyz;
-
-    output.position = mul(camera.proj, mul(camera.view, fragPos));
+    output.clipPos = input.position.xyz;
 
     return output;
 }
@@ -63,8 +45,8 @@ VertexOutput vertexMain(VertexInput input)
 float4 fragmentMain(VertexOutput input) : SV_Target
 {
     SurfaceInput si;
-    si.normalWS = input.normal;
-    si.positionWS = input.position.xyz;
+    si.normalWS = float3(0, 1, 0);
+    si.positionWS = input.clipPos;
     si.viewDirWS = normalize(input.position.xyz - camera.view[3].xyz);
     si.uv = input.uv;
 

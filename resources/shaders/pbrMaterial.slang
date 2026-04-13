@@ -1,4 +1,6 @@
-import "material.slang";
+module pbr;
+
+import material;
 
 struct PbrMaterial : IMaterial
 {
@@ -35,7 +37,7 @@ struct PbrMaterial : IMaterial
 
         SurfaceOutput o;
         o.baseColor = baseColor.rgb * albedoSample.rgb;
-        o.normalWS = i.normalWS;
+        o.normal = i.normalWS;
         o.roughness = saturate(roughness * mrSample.g);
         o.metallic = saturate(metallic * mrSample.b);
         o.opacity = albedoSample.a;
