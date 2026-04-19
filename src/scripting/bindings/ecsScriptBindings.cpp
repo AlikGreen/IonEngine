@@ -1,8 +1,7 @@
-#include "ecsScriptModule.h"
-
-#include <entis/entis.h>
+#include "ecsScriptBindings.h"
 
 #include "Coral/Array.hpp"
+#include "core/engine.h"
 #include "core/sceneManager.h"
 #include "core/components/tagComponent.h"
 #include "core/components/transformComponent.h"
@@ -22,17 +21,6 @@ namespace ion
         reg->registerType(typeHash, size, alignment);
     }
 
-    size_t createEntity(entis::TypeErasedRegistry* reg)
-    {
-        return reg->getRegistry().createEntity().id();
-    }
-
-    void* addComponent(entis::TypeErasedRegistry* reg, const size_t entityId, size_t componentTypeHash, void* componentData)
-    {
-        entis::Entity entity = reg->getRegistry().getEntity(entityId);
-        return reg->emplace(entity, componentTypeHash, componentData);
-    }
-
     entis::ViewBase* createView(entis::TypeErasedRegistry* reg, Coral::Array<uint64_t> typeHashes)
     {
         clogr::ensure(reg != nullptr, "registry is nullptr");
@@ -41,42 +29,7 @@ namespace ion
         return &reg->view(typeVec);
     }
 
-    size_t getViewSize(entis::ViewBase* view)
-    {
-        auto* typedView = dynamic_cast<entis::TypeErasedView*>(view);
-        return typedView ? typedView->size() : 0;
-    }
-
-    EntityComponentData getViewEntry(entis::ViewBase* view, size_t index)
-    {
-        if (!view)
-        {
-            clogr::error("View pointer is null");
-            return EntityComponentData{0, nullptr};
-        }
-
-        auto* typedView = dynamic_cast<entis::TypeErasedView*>(view);
-        if (!typedView)
-        {
-            clogr::error("Failed to cast view to TypeErasedView");
-            return EntityComponentData{0, nullptr};
-        }
-
-        if (index >= typedView->size())
-        {
-            clogr::error("Index {} out of bounds for view of size {}", index, typedView->size());
-            return EntityComponentData{0, nullptr};
-        }
-
-        entis::TypeErasedView::ComponentPack entry = typedView->at(index);
-
-        return EntityComponentData{
-            .entityId = entry.entityId,
-            .componentPtrs = entry.components.empty() ? nullptr : entry.components.data()
-        };
-    }
-
-    size_t getTypeHash(Coral::String typeName)
+    size_t getTypeHash(const Coral::String typeName)
     {
         const std::string name = typeName;
 
@@ -95,6 +48,52 @@ namespace ion
         return 0;
     }
 
+    size_t createEntity(entis::TypeErasedRegistry* reg)
+    {
+        return reg->getRegistry().createEntity().id();
+    }
+
+    void* addComponent(entis::TypeErasedRegistry* reg, const size_t entityId, size_t componentTypeHash, void* componentData)
+    {
+        entis::Entity entity = reg->getRegistry().getEntity(entityId);
+        return reg->emplace(entity, componentTypeHash, componentData);
+    }
+
+    size_t getViewSize(entis::ViewBase* view)
+    {
+        auto* typedView = dynamic_cast<entis::TypeErasedView*>(view);
+        return typedView ? typedView->size() : 0;
+    }
+
+    EntityComponentData getViewEntry(entis::ViewBase* view, size_t index)
+    {
+        if (!view)
+        {
+            clogr::error("View pointer is null");
+            return EntityComponentData{0, nullptr};
+        }
+
+        const auto* typedView = dynamic_cast<entis::TypeErasedView*>(view);
+        if (!typedView)
+        {
+            clogr::error("Failed to cast view to TypeErasedView");
+            return EntityComponentData{0, nullptr};
+        }
+
+        if (index >= typedView->size())
+        {
+            clogr::error("Index {} out of bounds for view of size {}", index, typedView->size());
+            return EntityComponentData{0, nullptr};
+        }
+
+        const entis::TypeErasedView::ComponentPack entry = typedView->at(index);
+
+        return EntityComponentData{
+            .entityId = entry.entityId,
+            .componentPtrs = entry.components.empty() ? nullptr : entry.components.data()
+        };
+    }
+
     entis::TypeErasedRegistry* getSceneRegistry()
     {
         return &Engine::sceneManager().getCurrentScene().registry().asTypeErased();
@@ -111,19 +110,19 @@ namespace ion
         component->name = name;
     }
 
-    void EcsScriptModule::registerInternalCalls(ScriptAssembly &assembly)
+    void EcsScriptBindings::registerCalls(CallBinder &binder)
     {
-        assembly.addInternalCall<&createView>           ("IonEngine.Scene", "createViewCall");
-        assembly.addInternalCall<&registerComponentType>("IonEngine.Scene", "registerTypeCall");
-        assembly.addInternalCall<&getTypeHash>          ("IonEngine.Scene", "getTypeHash");
+        binder.bind<&createView>("IonEngine.Scene", "createViewCall");
+        binder.bind<&registerComponentType>("IonEngine.Scene", "registerTypeCall");
+        binder.bind<&getTypeHash>("IonEngine.Scene", "getTypeHash");
 
-        assembly.addInternalCall<&getSceneRegistry>("IonEngine.SceneManager", "getCurrentRegistryCall");
+        binder.bind<&getSceneRegistry>("IonEngine.SceneManager", "getCurrentRegistryCall");
 
-        assembly.addInternalCall<&Tag_getName>("IonEngine.Tag", "getNameCall");
-        assembly.addInternalCall<&Tag_setName>("IonEngine.Tag", "setNameCall");
+        binder.bind<&Tag_getName>("IonEngine.Tag", "getNameCall");
+        binder.bind<&Tag_setName>("IonEngine.Tag", "setNameCall");
 
 
-        assembly.addInternalCall<&getViewSize> ("IonEngine.ViewInterface", "getSizeCall");
-        assembly.addInternalCall<&getViewEntry>("IonEngine.ViewInterface", "getAtIndexCall");
+        binder.bind<&getViewSize>("IonEngine.ViewInterface", "getSizeCall");
+        binder.bind<&getViewEntry>("IonEngine.ViewInterface", "getAtIndexCall");
     }
 }

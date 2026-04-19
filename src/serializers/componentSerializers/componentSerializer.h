@@ -14,6 +14,8 @@ public:
 template<typename T>
 class ComponentSerializer : public ComponentSerializerBase
 {
+public:
+    using AssetType = T;
     virtual void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const T& component) = 0;
     virtual T deserialize(AssetStream& assetStream, AssetRegistry& assetRegistry) = 0;
 };

@@ -13,6 +13,8 @@ template<typename T>
 class AssetSerializer
 {
 public:
+    using AssetType = T;
+
     virtual ~AssetSerializer() = default;
 
     virtual void serialize(AssetStream& assetStream, AssetRegistry& assetRegistry, AssetDeps& deps, const T& asset) = 0;

@@ -1,6 +1,7 @@
 #include "materialInstance.h"
 
 #include "graphicsSystem.h"
+#include "core/engine.h"
 
 namespace ion
 {

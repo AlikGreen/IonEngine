@@ -2,6 +2,7 @@
 
 #include "components/meshRenderer.h"
 #include "components/pointLight.h"
+#include "core/engine.h"
 #include "core/components/transformComponent.h"
 
 namespace ion

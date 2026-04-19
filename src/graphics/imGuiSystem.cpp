@@ -4,6 +4,7 @@
 #include "graphicsSystem.h"
 #include "imGuiStyleSerializer.h"
 #include "components/camera.h"
+#include "core/engine.h"
 #include "core/resourceFS.h"
 #include "core/sceneManager.h"
 #include "events/rhiWindowEvent.h"

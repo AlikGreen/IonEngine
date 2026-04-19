@@ -15,6 +15,8 @@
 #include "graphics/importers/shaderImporter.h"
 #include "serializers/sceneSerializer.h"
 #include "graphics/importers/imageImporter.h"
+#include "scripting/scriptDllImporter.h"
+#include "scripting/scriptManager.h"
 #include "serializers/meshSerializer.h"
 #include "serializers/componentSerializers/meshRendererSerializer.h"
 #include "serializers/componentSerializers/parentSerializer.h"
@@ -30,13 +32,14 @@ namespace ion
     grl::Box<ResourceFS>   Engine::m_resourceFS;
     grl::Box<AssetRegistry> Engine::m_assetRegistry;
     grl::Box<AssetImportPipeline> Engine::m_assetImportPipeline;
+    grl::Box<ScriptManager> Engine::m_scriptManager;
 
-    bool Engine::running = false;
-    float Engine::deltaTime = 0.0f;
-    double Engine::time = 0.0f;
-    uint64_t Engine::frames = 0;
+    bool Engine::m_running = false;
+    float Engine::m_deltaTime = 0.0f;
+    double Engine::m_time = 0.0f;
+    uint64_t Engine::m_frames = 0;
 
-    std::vector<grl::Box<System>> Engine::registeredSystems{};
+    std::vector<grl::Box<System>> Engine::m_registeredSystems{};
 
     void Engine::initialize()
     {
@@ -46,125 +49,80 @@ namespace ion
 
         m_eventManager = grl::makeBox<EventManager>();
         m_audioManager = grl::makeBox<AudioManager>();
-        m_sceneManager = grl::makeBox<SceneManager>();
+        m_sceneManager = grl::makeBox<SceneManager>(m_registeredSystems);
+
+        m_scriptManager = grl::makeBox<ScriptManager>();
 
         m_assetImportPipeline->registerImporter<GLBSceneImporter>();
         m_assetImportPipeline->registerImporter<ImageImporter>();
         m_assetImportPipeline->registerImporter<ShaderImporter>();
         m_assetImportPipeline->registerImporter<AudioClipImporter>();
+        m_assetImportPipeline->registerImporter<ScriptDllImporter>();
 
-        auto& sceneSerializer = m_assetRegistry->registerSerializer<Scene, SceneSerializer>();
-        sceneSerializer.registerComponentSerializer<Tag, TagSerializer>(grl::hash32("ion::Tag"));
-        sceneSerializer.registerComponentSerializer<Transform, TransformSerializer>(grl::hash32("ion::Transform"));
-        sceneSerializer.registerComponentSerializer<Parent, ParentSerializer>(grl::hash32("ion::Parent"));
-        sceneSerializer.registerComponentSerializer<MeshRenderer, MeshRendererSerializer>(grl::hash32("ion::MeshRenderer"));
-        sceneSerializer.registerComponentSerializer<PointLight, PointLightSerializer>(grl::hash32("ion::PointLight"));
+        auto& sceneSerializer = m_assetRegistry->registerSerializer<SceneSerializer>();
+        sceneSerializer.registerComponentSerializer<grl::hash32("ion::Tag"), TagSerializer>();
+        sceneSerializer.registerComponentSerializer<grl::hash32("ion::Transform"), TransformSerializer>();
+        sceneSerializer.registerComponentSerializer<grl::hash32("ion::Parent"), ParentSerializer>();
+        sceneSerializer.registerComponentSerializer<grl::hash32("ion::MeshRenderer"), MeshRendererSerializer>();
+        sceneSerializer.registerComponentSerializer<grl::hash32("ion::PointLight"), PointLightSerializer>();
 
-        m_assetRegistry->registerSerializer<Mesh, MeshSerializer>();
+        m_assetRegistry->registerSerializer<MeshSerializer>();
     }
 
-    void Engine::quit()
-    {
-        running = false;
-    }
-
-    const std::vector<grl::Box<System>>& Engine::getSystems()
-    {
-        return registeredSystems;
-    }
-
-    EventManager& Engine::eventManager()
-    {
-        return *m_eventManager;
-    }
-
-
-    AudioManager& Engine::audioManager()
-    {
-        return *m_audioManager;
-    }
-
-    SceneManager& Engine::sceneManager()
-    {
-        return *m_sceneManager;
-    }
-
-    ResourceFS& Engine::resourceFS()
-    {
-        return *m_resourceFS;
-    }
-
-    AssetRegistry& Engine::assetRegistry()
-    {
-        return *m_assetRegistry;
-    }
-
-    AssetImportPipeline& Engine::assetImportPipeline()
-    {
-        return *m_assetImportPipeline;
-    }
-
-    float Engine::getDeltaTime()
-    {
-        return deltaTime;
-    }
-
-    double Engine::getTime()
-    {
-        return time;
-    }
-
-    uint64_t Engine::getFrames()
-    {
-        return frames;
-    }
 
     void Engine::run()
     {
+        m_sceneManager->addScene("DefaultScene", assetRegistry().create<Scene>());
+        m_sceneManager->setScene("DefaultScene");
+
+        m_scriptManager->init();
         startup();
 
-        running = true;
-        while (running)
+        m_running = true;
+        while (m_running)
         {
             auto start = std::chrono::high_resolution_clock::now();
 
             m_eventManager->handleEvents();
 
-            for (const auto& system: registeredSystems)
+            // Update
+            for (const auto& system: m_registeredSystems)
             {
                 system->preUpdate();
             }
 
-            for (const auto& system: registeredSystems)
+            for (const auto& system: m_registeredSystems)
             {
                 system->update();
             }
 
-            for (const auto& system: registeredSystems)
+            for (const auto& system: m_registeredSystems)
             {
                 system->postUpdate();
             }
 
-            for (const auto& system: registeredSystems)
+
+            // Render
+            for (const auto& system: m_registeredSystems)
             {
                 system->preRender();
             }
 
-            for (const auto& system: registeredSystems)
+            for (const auto& system: m_registeredSystems)
             {
                 system->render();
             }
 
-            for (const auto& system: registeredSystems)
+            for (const auto& system: m_registeredSystems)
             {
                 system->postRender();
             }
 
             auto end = std::chrono::high_resolution_clock::now();
             std::chrono::duration<float> diff = end - start;
-            deltaTime = diff.count();
-            time += deltaTime;
-            frames++;
+            m_deltaTime = diff.count();
+            m_time += m_deltaTime;
+            m_frames++;
         }
 
         shutdown();
@@ -173,17 +131,17 @@ namespace ion
     void Engine::startup()
     {
 
-        for (const auto& system: registeredSystems)
+        for (const auto& system: m_registeredSystems)
         {
             system->preStartup();
         }
 
-        for (const auto& system: registeredSystems)
+        for (const auto& system: m_registeredSystems)
         {
             system->startup();
         }
 
-        for (const auto& system: registeredSystems)
+        for (const auto& system: m_registeredSystems)
         {
             system->postStartup();
         }
@@ -191,9 +149,19 @@ namespace ion
 
     void Engine::shutdown()
     {
-        for (const auto& system: registeredSystems)
+        for (const auto& system: m_registeredSystems)
+        {
+            system->preShutdown();
+        }
+
+        for (const auto& system: m_registeredSystems)
         {
             system->shutdown();
+        }
+
+        for (const auto& system: m_registeredSystems)
+        {
+            system->postShutdown();
         }
     }
 }

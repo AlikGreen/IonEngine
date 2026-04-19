@@ -21,12 +21,13 @@ public:
         m_loaders.push_back(grl::makeBox<T>(std::forward<Args>(args)...));
     }
 
-    template<typename T, typename Serializer, typename... Args>
+    template<typename Serializer, typename... Args>
     requires std::is_constructible_v<Serializer, Args...>
-            && std::is_base_of_v<AssetSerializer<T>, Serializer>
+            && std::is_base_of_v<AssetSerializer<typename Serializer::AssetType>, Serializer>
             && HasTypeId<Serializer>
     Serializer& registerSerializer(Args&&... args)
     {
+        using T = typename Serializer::AssetType;
         m_registeredTypeIds[typeid(T)] = Serializer::typeId;
         return m_serializers.registerSerializer<T, Serializer, Args...>(std::forward<Args>(args)...);
     }

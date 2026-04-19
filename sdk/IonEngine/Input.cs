@@ -24,19 +24,5 @@ public class Input
     {
         unsafe { return isKeyReleasedCall((int)keyCode); }
     }
-
-    public static void Run()
-    {
-        Scene scene = SceneManager.GetCurrentScene();
-        var view  = scene.View<Tag>();
-        
-        Log.Info($"{view.Length}");
-        
-        view.ForEach((ulong entity, ref Tag tag) =>
-        {
-            Log.Info($"[{entity}] pos: {tag.name}");
-        });
-        
-        Log.Info("looped");
-    }
+    
 }

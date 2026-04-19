@@ -1,6 +1,7 @@
 #include "skyboxPass.h"
 
 #include "asset/assetImportPipeline.h"
+#include "core/engine.h"
 
 namespace ion
 {

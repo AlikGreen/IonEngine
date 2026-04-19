@@ -18,10 +18,13 @@ public:
     void serialize(AssetStream &assetStream, AssetRegistry& assetRegistry, AssetDeps& deps, const Scene& scene) override;
     grl::Rc<Scene> deserialize(AssetStream &assetStream, AssetRegistry& assetRegistry) override;
 
-    template<typename T, typename Serializer, typename... Args>
-    requires std::is_constructible_v<Serializer, Args...> && std::is_base_of_v<ComponentSerializer<T>, Serializer>
-    void registerComponentSerializer(uint32_t typeId, Args&&... args)
+    template<size_t TypeId, typename Serializer, typename... Args>
+    requires std::is_constructible_v<Serializer, Args...> && std::is_base_of_v<ComponentSerializer<typename Serializer::AssetType>, Serializer>
+    void registerComponentSerializer(Args&&... args)
     {
+        using T = typename Serializer::AssetType;
+        constexpr uint32_t typeId = TypeId;
+
         m_componentSerializers[typeId] = grl::makeBox<Serializer>(std::forward<Args>(args)...);
 
         m_componentSerializerFuncs[typeId] = [typeId, this](AssetRegistry& assetRegistry, AssetStream &assetStream, AssetDeps& deps, entis::Entity entity)

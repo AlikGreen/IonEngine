@@ -1,9 +1,6 @@
 #pragma once
 
-#include <utility>
-
 #include "assetId.h"
-#include "core/engine.h"
 
 namespace ion
 {

@@ -1,6 +1,7 @@
 #include "opaqueForwardPass.h"
 
 #include "asset/assetImportPipeline.h"
+#include "core/engine.h"
 #include "core/components/transformComponent.h"
 #include "graphics/components/camera.h"
 

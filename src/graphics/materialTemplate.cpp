@@ -3,6 +3,7 @@
 #include "graphicsSystem.h"
 #include "asset/assetImportPipeline.h"
 #include "asset/assetRegistry.h"
+#include "core/engine.h"
 #include "importers/shaderImporter.h"
 
 namespace ion

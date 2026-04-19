@@ -17,13 +17,14 @@
 // singletons
 #include "asset/assetRegistry.h"
 #include "audio/audioManager.h"
+#include "scripting/scriptManager.h"
 #include "core/sceneManager.h"
 #include "core/eventManager.h"
 #include "core/resourceFs.h"
 
 // systems
 #include "core/coreSystem.h"
-#include "scripting/scriptingSystem.h"
+#include "scripting/scriptSystem.h"
 #include "audio/audioSystem.h"
 #include "graphics/imGuiSystem.h"
 #include "input/inputSystem.h"
