@@ -4,6 +4,7 @@
 #include <ranges>
 
 #include "scriptComponent.h"
+#include "bindings/coreScriptBindings.h"
 #include "bindings/ecsScriptBindings.h"
 #include "bindings/inputScriptBindings.h"
 #include "bindings/loggingScriptBindings.h"
@@ -58,9 +59,7 @@ namespace ion
         if(m_loaded)
         {
             for(const auto& [entity, comp] : registry.view<ScriptComponent>())
-            {
-                comp.saveState();
-            }
+                comp.unload();
 
             m_hostInstance->UnloadAssemblyLoadContext(m_loadContext);
         }
@@ -101,12 +100,18 @@ namespace ion
             }
         }
 
-        clogr::info("{} component script classes found", m_componentScriptTypes.size());
-        clogr::info("{} system script classes found", m_systemScriptTypes.size());
-
         for(const auto& [entity, comp] : registry.view<ScriptComponent>())
         {
-            comp.reload(*this);
+            comp.reload(*this, entity);
+        }
+
+        for(auto [entity, scriptComponent] : registry.view<ScriptComponent>())
+        {
+            for(auto& script : scriptComponent.scripts)
+            {
+                if(script.object().IsValid())
+                    script.object().InvokeMethod("Start");
+            }
         }
 
         for(const auto& cb : m_onAfterReload)
@@ -120,6 +125,7 @@ namespace ion
         : m_name(std::move(name)), m_hostInstance(&hostInstance)
     {
         addAssembly("IonEngine", ionEngineAssemblyData);
+        registerBindings<CoreScriptBindings>("IonEngine");
         registerBindings<EcsScriptBindings>("IonEngine");
         registerBindings<InputScriptBindings>("IonEngine");
         registerBindings<LoggingScriptBindings>("IonEngine");

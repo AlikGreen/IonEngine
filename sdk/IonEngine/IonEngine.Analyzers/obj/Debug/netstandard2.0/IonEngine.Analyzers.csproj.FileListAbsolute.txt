@@ -1,0 +1,11 @@
+C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine.Analyzers\bin\Debug\netstandard2.0\IonEngine.Analyzers.deps.json
+C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine.Analyzers\bin\Debug\netstandard2.0\IonEngine.Analyzers.dll
+C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine.Analyzers\bin\Debug\netstandard2.0\IonEngine.Analyzers.pdb
+C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine.Analyzers\obj\Debug\netstandard2.0\IonEngine.Analyzers.csproj.AssemblyReference.cache
+C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine.Analyzers\obj\Debug\netstandard2.0\IonEngine.Analyzers.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine.Analyzers\obj\Debug\netstandard2.0\IonEngine.Analyzers.AssemblyInfoInputs.cache
+C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine.Analyzers\obj\Debug\netstandard2.0\IonEngine.Analyzers.AssemblyInfo.cs
+C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine.Analyzers\obj\Debug\netstandard2.0\IonEngine.Analyzers.csproj.CoreCompileInputs.cache
+C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine.Analyzers\obj\Debug\netstandard2.0\IonEngine.Analyzers.sourcelink.json
+C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine.Analyzers\obj\Debug\netstandard2.0\IonEngine.Analyzers.dll
+C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine.Analyzers\obj\Debug\netstandard2.0\IonEngine.Analyzers.pdb

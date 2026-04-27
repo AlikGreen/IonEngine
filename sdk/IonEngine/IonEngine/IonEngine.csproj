@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <EnableSourceLink>false</EnableSourceLink>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <RootNamespace>IonEngine</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Coral.Managed">
+      <HintPath>../../../external/coral/Coral.Managed/bin/Debug/net9.0/Coral.Managed.dll</HintPath>
+    </Reference>
+
+    <ProjectReference Include="..\IonEngine.Analyzers\IonEngine.Analyzers.csproj"
+                    OutputItemType="Analyzer"
+                    ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

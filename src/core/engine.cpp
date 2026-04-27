@@ -21,6 +21,7 @@
 #include "serializers/componentSerializers/meshRendererSerializer.h"
 #include "serializers/componentSerializers/parentSerializer.h"
 #include "serializers/componentSerializers/pointLightSerializer.h"
+#include "serializers/componentSerializers/scriptComponentSerializer.h"
 #include "serializers/componentSerializers/tagSerializer.h"
 #include "serializers/componentSerializers/transformSerializer.h"
 
@@ -65,6 +66,7 @@ namespace ion
         sceneSerializer.registerComponentSerializer<grl::hash32("ion::Parent"), ParentSerializer>();
         sceneSerializer.registerComponentSerializer<grl::hash32("ion::MeshRenderer"), MeshRendererSerializer>();
         sceneSerializer.registerComponentSerializer<grl::hash32("ion::PointLight"), PointLightSerializer>();
+        sceneSerializer.registerComponentSerializer<grl::hash32("ion::ScriptComponent"), ScriptComponentSerializer>();
 
         m_assetRegistry->registerSerializer<MeshSerializer>();
     }

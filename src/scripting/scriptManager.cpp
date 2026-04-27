@@ -23,7 +23,7 @@ namespace ion
 
         clogr::ensure(status == Coral::CoralInitStatus::Success, "Coral Initialization Failed with Error: {}", static_cast<int>(status));
 
-        const std::string ionEngineDllPath = R"(C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\bin\Debug\net9.0\IonEngine.dll)";
+        const std::string ionEngineDllPath = R"(C:\Users\alikg\CLionProjects\IonEditor\external\ionEngine\sdk\IonEngine\IonEngine\bin\Debug\net9.0\IonEngine.dll)";
         auto& importPipeline = Engine::assetImportPipeline();
         m_engineAssemblyData = importPipeline.import<ScriptAssemblyData>(ionEngineDllPath);
     }

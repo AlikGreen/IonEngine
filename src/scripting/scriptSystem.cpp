@@ -12,9 +12,20 @@ namespace ion
         auto* ctx = Engine::scriptManager().getContext("UserScripts");
         if(!ctx) return;
 
-        for(const auto& [entity, comp] : scene.registry().view<ScriptComponent>())
+        auto& registry = Engine::sceneManager().getCurrentScene().registry();
+
+        for(const auto& [entity, comp] : registry.view<ScriptComponent>())
         {
-            comp.reload(*ctx);
+            comp.reload(*ctx, entity);
+        }
+
+        for(auto [entity, scriptComponent] : registry.view<ScriptComponent>())
+        {
+            for(auto& script : scriptComponent.scripts)
+            {
+                if(script.object().IsValid())
+                    script.object().InvokeMethod("Start");
+            }
         }
     }
 
@@ -22,7 +33,7 @@ namespace ion
     {
         for(const auto& [entity, comp] : scene.registry().view<ScriptComponent>())
         {
-            comp.saveState();
+            comp.unload();
         }
     }
 

@@ -29,14 +29,23 @@ namespace ion
         return &reg->view(typeVec);
     }
 
+    void* getEntityComponent(const entis::TypeErasedRegistry* reg, const uint64_t entityId, const uint64_t typeId)
+    {
+        clogr::ensure(reg != nullptr, "registry is nullptr");
+
+        auto entity = reg->getRegistry().getEntity(entityId);
+        return reg->get(entity, typeId);
+    }
+
     size_t getTypeHash(const Coral::String typeName)
     {
         const std::string name = typeName;
 
-        clogr::info("Getting type hash for: {}", name);
-
         if (name == "IonEngine.Transform")
-            return typeid(Transform).hash_code();
+        {
+            size_t code = typeid(Transform).hash_code();
+            return code;
+        }
         if (name == "IonEngine.Camera")
             return typeid(Camera).hash_code();
         if (name == "IonEngine.MeshRenderer")
@@ -110,19 +119,39 @@ namespace ion
         component->name = name;
     }
 
+    glm::vec3 Transform_getForward(const Transform* component)
+    {
+        return component->forward();
+    }
+
+    glm::vec3 Transform_getRight(const Transform* component)
+    {
+        return component->right();
+    }
+
+    glm::vec3 Transform_getUp(const Transform* component)
+    {
+        return component->up();
+    }
+
     void EcsScriptBindings::registerCalls(CallBinder &binder)
     {
-        binder.bind<&createView>("IonEngine.Scene", "createViewCall");
-        binder.bind<&registerComponentType>("IonEngine.Scene", "registerTypeCall");
-        binder.bind<&getTypeHash>("IonEngine.Scene", "getTypeHash");
+        binder.bind<&createView>("IonEngine.NativeBridge", "Registry_createView");
+        binder.bind<&getEntityComponent>("IonEngine.NativeBridge", "Registry_getEntityComponent");
 
-        binder.bind<&getSceneRegistry>("IonEngine.SceneManager", "getCurrentRegistryCall");
+        binder.bind<&registerComponentType>("IonEngine.NativeBridge", "Registry_registerType");
+        binder.bind<&getTypeHash>("IonEngine.NativeBridge", "Registry_getTypeHash");
 
-        binder.bind<&Tag_getName>("IonEngine.Tag", "getNameCall");
-        binder.bind<&Tag_setName>("IonEngine.Tag", "setNameCall");
+        binder.bind<&getSceneRegistry>("IonEngine.NativeBridge", "Engine_getCurrentRegistry");
 
+        binder.bind<&getViewSize>("IonEngine.NativeBridge", "View_getSize");
+        binder.bind<&getViewEntry>("IonEngine.NativeBridge", "View_getAtIndex");
 
-        binder.bind<&getViewSize>("IonEngine.ViewInterface", "getSizeCall");
-        binder.bind<&getViewEntry>("IonEngine.ViewInterface", "getAtIndexCall");
+        binder.bind<&Tag_getName>("IonEngine.NativeBridge", "Tag_getName");
+        binder.bind<&Tag_setName>("IonEngine.NativeBridge", "Tag_setName");
+
+        binder.bind<&Transform_getForward>("IonEngine.NativeBridge", "Transform_getForward");
+        binder.bind<&Transform_getRight>("IonEngine.NativeBridge", "Transform_getRight");
+        binder.bind<&Transform_getUp>("IonEngine.NativeBridge", "Transform_getUp");
     }
 }

@@ -2,50 +2,134 @@
 
 namespace ion
 {
-    void ScriptInstance::saveState()
+    void ScriptInstance::setField(const std::string &name, FieldValue value)
     {
-        for(auto field : m_object.GetType().GetFields())
-        {
-            const std::string name     = field.GetName();
-            const auto typeName = field.GetType().GetFullName();
-            FieldValue value;
+        m_fields[name] = std::move(value);
 
-            if     (typeName == "System.Single")  value = m_object.GetFieldValue<float>(name);
-            else if(typeName == "System.Int32")   value = m_object.GetFieldValue<int>(name);
-            else if(typeName == "System.Boolean") value = m_object.GetFieldValue<bool>(name);
-            else if(typeName == "System.String")  value = m_object.GetFieldValue<std::string>(name);
-
-            m_fields.emplace_back(name, value);
-        }
+        if (m_loaded)
+            applyField(name, m_fields[name]);
     }
 
-    void ScriptInstance::reload(ScriptContext &scriptContext)
+    const FieldValue * ScriptInstance::getField(const std::string &name) const
     {
-        const auto type = scriptContext.findType(m_typeName);
-        m_object = type->CreateInstance();
+        const auto it = m_fields.find(name);
+        return it != m_fields.end() ? &it->second : nullptr;
+    }
 
-        for(auto& [name, value] : m_fields)
+    void ScriptInstance::unload()
+    {
+        if (!m_loaded) return;
+
+        syncFieldsFromObject();
+
+        m_object.Destroy();
+        m_loaded = false;
+    }
+
+    void ScriptInstance::reload(ScriptContext &scriptContext, entis::Entity entity)
+    {
+        if (m_loaded) unload();
+
+        m_type = *scriptContext.findType(m_typeName);
+        m_object = m_type.CreateInstance(entity.id(), &entity.registry());
+        m_loaded = true;
+
+        for (auto& field : m_type.GetFields())
         {
-            std::visit([&](auto&& v)
+            if (field.GetAccessibility() != Coral::TypeAccessibility::Public) continue;
+            if (m_fields.contains(field.GetName())) continue;
+
+            m_fields[field.GetName()] = fieldDefaultValue(field);
+        }
+
+        for (const auto& [name, value] : m_fields)
+            applyField(name, value);
+
+    }
+
+    void ScriptInstance::syncFieldsFromObject() const
+    {
+        for (auto& [name, value] : m_fields)
+        {
+            std::visit([&]<typename T>(T& v)
             {
-                m_object.SetFieldValue(name, v);
+                v = m_object.GetFieldValue<T>(name);
             }, value);
         }
     }
 
-    void ScriptComponent::saveState()
+    void ScriptInstance::syncFieldsToObject() const
     {
-        for(auto& script : scripts)
+        for (auto& [name, value] : m_fields)
         {
-            script.saveState();
+            std::visit([&]<typename T>(const T& v)
+            {
+                m_object.SetFieldValue<T>(name, v);
+            }, value);
         }
     }
 
-    void ScriptComponent::reload(ScriptContext &scriptContext)
+    FieldValue ScriptInstance::fieldDefaultValue(Coral::FieldInfo &field)
+    {
+        const auto typeName = field.GetType().GetFullName();
+
+        if (typeName == "System.Single")  return float{};
+        if (typeName == "System.Int32")   return int{};
+        if (typeName == "System.Boolean") return bool{};
+        if (typeName == "System.String")  return std::string{};
+        if (typeName == "IonEngine.Maths.Vector2") return glm::vec2{};
+        if (typeName == "IonEngine.Maths.Vector3") return glm::vec3{};
+
+        return float{};
+    }
+
+    void ScriptInstance::applyField(const std::string &name, const FieldValue &value)
+    {
+        std::visit([&](const auto& v)
+        {
+            m_object.SetFieldValue(name, v);
+        }, value);
+    }
+
+    void ScriptComponent::unload()
     {
         for(auto& script : scripts)
         {
-            script.reload(scriptContext);
+            script.unload();
         }
+    }
+
+    void ScriptComponent::reload(ScriptContext &scriptContext, const entis::Entity entity)
+    {
+        for(auto& script : scripts)
+        {
+            script.reload(scriptContext, entity);
+        }
+    }
+
+    ScriptComponent::ScriptComponent(const ScriptComponent &other)
+    {
+        for (const auto& script : other.scripts)
+        {
+            auto copy = ScriptInstance(script.typeName());
+            for (const auto& [name, value] : script.fields())
+                copy.setField(name, value);
+
+            scripts.push_back(std::move(copy));
+        }
+    }
+
+    ScriptComponent & ScriptComponent::operator=(const ScriptComponent &other)
+    {
+        if (this == &other) return *this;
+        scripts.clear();
+        for (const auto& script : other.scripts)
+        {
+            ScriptInstance copy{script.typeName()};
+            for (const auto& [name, value] : script.fields())
+                copy.setField(name, value);
+            scripts.push_back(std::move(copy));
+        }
+        return *this;
     }
 }

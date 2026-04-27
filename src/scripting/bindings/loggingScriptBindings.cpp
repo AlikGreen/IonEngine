@@ -10,6 +10,6 @@ namespace ion
 
     void LoggingScriptBindings::registerCalls(CallBinder &binder)
     {
-        binder.bind<&logInfo>("IonEngine.Log", "logInfoCall");
+        binder.bind<&logInfo>("IonEngine.NativeBridge", "Log_logInfo");
     }
 }

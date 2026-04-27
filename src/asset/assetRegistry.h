@@ -108,7 +108,7 @@ public:
         return nullptr;
     }
 
-    bool isLoaded(const AssetId id) const
+    [[nodiscard]] bool isLoaded(const AssetId id) const
     {
         const auto it = m_assets.find(id);
         if(it == m_assets.end())
@@ -117,7 +117,7 @@ public:
         return !it->second.asset.expired();
     }
 
-    bool canLoad(const AssetId id) const
+    [[nodiscard]] bool canLoad(const AssetId id) const
     {
         for(const auto& loader : m_loaders)
         {

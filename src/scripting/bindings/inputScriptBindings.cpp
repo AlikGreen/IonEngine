@@ -22,8 +22,8 @@ namespace ion
 
     void InputScriptBindings::registerCalls(CallBinder &binder)
     {
-        binder.bind<&isKeyHeld>("IonEngine.Input", "isKeyHeldCall");
-        binder.bind<&isKeyPressed>("IonEngine.Input", "isKeyPressedCall");
-        binder.bind<&isKeyReleased>("IonEngine.Input", "isKeyReleasedCall");
+        binder.bind<&isKeyHeld>("IonEngine.NativeBridge", "Input_isKeyHeld");
+        binder.bind<&isKeyPressed>("IonEngine.NativeBridge", "Input_isKeyPressed");
+        binder.bind<&isKeyReleased>("IonEngine.NativeBridge", "Input_isKeyReleased");
     }
 }
