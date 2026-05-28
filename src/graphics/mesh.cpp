@@ -8,11 +8,20 @@
 
 namespace ion
 {
+    Mesh::Mesh(const bool keepCpuData)
+        : m_keepCpuData(keepCpuData) {  }
+
+    bool Mesh::isDrawable() const
+    {
+        return (!m_verticesDirty && !m_indicesDirty) || (m_verticesDirty && m_indicesDirty && !m_vertices.empty() && !m_indices.empty());
+    }
+
     void Mesh::apply()
     {
-        if(m_primitives.empty()) m_primitives.emplace_back(0, m_indices.size());
-
         const auto device = Engine::getSystem<GraphicsSystem>()->getDevice();
+
+        if(!isDrawable())
+            return;
 
         m_vertexBuffer = device->createBuffer({ urhi::BufferUsage::Vertex, m_vertices.size() * sizeof(Vertex) });
         m_indexBuffer  = device->createBuffer({ urhi::BufferUsage::Index, m_indices.size() * sizeof(uint32_t) });
@@ -39,24 +48,26 @@ namespace ion
 
     void Mesh::recalculateBounds()
     {
-        m_bounds.min = glm::vec3(std::numeric_limits<float>::min());
-        m_bounds.max = glm::vec3(std::numeric_limits<float>::max());
+        if(!m_boundsDirty) return;
+
+        m_bounds.min = glm::vec3(std::numeric_limits<float>::max());
+        m_bounds.max = glm::vec3(std::numeric_limits<float>::lowest());
 
         for(Vertex vert : m_vertices)
         {
             m_bounds.min = glm::min(m_bounds.min, vert.position);
             m_bounds.max = glm::max(m_bounds.max, vert.position);
         }
-    }
 
-    Mesh::Mesh(const bool keepCpuData)
-        : m_keepCpuData(keepCpuData) {  }
+        m_boundsDirty = false;
+    }
 
     void Mesh::vertices(std::vector<Vertex> vertices)
     {
         m_vertexCount = vertices.size();
         m_vertices = std::move(vertices);
         m_verticesDirty = true;
+        m_boundsDirty = true;
     }
 
     void Mesh::indices(std::vector<uint32_t> indices)
@@ -64,6 +75,7 @@ namespace ion
         m_indexCount = indices.size();
         m_indices = std::move(indices);
         m_indicesDirty = true;
+        m_boundsDirty = true;
     }
 
     void Mesh::primitives(std::vector<Primitive> primitives)
@@ -76,8 +88,11 @@ namespace ion
         m_primitives.emplace_back(startIndex, indexCount);
     }
 
-    const std::vector<Primitive> & Mesh::primitives() const
+    std::vector<Primitive> Mesh::primitives() const
     {
+        if(m_primitives.empty() && m_indexCount > 0)
+            return {Primitive{0, static_cast<uint32_t>(m_indexCount)}};
+
         return m_primitives;
     }
 
@@ -95,25 +110,23 @@ namespace ion
 
     AABB Mesh::bounds()
     {
-        if(m_verticesDirty) recalculateBounds();
+        recalculateBounds();
         return m_bounds;
     }
 
     grl::Rc<urhi::Buffer> Mesh::vertexBuffer()
     {
         if(m_verticesDirty)
-        {
             apply();
-        }
+
         return m_vertexBuffer;
     }
 
     grl::Rc<urhi::Buffer> Mesh::indexBuffer()
     {
         if(m_indicesDirty)
-        {
             apply();
-        }
+
         return m_indexBuffer;
     }
 

@@ -11,7 +11,7 @@ namespace ion
 class AudioSystem final : public System
 {
 public:
-    void postUpdate() override;
+    void postUpdate(Scene& scene) override;
 private:
     std::unordered_map<AssetId, Sound> sounds;
 };

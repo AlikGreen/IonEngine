@@ -20,8 +20,9 @@ public:
     grl::Rc<urhi::Sampler> sampler();
 
     [[nodiscard]] std::vector<uint8_t> pixels() const;
-    [[nodiscard]] uint32_t width() const;
-    [[nodiscard]] uint32_t height() const;
+    [[nodiscard]] uint32_t width() const { return m_width; }
+    [[nodiscard]] uint32_t height() const { return m_height; }
+    [[nodiscard]] urhi::PixelFormat format() const { return m_format; }
 private:
     [[nodiscard]] uint32_t sizeInBytes() const;
     void upload();
@@ -30,6 +31,7 @@ private:
     uint32_t m_height = 0;
     urhi::PixelFormat m_format = urhi::PixelFormat::RGBA8UNorm;
     std::vector<uint8_t> m_pixels;
+    bool m_uploaded = false;
 
     grl::Rc<urhi::Texture> m_texture;
     grl::Rc<urhi::TextureView> m_textureView;

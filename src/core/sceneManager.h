@@ -8,17 +8,22 @@ namespace ion
 class SceneManager
 {
 public:
-    explicit SceneManager(std::vector<grl::Box<System>>& systems) : m_systems(systems) { };
+    explicit SceneManager(std::vector<System*>& sceneLoadedSystems, std::vector<System*>& sceneUnloadedSystems)
+        : m_sceneLoadedSystems(sceneLoadedSystems), m_sceneUnloadedSystems(sceneUnloadedSystems) { };
 
     SceneManager(const SceneManager&) = delete;
     SceneManager& operator=(const SceneManager&) = delete;
 
-    void addScene(const std::string& name, const AssetRef<Scene>& scene);
-    void setScene(const std::string &name);
-    [[nodiscard]] Scene& getCurrentScene() const;
+    void setScene(const AssetRef<Scene>& scene);
+    [[nodiscard]] AssetRef<Scene> activeScene() const { return m_currentScene; }
 private:
+    friend class Engine;
+    void loadScene();
+
     AssetRef<Scene> m_currentScene = nullptr;
-    std::unordered_map<std::string, AssetRef<Scene>> m_scenes;
-    std::vector<grl::Box<System>>& m_systems;
+    AssetRef<Scene> m_sceneToLoad = nullptr;
+
+    std::vector<System*>& m_sceneLoadedSystems;
+    std::vector<System*>& m_sceneUnloadedSystems;
 };
 }

@@ -5,6 +5,7 @@
 #include "assetSerializerRegistry.h"
 #include "assetStream.h"
 
+
 namespace ion
 {
 class AssetRegistry
@@ -147,6 +148,22 @@ public:
         return m_serializers;
     }
 
+    void setName(const AssetId asset, const std::string &name)
+    {
+        const auto it = m_assets.find(asset);
+        if(it != m_assets.end())
+            it->second.name = name;
+    }
+
+    const std::string& getName(const AssetId asset) const
+    {
+        const auto it = m_assets.find(asset);
+        if(it != m_assets.end())
+            return it->second.name;
+
+        return "";
+    }
+
     template<typename T>
     [[nodiscard]] bool isType(const uint64_t typeId) const
     {
@@ -171,7 +188,8 @@ private:
     {
         grl::Weak<void> asset;
         std::type_index runtimeType;
-        uint64_t stableType;
+        uint64_t stableType{};
+        std::string name{};
 
         AssetEntry() : runtimeType(typeid(void)) {}
     };

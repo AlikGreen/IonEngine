@@ -1,5 +1,7 @@
 #include "materialTemplate.h"
 
+#include <utility>
+
 #include "graphicsSystem.h"
 #include "asset/assetImportPipeline.h"
 #include "asset/assetRegistry.h"
@@ -11,50 +13,28 @@ namespace ion
     AssetRef<urhi::slang::Module> MaterialTemplate::s_baseMaterialModule{};
     AssetRef<urhi::slang::Module> MaterialTemplate::s_reflectionShader{};
 
-    MaterialTemplate::MaterialTemplate(const MaterialDescription &desc)
-        : m_desc(desc)
+    grl::Rc<urhi::TextureView> MaterialTemplate::s_defaultTexture{};
+    grl::Rc<urhi::Sampler> MaterialTemplate::s_defaultSampler{};
+
+    MaterialTemplate::MaterialTemplate(const MaterialDesc &desc)
+        : m_lit(desc.lit), m_opaque(desc.opaque), m_name(desc.name)
     {
+        m_device = Engine::getSystem<GraphicsSystem>()->getDevice();
+        init(m_device);
+
         AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-
-        if(!s_baseMaterialModule)
-            s_baseMaterialModule = importPipeline.import<urhi::slang::Module>("shaders/material.slang");
-
-        if(!s_reflectionShader)
-            s_reflectionShader = importPipeline.import<urhi::slang::Module>("shaders/materialReflection.slang");
-
         m_module = importPipeline.import<urhi::slang::Module>(desc.path);
 
+        compileModule();
+    }
+
+    MaterialTemplate::MaterialTemplate(std::string name, const bool opaque, const bool lit, AssetRef<urhi::slang::Module> module)
+        : m_lit(lit), m_opaque(opaque), m_name(std::move(name)), m_module(std::move(module))
+    {
         m_device = Engine::getSystem<GraphicsSystem>()->getDevice();
+        init(m_device);
 
-
-        urhi::slang::LinkDesc linkDesc;
-        linkDesc.modules     = { *m_module, *s_reflectionShader, *s_baseMaterialModule };
-        linkDesc.typeSpecializations = { m_desc.name };
-
-        urhi::slang::Diagnostics diags;
-        const auto shaderSet = urhi::slang::Compiler::linkToShaderSet(linkDesc, &diags);
-
-        for (const auto& res : shaderSet.stages()[0].reflection.resources)
-        {
-            m_resources[res.name] = res;
-
-            if (res.type == urhi::ShaderReflection::ResourceType::ConstantBuffer
-                && res.name == "material")
-            {
-                for (const auto& mem : res.members)
-                {
-                    m_properties[mem.name] = mem;
-                    m_propertiesSize = std::max(m_propertiesSize, mem.offset + mem.size);
-                }
-            }
-        }
-
-        m_defaultTexture = Engine::getSystem<GraphicsSystem>()->getDefaultTexture();
-
-        urhi::SamplerDesc samplerDesc{};
-        samplerDesc.addressModeU = urhi::AddressMode::Repeat;
-        samplerDesc.addressModeV = urhi::AddressMode::Repeat;
-        m_defaultSampler = m_device->createSampler(samplerDesc);
+        compileModule();
     }
 
     grl::Rc<urhi::Pipeline> MaterialTemplate::getOrCreatePipeline(const urhi::slang::Module& passModule, urhi::GraphicsPipelineDesc pipelineDesc)
@@ -65,10 +45,11 @@ namespace ion
             return it->second;
 
         // TODO Check disk shader cache
+        // Should probably have an engine-wide cache folder for anything that needs caching
 
         urhi::slang::LinkDesc linkDesc;
         linkDesc.modules     = { *m_module, passModule, *s_baseMaterialModule };
-        linkDesc.typeSpecializations = { m_desc.name };
+        linkDesc.typeSpecializations = { m_name };
 
         urhi::slang::Diagnostics diags;
         const auto shaderSet = urhi::slang::Compiler::linkToShaderSet(linkDesc, &diags);
@@ -87,38 +68,98 @@ namespace ion
         return pipeline;
     }
 
-    static void hashCombine(size_t& seed, const size_t hash)
+    static size_t fnv1a(const void* data, size_t size)
+    {
+        auto* p = static_cast<const uint8_t*>(data);
+        size_t hash = 14695981039346656037ull;
+        for (size_t i = 0; i < size; i++)
+            hash = (hash ^ p[i]) * 1099511628211ull;
+        return hash;
+    }
+
+    static void hashCombine(size_t& seed, size_t hash)
     {
         seed ^= hash + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     }
 
-    static void hashBytes(size_t& seed, const void* data, const size_t size)
+    static size_t irHash(const urhi::slang::Module& module)
     {
-        auto* p = static_cast<const uint8_t*>(data);
-        for (size_t i = 0; i < size; i++)
-            hashCombine(seed, std::hash<uint8_t>{}(p[i]));
+        static std::unordered_map<const void*, size_t> s_cache;
+
+        const void* key = module.ir.data();
+        auto it = s_cache.find(key);
+        if (it != s_cache.end())
+            return it->second;
+
+        size_t h = fnv1a(module.ir.data(), module.ir.size());
+        s_cache.emplace(key, h);
+        return h;
     }
 
+    void MaterialTemplate::compileModule()
+    {
+        urhi::slang::LinkDesc linkDesc;
+        linkDesc.modules     = { *m_module, *s_reflectionShader, *s_baseMaterialModule };
+        linkDesc.typeSpecializations = { m_name };
+
+        urhi::slang::Diagnostics diags;
+        const auto shaderSet = urhi::slang::Compiler::linkToShaderSet(linkDesc, &diags);
+
+        for (const auto& res : shaderSet.stages()[0].reflection.resources)
+        {
+            m_resources[res.name] = res;
+
+            if (res.type == urhi::ShaderReflection::ResourceType::ConstantBuffer
+                && res.name == "material")
+            {
+                for (const auto& mem : res.members)
+                {
+                    m_properties[mem.name] = mem;
+                    m_propertiesSize = std::max(m_propertiesSize, mem.offset + mem.size);
+                }
+            }
+        }
+    }
+
+    void MaterialTemplate::init(const grl::Rc<urhi::Device> &device)
+    {
+        AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
+
+        if(!s_baseMaterialModule)
+            s_baseMaterialModule = importPipeline.import<urhi::slang::Module>("shaders/material.slang");
+
+        if(!s_reflectionShader)
+            s_reflectionShader = importPipeline.import<urhi::slang::Module>("shaders/materialReflection.slang");
+
+        if(!s_defaultTexture)
+            s_defaultTexture = Engine::getSystem<GraphicsSystem>()->getDefaultTexture();
+
+        if(!s_defaultSampler)
+        {
+            urhi::SamplerDesc samplerDesc{};
+            samplerDesc.addressModeU = urhi::AddressMode::Repeat;
+            samplerDesc.addressModeV = urhi::AddressMode::Repeat;
+            s_defaultSampler = device->createSampler(samplerDesc);
+        }
+    }
 
     size_t MaterialTemplate::pipelineHash(
-        const urhi::slang::Module& passModule,
-        const urhi::GraphicsPipelineDesc& desc)
+    const urhi::slang::Module& passModule,
+    const urhi::GraphicsPipelineDesc& desc)
     {
-        size_t seed = 0;
+        size_t seed = irHash(passModule);
 
-        hashBytes(seed, passModule.ir.data(),  passModule.ir.size());
-
-        hashBytes(seed, &desc.primitiveType,   sizeof(desc.primitiveType));
-        hashBytes(seed, &desc.rasterizerState, sizeof(desc.rasterizerState));
-        hashBytes(seed, &desc.depthState,      sizeof(desc.depthState));
+        hashCombine(seed, fnv1a(&desc.primitiveType,   sizeof(desc.primitiveType)));
+        hashCombine(seed, fnv1a(&desc.rasterizerState, sizeof(desc.rasterizerState)));
+        hashCombine(seed, fnv1a(&desc.depthState,      sizeof(desc.depthState)));
 
         for (const auto& att : desc.colorAttachments)
-            hashBytes(seed, &att, sizeof(att));
+            hashCombine(seed, fnv1a(&att, sizeof(att)));
 
         const bool hasDepth = desc.depthAttachmentFormat.has_value();
-        hashBytes(seed, &hasDepth, sizeof(hasDepth));
+        hashCombine(seed, hasDepth);
         if (hasDepth)
-            hashBytes(seed, &*desc.depthAttachmentFormat, sizeof(urhi::PixelFormat));
+            hashCombine(seed, fnv1a(&*desc.depthAttachmentFormat, sizeof(urhi::PixelFormat)));
 
         return seed;
     }
@@ -131,7 +172,7 @@ namespace ion
     {
         if(s_pbr) return s_pbr;
 
-        MaterialDescription desc{};
+        MaterialDesc desc{};
         desc.name = "PbrMaterial";
         desc.path = "shaders/pbrMaterial.slang";
         desc.opaque = true;
@@ -144,7 +185,7 @@ namespace ion
     {
         if(s_billboard) return s_billboard;
 
-        MaterialDescription desc{};
+        MaterialDesc desc{};
         desc.name = "BillboardMaterial";
         desc.path = "shaders/billboardMaterial.slang";
         desc.opaque = false;
@@ -157,7 +198,7 @@ namespace ion
     {
         if(s_equirectangularSkybox) return s_equirectangularSkybox;
 
-        MaterialDescription desc{};
+        MaterialDesc desc{};
         desc.name = "EquirectangularSkyboxMaterial";
         desc.path = "shaders/equirectangularSkyboxMaterial.slang";
         desc.opaque = true;

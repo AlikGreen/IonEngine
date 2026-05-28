@@ -28,7 +28,7 @@ namespace ion
         if (it == resources.end() || it->second.type != urhi::ShaderReflection::ResourceType::Texture)
             return false;
 
-        m_textures[qualifiedName] = image;
+        m_textures[name] = image;
         return true;
     }
 
@@ -40,12 +40,12 @@ namespace ion
         if (it == resources.end() || it->second.type != urhi::ShaderReflection::ResourceType::Sampler)
             return false;
 
-        m_samplers[qualifiedName] = image;
+        m_samplers[name] = image;
         return true;
     }
 
 
-    void MaterialInstance::applyBindings(const grl::Rc<urhi::CommandList> &cmd, const grl::Rc<urhi::RenderPass> &pass)
+    void MaterialInstance::applyBindings(const grl::Rc<urhi::CommandList> &cmd, urhi::RenderPass& pass)
     {
         if (m_dirty && m_propertyBuffer && !m_cpuBuffer.empty())
         {
@@ -54,18 +54,18 @@ namespace ion
         }
 
         if (m_propertyBuffer)
-            pass->setBuffer("material", m_propertyBuffer);
+            pass.setBuffer("material", m_propertyBuffer);
 
         std::unordered_set<std::string> boundNames;
         for (const auto& [name, image] : m_textures)
         {
-            pass->setTexture(name, image->textureView());
+            pass.setTexture("material."+name, image->textureView());
             boundNames.insert(name);
         }
 
         for (const auto& [name, image] : m_samplers)
         {
-            pass->setSampler(name, image->sampler());
+            pass.setSampler("material."+name, image->sampler());
             boundNames.insert(name);
         }
 
@@ -78,10 +78,10 @@ namespace ion
             switch (res.type)
             {
                 case urhi::ShaderReflection::ResourceType::Texture:
-                    pass->setTexture(name, m_template->defaultTexture());
+                    pass.setTexture(name, m_template->defaultTexture());
                 break;
                 case urhi::ShaderReflection::ResourceType::Sampler:
-                    pass->setSampler(name, m_template->defaultSampler());
+                    pass.setSampler(name, m_template->defaultSampler());
                 break;
                 default:
                     break;

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("IonEngine.Analyzers")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+027136a5ba6ced14db5971624df022bbda223c25")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+999da686f63b2672df60fbb67ce442e437dab37a")]
 [assembly: System.Reflection.AssemblyProductAttribute("IonEngine.Analyzers")]
 [assembly: System.Reflection.AssemblyTitleAttribute("IonEngine.Analyzers")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

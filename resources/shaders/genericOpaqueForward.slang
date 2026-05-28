@@ -67,11 +67,10 @@ VertexOutput vertexMain(VertexInput input)
 [shader("fragment")]
 float4 fragmentMain(VertexOutput input) : SV_Target
 {
-    // 1. Correct View Direction (Surface to Camera)
     float3 viewDir = normalize(camera.position - input.fragPos);
 
     SurfaceInput si;
-    si.normalWS = normalize(input.normal); // Ensure normal is unit length!
+    si.normalWS = normalize(input.normal);
     si.positionWS = input.fragPos;
     si.viewDirWS = viewDir;
     si.uv = input.uv;

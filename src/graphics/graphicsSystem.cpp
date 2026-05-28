@@ -25,7 +25,11 @@ namespace ion
     void GraphicsSystem::preStartup()
     {
         clogr::defaultLogger()->addSink<clogr::FileSink>(R"(C:\Users\alikg\Downloads\log.log)");
-        m_context = urhi::Context::create(urhi::BackendAPI::Vulkan);
+        m_context = urhi::Context::create(
+        {
+            .api = urhi::BackendAPI::Vulkan,
+            .cachePath = "./shaders"
+        });
 
         m_window = m_context->createWindow(m_windowDesc);
         m_device = m_context->createDevice({ m_window });
@@ -33,7 +37,7 @@ namespace ion
         urhi::SwapchainDesc swapchainDesc{};
         swapchainDesc.window = m_window;
         swapchainDesc.device = m_device;
-        swapchainDesc.presentMode = urhi::PresentMode::VSync;
+        swapchainDesc.presentMode = urhi::PresentMode::NoVSync;
 
         m_swapchain = m_context->createSwapchain(swapchainDesc);
 
@@ -56,6 +60,11 @@ namespace ion
         m_device->submit(cmd);
 
         m_defaultTexture = m_device->createTextureView(texture);
+    }
+
+    void GraphicsSystem::postStartup()
+    {
+        m_window->show();
     }
 
     void GraphicsSystem::preUpdate()
@@ -141,7 +150,11 @@ namespace ion
 
     void GraphicsSystem::postRender()
     {
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto frameTime = std::chrono::duration<float>(endTime - m_frameStartTime);
+        m_frameDuration = frameTime.count();
         m_swapchain->present();
+        m_frameStartTime = std::chrono::high_resolution_clock::now();
     }
 
     void GraphicsSystem::shutdown()

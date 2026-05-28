@@ -58,7 +58,7 @@ namespace ion
         return true;
     }
 
-    bool AssetStream::read(std::string &string)
+    bool AssetStream::read(std::string& string)
     {
         uint32_t size = 0;
         if(!read<uint32_t>(size))

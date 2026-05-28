@@ -19,6 +19,13 @@ public struct Vector2(float x, float y)
 [StructLayout(LayoutKind.Sequential)]
 public struct Vector3(float x, float y, float z)
 {
+    public static Vector3 up = new(0, 1, 0);
+    public static Vector3 down = new(0, -1, 0);
+    public static Vector3 left = new(-1, 0, 0);
+    public static Vector3 right = new(1, 0, 0);
+    public static Vector3 forward = new(0, 0, 1);
+    public static Vector3 back = new(0, 0, -1);
+    
     public float x = x;
     public float y = y;
     public float z = z;
@@ -34,18 +41,23 @@ public struct Vector3(float x, float y, float z)
 
     public Vector3(float scalar) : this(scalar, scalar, scalar) { }
     
+    public Vector3 Normalized() => this / Length();
+    public float Dot(Vector3 other) => x * other.x + y * other.y + z * other.z;
     public float Length() => (float)Math.Sqrt(x * x + y * y + z * z);
     public static float Distance(Vector3 lhs, Vector3 rhs) => (lhs-rhs).Length();
+    public static float Dot(Vector3 lhs, Vector3 rhs) => lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z;
+    public static Vector3 Cross(Vector3 lhs, Vector3 rhs) => new(lhs.y*rhs.z - lhs.z*rhs.y, lhs.z*rhs.x - lhs.x*rhs.z, lhs.x*rhs.y - lhs.y*rhs.x);
     
-    public static Vector3 operator +(Vector3 rhs, Vector3 lhs) => new(rhs.x + lhs.x, rhs.y + lhs.y, rhs.z + lhs.z);
-    public static Vector3 operator -(Vector3 rhs, Vector3 lhs) => new(rhs.x - lhs.x, rhs.y - lhs.y, rhs.z - lhs.z);
+    public static Vector3 operator +(Vector3 lhs, Vector3 rhs) => new(rhs.x + lhs.x, rhs.y + lhs.y, rhs.z + lhs.z);
+    public static Vector3 operator -(Vector3 lhs, Vector3 rhs) => new(rhs.x - lhs.x, rhs.y - lhs.y, rhs.z - lhs.z);
+
+    public static Vector3 operator *(Vector3 lhs, Vector3 rhs) => new(rhs.x * lhs.x, rhs.y * lhs.y, rhs.z * lhs.z);
+    public static Vector3 operator /(Vector3 lhs, Vector3 rhs) => new(rhs.x / lhs.x, rhs.y / lhs.y, rhs.z / lhs.z);
     
-    public static Vector3 operator *(Vector3 rhs, Vector3 lhs) => new(rhs.x * lhs.x, rhs.y * lhs.y, rhs.z * lhs.z);
-    public static Vector3 operator /(Vector3 rhs, Vector3 lhs) => new(rhs.x / lhs.x, rhs.y / lhs.y, rhs.z / lhs.z);
-    
-    public static Vector3 operator *(Vector3 rhs, float scalar) => new(rhs.x * scalar, rhs.y * scalar, rhs.z * scalar);
-    public static Vector3 operator /(Vector3 rhs, float scalar) => new(rhs.x / scalar, rhs.y / scalar, rhs.z / scalar);
-    
+    public static Vector3 operator *(Vector3 lhs, float scalar) => new(lhs.x * scalar, lhs.y * scalar, lhs.z * scalar);
+    public static Vector3 operator *(float scalar, Vector3 rhs) => new(rhs.x * scalar, rhs.y * scalar, rhs.z * scalar);
+    public static Vector3 operator /(Vector3 lhs, float scalar) => new(lhs.x / scalar, lhs.y / scalar, lhs.z / scalar);
+
     public override string ToString()
     {
         return $"({x}, {y}, {z})";

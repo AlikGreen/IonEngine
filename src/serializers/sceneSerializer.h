@@ -7,23 +7,24 @@
 #include "asset/assetSerializer.h"
 #include "componentSerializers/componentSerializer.h"
 #include "core/scene.h"
-#include "grl/error.h"
 
 namespace ion
 {
 class SceneSerializer final : public AssetSerializer<Scene>
 {
 public:
-    static constexpr uint64_t typeId = grl::hash64("ion::Scene");
+    static constexpr uint64_t typeId = grl::Hash::fnv1a64("ion::Scene");
     void serialize(AssetStream &assetStream, AssetRegistry& assetRegistry, AssetDeps& deps, const Scene& scene) override;
     grl::Rc<Scene> deserialize(AssetStream &assetStream, AssetRegistry& assetRegistry) override;
 
-    template<size_t TypeId, typename Serializer, typename... Args>
-    requires std::is_constructible_v<Serializer, Args...> && std::is_base_of_v<ComponentSerializer<typename Serializer::AssetType>, Serializer>
+    template<typename Serializer, typename... Args>
+    requires std::is_constructible_v<Serializer, Args...> &&
+            std::is_base_of_v<ComponentSerializer<typename Serializer::AssetType>, Serializer> &&
+            HasTypeId<Serializer>
     void registerComponentSerializer(Args&&... args)
     {
         using T = typename Serializer::AssetType;
-        constexpr uint32_t typeId = TypeId;
+        constexpr uint64_t typeId = Serializer::typeId;
 
         m_componentSerializers[typeId] = grl::makeBox<Serializer>(std::forward<Args>(args)...);
 
@@ -49,8 +50,8 @@ private:
     using SerializerFunc = std::function<void(AssetRegistry&, AssetStream&, AssetDeps&, entis::Entity)>;
     using DeserializerFunc = std::function<void(AssetRegistry&, AssetStream&, entis::Entity, entis::Registry&)>;
 
-    std::unordered_map<uint32_t, SerializerFunc> m_componentSerializerFuncs{};
-    std::unordered_map<uint32_t, DeserializerFunc> m_componentDeserializerFuncs{};
-    std::unordered_map<uint32_t, grl::Box<ComponentSerializerBase>> m_componentSerializers{};
+    std::unordered_map<uint64_t, SerializerFunc> m_componentSerializerFuncs{};
+    std::unordered_map<uint64_t, DeserializerFunc> m_componentDeserializerFuncs{};
+    std::unordered_map<uint64_t, grl::Box<ComponentSerializerBase>> m_componentSerializers{};
 };
 }

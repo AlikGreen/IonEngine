@@ -8,6 +8,7 @@ namespace ion
 class PointLightSerializer final : public ComponentSerializer<PointLight>
 {
 public:
+    static constexpr uint64_t typeId = grl::Hash::fnv1a64("ion::PointLight");
     void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const PointLight &light) override
     {
         assetStream.write(light.power);

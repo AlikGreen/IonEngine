@@ -7,6 +7,7 @@
 #include "core/components/transformComponent.h"
 #include "graphics/components/camera.h"
 #include "graphics/components/meshRenderer.h"
+#include "scripting/handleRegistry.h"
 
 namespace ion
 {
@@ -42,10 +43,7 @@ namespace ion
         const std::string name = typeName;
 
         if (name == "IonEngine.Transform")
-        {
-            size_t code = typeid(Transform).hash_code();
-            return code;
-        }
+            return typeid(Transform).hash_code();
         if (name == "IonEngine.Camera")
             return typeid(Camera).hash_code();
         if (name == "IonEngine.MeshRenderer")
@@ -57,7 +55,7 @@ namespace ion
         return 0;
     }
 
-    size_t createEntity(entis::TypeErasedRegistry* reg)
+    size_t createEntity(const entis::TypeErasedRegistry* reg)
     {
         return reg->getRegistry().createEntity().id();
     }
@@ -105,7 +103,7 @@ namespace ion
 
     entis::TypeErasedRegistry* getSceneRegistry()
     {
-        return &Engine::sceneManager().getCurrentScene().registry().asTypeErased();
+        return &Engine::sceneManager().activeScene()->registry().asTypeErased();
     }
 
     Coral::String Tag_getName(const Tag* component)
@@ -134,6 +132,46 @@ namespace ion
         return component->up();
     }
 
+    uint32_t MeshRenderer_getMesh(const MeshRenderer* meshRenderer)
+    {
+        if(meshRenderer->mesh)
+            return HandleRegistry<Mesh>::instance().registerHandle(meshRenderer->mesh.ref());
+
+        return 0;
+    }
+
+    void MeshRenderer_setMesh(MeshRenderer* meshRenderer, const uint32_t meshHandle)
+    {
+        if(meshHandle != 0)
+            meshRenderer->mesh = HandleRegistry<Mesh>::instance().getShared(meshHandle);
+        else
+            meshRenderer->mesh = nullptr;
+    }
+
+    uint32_t MeshRenderer_getMaterial(const MeshRenderer* meshRenderer)
+    {
+        if(!meshRenderer->materials.empty() && meshRenderer->materials.at(0))
+            return HandleRegistry<MaterialInstance>::instance().registerHandle(meshRenderer->materials[0].ref());
+
+        return 0;
+    }
+
+    void MeshRenderer_setMaterial(MeshRenderer* meshRenderer, const uint32_t matHandle)
+    {
+        if(matHandle != 0)
+        {
+            if(meshRenderer->materials.empty())
+                meshRenderer->materials.resize(1);
+
+            meshRenderer->materials[0] = HandleRegistry<MaterialInstance>::instance().getShared(matHandle);
+        }
+        else
+        {
+            if(meshRenderer->materials.empty())
+                meshRenderer->materials[0] = nullptr;
+        }
+    }
+
     void EcsScriptBindings::registerCalls(CallBinder &binder)
     {
         binder.bind<&createView>("IonEngine.NativeBridge", "Registry_createView");
@@ -153,5 +191,11 @@ namespace ion
         binder.bind<&Transform_getForward>("IonEngine.NativeBridge", "Transform_getForward");
         binder.bind<&Transform_getRight>("IonEngine.NativeBridge", "Transform_getRight");
         binder.bind<&Transform_getUp>("IonEngine.NativeBridge", "Transform_getUp");
+
+        binder.bind<&MeshRenderer_getMesh>("IonEngine.NativeBridge", "MeshRenderer_getMesh");
+        binder.bind<&MeshRenderer_setMesh>("IonEngine.NativeBridge", "MeshRenderer_setMesh");
+
+        binder.bind<&MeshRenderer_getMaterial>("IonEngine.NativeBridge", "MeshRenderer_getMaterial");
+        binder.bind<&MeshRenderer_setMaterial>("IonEngine.NativeBridge", "MeshRenderer_setMaterial");
     }
 }

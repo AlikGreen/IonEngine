@@ -13,7 +13,7 @@
 [submodule "external/urhi"]
 	path = external/urhi
 	url = https://github.com/AlikGreen/urhi.git
-	branch = vulkan
+	branch = d3d12
 [submodule "external/jsoncons"]
 	path = external/jsoncons
 	url = https://github.com/danielaparker/jsoncons.git

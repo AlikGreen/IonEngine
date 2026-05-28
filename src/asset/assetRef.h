@@ -39,12 +39,15 @@ namespace ion
 
         bool operator==(const AssetRef other) const
         {
-            return m_id == other.m_id;
+            if(m_id.isValid())
+                return m_id == other.m_id;
+
+            return m_data == other.m_data;
         }
 
         bool operator!=(const AssetRef other) const
         {
-            return m_id != other.m_id;
+            return !(*this == other);
         }
 
         operator bool() const

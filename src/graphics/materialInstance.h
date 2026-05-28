@@ -51,7 +51,7 @@ public:
     bool setTexture(const std::string& name, const AssetRef<Image>& image);
     bool setSampler(const std::string& name, const AssetRef<Image>& image);
 
-    void applyBindings(const grl::Rc<urhi::CommandList>& cmd, const grl::Rc<urhi::RenderPass>& pass);
+    void applyBindings(const grl::Rc<urhi::CommandList>& cmd, urhi::RenderPass& pass);
 
     [[nodiscard]] const AssetRef<MaterialTemplate>& materialTemplate() const { return m_template; }
 

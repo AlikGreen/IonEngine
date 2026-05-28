@@ -12,6 +12,8 @@
 
 #include "asset/assetRegistry.h"
 #include "core/scene.h"
+#include "core/components/parentComponent.h"
+#include "core/components/tagComponent.h"
 #include "core/components/transformComponent.h"
 #include "graphics/graphicsSystem.h"
 #include "graphics/image.h"
@@ -38,11 +40,6 @@ namespace ion
         return scene;
     }
 
-    bool GLBSceneImporter::canImport(const std::filesystem::path &src) const
-    {
-        return src.extension() == ".glb" || src.extension() == ".gltf";
-    }
-
     bool isGlbFile(std::filesystem::path const& path)
     {
         std::ifstream file(path, std::ios::binary);
@@ -57,6 +54,11 @@ namespace ion
             && magic[1] == 'l'
             && magic[2] == 'T'
             && magic[3] == 'F';
+    }
+
+    bool GLBSceneImporter::canImport(const std::filesystem::path &src) const
+    {
+        return src.extension() == ".glb" || src.extension() == ".gltf" || isGlbFile(src);
     }
 
     bool GLBSceneImporter::loadModel(tinygltf::Model& model, const std::string& filePath)
@@ -98,8 +100,16 @@ namespace ion
 
     void GLBSceneImporter::processNodes(const tinygltf::Model& model, Scene& scene, const std::vector<AssetRef<MaterialInstance>>& materials, const AssetRef<MaterialInstance>& defaultMaterial)
     {
-        for (const auto& node : model.nodes)
+        std::unordered_map<int, entis::Entity> nodeEntityMap;
+
+        for (int i = 0; i < static_cast<int>(model.nodes.size()); ++i)
         {
+            auto node = model.nodes[i];
+
+            entis::Entity entity = scene.createEntity();
+            entity.get<Tag>().name = node.name;
+            nodeEntityMap.emplace(i, entity);
+
             if (node.mesh < 0) continue;
 
             const tinygltf::Mesh& mesh = model.meshes[node.mesh];
@@ -107,10 +117,22 @@ namespace ion
             if (!nMesh) continue;
 
             const auto meshHandle = Engine::assetRegistry().add(nMesh);
-            entis::Entity entity = scene.createEntity();
+            Engine::assetRegistry().setName(meshHandle.id(), mesh.name);
 
             setupTransform(entity, node);
             setupMeshRenderer(entity, meshHandle, mesh, defaultMaterial, materials);
+        }
+
+        for (int i = 0; i < static_cast<int>(model.nodes.size()); ++i)
+        {
+            const tinygltf::Node& node = model.nodes[i];
+            const entis::Entity parent = nodeEntityMap.at(i);;
+
+            for (int childIdx : node.children)
+            {
+                entis::Entity child = nodeEntityMap.at(childIdx);
+                child.get<Parent>().setParent(parent);
+            }
         }
     }
 
@@ -163,6 +185,8 @@ namespace ion
         setupTextureProperties(mat, material, model);
         setupMaterialFlags(mat, material);
 
+        Engine::assetRegistry().setName(mat.id(), material.name);
+
         return mat;
     }
 
@@ -174,7 +198,6 @@ namespace ion
         if (pbr.baseColorTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.baseColorTexture.index], model, true);
-            grl::Rc<urhi::TextureView> view = device->createTextureView(urhi::TextureViewDesc(imageRef->texture()));
             mat->setTexture("albedoMap", imageRef);
             mat->setSampler("albedoSampler", imageRef);
         }
@@ -315,41 +338,26 @@ namespace ion
         const tinygltf::Image& image = model.images[texture.source];
         const std::vector<uint8_t>& data = image.image;
 
-        urhi::TextureDesc textureDescription{};
-        textureDescription.format = determineTextureFormat(image, isSrgb);
-        textureDescription.width = image.width;
-        textureDescription.height = image.height;
-        textureDescription.maxMipLevels = ~0u;
+        // if (texture.sampler >= 0)
+        // {
+        //     const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
+        //     samplerDescription.minFilter = convertGLTFFilter(sampler.minFilter);
+        //     samplerDescription.magFilter = convertGLTFFilter(sampler.magFilter);
+        //     samplerDescription.addressModeU = convertGLTFWrap(sampler.wrapS);
+        //     samplerDescription.addressModeV = convertGLTFWrap(sampler.wrapT);
+        // }
 
-        urhi::SamplerDesc samplerDescription{};
+        TextureData texData{};
+        texData.data.resize(data.size());
+        std::memcpy(texData.data.data(), data.data(), data.size());
+        texData.width = image.width;
+        texData.height = image.height;
+        texData.pixelFormat = determineTextureFormat(image, isSrgb);
 
-        if (texture.sampler >= 0)
-        {
-            const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
-            samplerDescription.minFilter = convertGLTFFilter(sampler.minFilter);
-            samplerDescription.magFilter = convertGLTFFilter(sampler.magFilter);
-            samplerDescription.addressModeU = convertGLTFWrap(sampler.wrapS);
-            samplerDescription.addressModeV = convertGLTFWrap(sampler.wrapT);
-        }
-
-        const grl::Rc<urhi::Device>& device = Engine::getSystem<GraphicsSystem>()->getDevice();
-        const grl::Rc<urhi::Texture>& tex = device->createTexture(textureDescription);
-        const grl::Rc<urhi::Sampler>& sampler = device->createSampler(samplerDescription);
-
-        urhi::TextureUploadDesc uploadDesc{};
-        uploadDesc.texture = tex;
-        uploadDesc.data = data.data();
-        uploadDesc.width = image.width;
-        uploadDesc.height = image.height;
-
-        const auto cmd = device->acquireCommandList(urhi::QueueType::Graphics);
-
-        cmd->begin();
-        cmd->updateTexture(uploadDesc);
-        cmd->generateMipmaps(tex);
-        device->submit(cmd);
-
-        return Engine::assetRegistry().create<Image>(tex, sampler);
+        auto& registry = Engine::assetRegistry();
+        auto asset = registry.create<Image>(texData);
+        registry.setName(asset.id(), texture.name);
+        return asset;
     }
 
     Mesh* GLBSceneImporter::createMesh(const tinygltf::Mesh& mesh, const tinygltf::Model& model)

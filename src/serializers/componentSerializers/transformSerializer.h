@@ -7,6 +7,7 @@ namespace ion
 class TransformSerializer final : public ComponentSerializer<Transform>
 {
 public:
+    static constexpr uint64_t typeId = grl::Hash::fnv1a64("ion::Transform");
     void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const Transform &transform) override
     {
         assetStream.write(transform.position);

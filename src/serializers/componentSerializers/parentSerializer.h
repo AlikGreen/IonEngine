@@ -8,6 +8,7 @@ namespace ion
 class ParentSerializer final : public ComponentSerializer<Parent>
 {
 public:
+    static constexpr uint64_t typeId = grl::Hash::fnv1a64("ion::Parent");
     void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const Parent &parent) override
     {
         assetStream.write<uint32_t>(parent.getParent().id());

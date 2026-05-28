@@ -48,7 +48,7 @@ public struct Tag
 [StructLayout(LayoutKind.Sequential)]
 public struct Camera
 {
-    private unsafe fixed byte data[304];
+    
 }
 
 [NativeComponent]
@@ -103,5 +103,60 @@ public struct Transform
 
     public Transform()
     {
+    }
+}
+
+[NativeComponent]
+[StructLayout(LayoutKind.Sequential)]
+public struct MeshRenderer
+{
+    public Mesh? mesh
+    {
+        get
+        {
+            unsafe
+            {
+                fixed (MeshRenderer* ptr = &this)
+                {
+                    uint id = NativeBridge.MeshRenderer_getMesh(ptr);
+                    return id == 0 ? null : new Mesh(id);
+                }
+            }
+        }
+        set
+        {
+            unsafe
+            {
+                fixed (MeshRenderer* ptr = &this)
+                {
+                    NativeBridge.MeshRenderer_setMesh(ptr, value?.id ?? 0);
+                }
+            }
+        }
+    }
+    
+    public Material? material
+    {
+        get
+        {
+            unsafe
+            {
+                fixed (MeshRenderer* ptr = &this)
+                {
+                    uint id = NativeBridge.MeshRenderer_getMaterial(ptr);
+                    return id == 0 ? null : new Material(id);
+                }
+            }
+        }
+        set
+        {
+            unsafe
+            {
+                fixed (MeshRenderer* ptr = &this)
+                {
+                    NativeBridge.MeshRenderer_setMaterial(ptr, value?.id ?? 0);
+                }
+            }
+        }
     }
 }

@@ -14,6 +14,7 @@ public:
     explicit GraphicsSystem(const urhi::WindowDesc &windowOptions);
 
     void preStartup() override;
+    void postStartup() override;
     void preUpdate() override;
     void preRender() override;
     void postRender() override;
@@ -27,6 +28,8 @@ public:
     [[nodiscard]] grl::Rc<urhi::Device> getDevice() const { return m_device; }
     [[nodiscard]] grl::Rc<urhi::Window> getWindow() const { return m_window; }
     [[nodiscard]] grl::Rc<urhi::Swapchain> getSwapchain() const { return m_swapchain; }
+
+    [[nodiscard]] float frameDuration() const { return m_frameDuration; }
 private:
     urhi::WindowDesc m_windowDesc;
 
@@ -37,5 +40,8 @@ private:
 
     grl::Rc<urhi::TextureView> m_renderView{};
     grl::Rc<urhi::TextureView> m_defaultTexture{};
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_frameStartTime;
+    float m_frameDuration{};
 };
 }

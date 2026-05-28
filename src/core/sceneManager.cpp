@@ -4,29 +4,29 @@
 
 namespace ion
 {
-    void SceneManager::addScene(const std::string& name, const AssetRef<Scene>& scene)
+    void SceneManager::setScene(const AssetRef<Scene> &scene)
     {
-        m_scenes.emplace(name, scene);
+        m_sceneToLoad = scene;
     }
 
-    void SceneManager::setScene(const std::string &name)
+    void SceneManager::loadScene()
     {
+        if(m_sceneToLoad == nullptr) return;
+        
         if(m_currentScene)
-            for(const auto& system : m_systems)
+        {
+            for(const auto& system : m_sceneUnloadedSystems)
             {
                 system->sceneUnloaded(*m_currentScene);
             }
+        }
 
-        m_currentScene = m_scenes[name];
+        m_currentScene = m_sceneToLoad;
+        m_sceneToLoad = nullptr;
 
-        for(const auto& system : m_systems)
+        for(const auto& system : m_sceneLoadedSystems)
         {
             system->sceneLoaded(*m_currentScene);
         }
-    }
-
-    Scene& SceneManager::getCurrentScene() const
-    {
-        return *m_currentScene;
     }
 }

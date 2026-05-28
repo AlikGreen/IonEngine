@@ -61,7 +61,9 @@ namespace ion
             || !ctx.has("pass_data_buffer"))
             return;
 
-        MaterialInstance& material = *ctx.get<MaterialInstance*>("skybox_material");
+        const auto material = ctx.get<MaterialInstance*>("skybox_material");
+        if(material == nullptr) return;
+
         const auto cameraBuffer = ctx.get<grl::Rc<urhi::Buffer>>("camera_buffer");
         const auto sceneColorTexture = ctx.get<grl::Rc<urhi::TextureView>>("scene_color_texture");
         const auto sceneDepthTexture = ctx.get<grl::Rc<urhi::TextureView>>("scene_depth_texture");
@@ -80,19 +82,19 @@ namespace ion
         urhi::RenderPassDesc renderPassDesc{};
         renderPassDesc.colorAttachments = {colorAttachment};
         renderPassDesc.depthAttachment = depthAttachment;
-        const auto pass = cmd->beginRenderPass(renderPassDesc);
+        auto& pass = cmd->beginRenderPass(renderPassDesc);
 
-        auto pipeline = material.materialTemplate()->getOrCreatePipeline(*m_shaderModule, m_pipelineDesc);
-        pass->setPipeline(pipeline);
+        const auto pipeline = material->materialTemplate()->getOrCreatePipeline(*m_shaderModule, m_pipelineDesc);
+        pass.setPipeline(pipeline);
 
-        material.applyBindings(cmd, pass);
-        pass->setBuffer("camera", cameraBuffer);
-        pass->setBuffer("pass", passDataBuffer);
+        material->applyBindings(cmd, pass);
+        pass.setBuffer("camera", cameraBuffer);
+        pass.setBuffer("pass", passDataBuffer);
 
-        pass->setVertexBuffer(0, m_screenMesh.vertexBuffer());
-        pass->setIndexBuffer(m_screenMesh.indexBuffer(), urhi::IndexFormat::UInt32);
-        pass->drawIndexed(6);
+        pass.setVertexBuffer(0, m_screenMesh.vertexBuffer());
+        pass.setIndexBuffer(m_screenMesh.indexBuffer(), urhi::IndexFormat::UInt32);
+        pass.drawIndexed(6);
 
-        pass->end();
+        pass.end();
     }
 }

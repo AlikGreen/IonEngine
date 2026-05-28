@@ -68,7 +68,7 @@ namespace ion
         urhi::RenderPassDesc renderPassDesc{};
         renderPassDesc.colorAttachments = {colorAttachment};
         renderPassDesc.depthAttachment = depthAttachment;
-        const auto pass = cmd->beginRenderPass(renderPassDesc);
+        auto& pass = cmd->beginRenderPass(renderPassDesc);
 
         const auto& renderables = *ctx.get<std::vector<Renderable>*>("opaque_renderables");
 
@@ -78,22 +78,22 @@ namespace ion
             ModelUniforms modelUniforms = { renderable.worldMatrix, normalMatrix };
 
             auto pipeline = renderable.material->materialTemplate()->getOrCreatePipeline(*m_shaderModule, m_pipelineDesc);
-            pass->setPipeline(pipeline);
+            pass.setPipeline(pipeline);
 
-            pass->setBuffer("camera", cameraBuffer);
-            pass->setBuffer("pass", passDataBuffer);
-            pass->setBuffer("pointLights", pointLightsBuffer);
-            pass->pushConstants(modelUniforms);
+            pass.setBuffer("camera", cameraBuffer);
+            pass.setBuffer("pass", passDataBuffer);
+            pass.setBuffer("pointLights", pointLightsBuffer);
+            pass.pushConstants(modelUniforms);
 
             renderable.material->applyBindings(cmd, pass);
 
             const Primitive primitive = renderable.mesh->primitives().at(renderable.submeshIndex);
 
-            pass->setVertexBuffer(0, renderable.mesh->vertexBuffer());
-            pass->setIndexBuffer(renderable.mesh->indexBuffer(), urhi::IndexFormat::UInt32);
-            pass->drawIndexed(primitive.indexCount, 1, primitive.indexStart);
+            pass.setVertexBuffer(0, renderable.mesh->vertexBuffer());
+            pass.setIndexBuffer(renderable.mesh->indexBuffer(), urhi::IndexFormat::UInt32);
+            pass.drawIndexed(primitive.indexCount, 1, primitive.indexStart);
         }
 
-        pass->end();
+        pass.end();
     }
 }

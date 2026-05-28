@@ -38,6 +38,7 @@ private:
     AssetFileReader() = default;
     std::fstream m_file;
 
+    std::string m_name;
     AssetHeader m_header{};
     std::vector<SectionEntry> m_sections;
     std::unordered_map<uint64_t, SectionEntry> m_sectionMap;

@@ -19,7 +19,11 @@ public:
     Renderer() = default;
 
     static CulledRenderables performCulling(Scene& scene, entis::Entity camEntity);
+    static CulledRenderables performCulling(Scene& scene, glm::mat4 camTransform, const Camera& camera);
+
     static CameraData createCameraUniformData(entis::Entity camEntity);
+    static CameraData createCameraUniformData(glm::mat4 camTransform, const glm::mat4 &camProj);
+
     static PointLightsData createPointLightsUniformData(Scene &scene);
     static PassData createPassData(glm::vec2 resolution);
 

@@ -5,6 +5,11 @@
 
 #include <unordered_map>
 
+namespace entis
+{
+    class Registry;
+}
+
 namespace ion
 {
 class ScriptContext
@@ -32,6 +37,7 @@ public:
     }
 
     void reload();
+    bool isLoaded() const { return m_loaded; }
 
     void onBeforeUnload(const std::function<void(ScriptContext&)> &callback) { m_onBeforeUnload.push_back(callback); }
     void onAfterReload(const std::function<void(ScriptContext&)> &callback) { m_onAfterReload.push_back(callback); }

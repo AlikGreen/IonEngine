@@ -81,6 +81,7 @@ namespace ion
         AssetFileReader reader{};
         reader.m_file.open(path, std::ios::in | std::ios::binary);
         reader.m_file.read(reinterpret_cast<char*>(&reader.m_header), sizeof(AssetHeader));
+        reader.m_name = path.stem().string();
         return reader;
     }
 

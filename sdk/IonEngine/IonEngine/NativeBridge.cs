@@ -1,5 +1,6 @@
 ﻿using Coral.Managed.Interop;
 using IonEngine.Maths;
+// ReSharper disable InconsistentNaming
 
 namespace IonEngine;
 
@@ -40,5 +41,28 @@ internal static unsafe class NativeBridge
     internal static delegate*<Transform*, Vector3> Transform_getForward;
     internal static delegate*<Transform*, Vector3> Transform_getRight;
     internal static delegate*<Transform*, Vector3> Transform_getUp;
+    
+    // MeshRenderer
+    internal static delegate*<MeshRenderer*, uint> MeshRenderer_getMesh;
+    internal static delegate*<MeshRenderer*, uint, void> MeshRenderer_setMesh;
+    
+    internal static delegate*<MeshRenderer*, uint> MeshRenderer_getMaterial;
+    internal static delegate*<MeshRenderer*, uint, void> MeshRenderer_setMaterial;
+    
+    // Mesh
+    internal static delegate*<IntPtr, NativeArray<Vertex>> Mesh_getVertices;
+    internal static delegate*<IntPtr, NativeArray<Vertex>, void> Mesh_setVertices;
+    
+    internal static delegate*<IntPtr, NativeArray<int>> Mesh_getIndices;
+    internal static delegate*<IntPtr, NativeArray<int>, void> Mesh_setIndices;
+    
+    internal static delegate*<uint> Mesh_create; // returns the handle
+    internal static delegate*<uint, IntPtr> Mesh_get; // returns the ptr
+    internal static delegate*<uint, void> Mesh_release;
+    
+    // Material Instance
+    internal static delegate*<uint> MaterialInstance_create;
+    internal static delegate*<uint, IntPtr> MaterialInstance_get;
+    internal static delegate*<uint, void> MaterialInstance_release;
 #pragma warning restore CS0649
 }           

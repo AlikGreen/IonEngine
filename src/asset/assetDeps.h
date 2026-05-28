@@ -1,4 +1,5 @@
 #pragma once
+#include <stack>
 #include <unordered_set>
 #include <utility>
 
@@ -33,7 +34,7 @@ public:
         if (!ref || m_seen.contains(ref.id())) return;
         m_seen.insert(ref.id());
 
-        m_pending.push_back(
+        m_pending.push(
         {
             ref.id(),
             m_registry.stableId<T>(),
@@ -44,10 +45,10 @@ public:
         });
     }
 
-    [[nodiscard]] const std::vector<AssetDependency>& pending() const { return m_pending; }
+    std::stack<AssetDependency>& pending() { return m_pending; }
 private:
     AssetRegistry& m_registry;
     std::unordered_set<AssetId> m_seen;
-    std::vector<AssetDependency> m_pending;
+    std::stack<AssetDependency> m_pending;
 };
 }

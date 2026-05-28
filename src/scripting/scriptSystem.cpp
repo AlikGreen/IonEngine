@@ -3,6 +3,10 @@
 #include "scriptComponent.h"
 #include "core/engine.h"
 #include "core/sceneManager.h"
+#include "core/components/tagComponent.h"
+#include "core/components/transformComponent.h"
+#include "graphics/components/camera.h"
+#include "graphics/components/meshRenderer.h"
 
 
 namespace ion
@@ -12,7 +16,11 @@ namespace ion
         auto* ctx = Engine::scriptManager().getContext("UserScripts");
         if(!ctx) return;
 
-        auto& registry = Engine::sceneManager().getCurrentScene().registry();
+        auto& registry = scene.registry();
+        registry.asTypeErased().registerType<Transform>();
+        registry.asTypeErased().registerType<Camera>();
+        registry.asTypeErased().registerType<Tag>();
+        registry.asTypeErased().registerType<MeshRenderer>();
 
         for(const auto& [entity, comp] : registry.view<ScriptComponent>())
         {
@@ -37,9 +45,9 @@ namespace ion
         }
     }
 
-    void ScriptSystem::update()
+    void ScriptSystem::update(Scene& scene)
     {
-        auto& registry = Engine::sceneManager().getCurrentScene().registry();
+        auto& registry = scene.registry();
         for(auto [entity, scriptComponent] : registry.view<ScriptComponent>())
         {
             for(auto& script : scriptComponent.scripts)

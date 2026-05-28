@@ -9,7 +9,12 @@ namespace ion
 {
     CulledRenderables Renderer::performCulling(Scene &scene, entis::Entity camEntity)
     {
-        const auto& camera = camEntity.get<Camera>();
+        const glm::mat4 cameraMat = Transform::getWorldMatrix(camEntity);
+        return performCulling(scene, cameraMat, camEntity.get<Camera>());
+    }
+
+    CulledRenderables Renderer::performCulling(Scene &scene, glm::mat4 camTransform, const Camera& camera)
+    {
         const auto& meshRenderers = scene.registry().view<MeshRenderer, Transform>();
         std::vector<Renderable> renderables;
         renderables.reserve(meshRenderers.size());
@@ -18,13 +23,16 @@ namespace ion
         std::vector<Renderable> transparentRenderables;
         transparentRenderables.reserve(meshRenderers.size());
 
+        const glm::mat4 flip = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, -1));
+        const glm::mat4 viewMat = glm::inverse(camTransform * flip);
+
         for (auto[entity, meshRenderer, transform] : meshRenderers)
         {
-            if(meshRenderer.mesh == nullptr) continue;
+            if(meshRenderer.mesh == nullptr || !meshRenderer.mesh->isDrawable()) continue;
 
             const glm::mat4 worldMat = Transform::getWorldMatrix(entity);
-            glm::mat4 cameraMat = Transform::getWorldMatrix(camEntity);
-            if(camera.getFrustum(glm::inverse(cameraMat)).intersects(meshRenderer.mesh->bounds()))
+            AABB worldBounds = meshRenderer.mesh->bounds().transformed(worldMat);
+            if(camera.getFrustum(viewMat).intersects(worldBounds))
             {
                 for(size_t i = 0; i < meshRenderer.mesh->primitives().size(); i++)
                 {
@@ -40,7 +48,7 @@ namespace ion
                     renderable.submeshIndex = i;
                     renderable.worldMatrix = worldMat;
 
-                    auto camPos = glm::vec3(cameraMat[3]);
+                    auto camPos = glm::vec3(camTransform[3]);
                     auto meshPos = glm::vec3(worldMat[3]);
 
                     renderable.distanceToCamera = glm::distance(camPos, meshPos);
@@ -71,10 +79,15 @@ namespace ion
     CameraData Renderer::createCameraUniformData(entis::Entity camEntity)
     {
         const auto worldMat = Transform::getWorldMatrix(camEntity);
+        return createCameraUniformData(worldMat, camEntity.get<Camera>().getProjectionMatrix());
+    }
+
+    CameraData Renderer::createCameraUniformData(glm::mat4 camTransform, const glm::mat4 &camProj)
+    {
         const glm::mat4 flip = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, -1));
-        const glm::mat4 invViewMat = worldMat * flip;
+        const glm::mat4 invViewMat = camTransform * flip;
         const glm::mat4 viewMat = glm::inverse(invViewMat);
-        const glm::mat4 projMat = camEntity.get<Camera>().getProjectionMatrix();
+        const glm::mat4 projMat = camProj;
         const glm::mat4 viewProjMat = projMat * viewMat;
 
         CameraData cameraUniformData{};
@@ -84,7 +97,7 @@ namespace ion
         cameraUniformData.invView = invViewMat;
         cameraUniformData.invProjection = glm::inverse(projMat);
         cameraUniformData.invViewProjection = glm::inverse(viewProjMat);
-        cameraUniformData.position = xyz(worldMat[3]);
+        cameraUniformData.position = xyz(camTransform[3]);
 
         return cameraUniformData;
     }

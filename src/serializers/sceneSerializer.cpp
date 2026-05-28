@@ -34,7 +34,7 @@ namespace ion
             {
                 const uint32_t beforeWrite = assetStream.getCursor();
                 assetStream.write<uint32_t>(0);      // size placeholder
-                assetStream.write<uint32_t>(typeId);
+                assetStream.write<uint64_t>(typeId);
 
                 const uint32_t beforeData = assetStream.getCursor();
                 serializer(assetRegistry, assetStream, deps, entity);
@@ -86,7 +86,7 @@ namespace ion
                 uint32_t componentSize = 0;
                 assetStream.read(componentSize);
 
-                uint32_t typeId = 0;
+                uint64_t typeId = 0;
                 assetStream.read(typeId);
 
                 // Find and execute the deserializer

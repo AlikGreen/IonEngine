@@ -9,11 +9,9 @@
 
 namespace ion
 {
-    void AudioSystem::postUpdate()
+    void AudioSystem::postUpdate(Scene& scene)
     {
-        entis::Registry& registry = Engine::sceneManager().getCurrentScene().registry();
-
-        auto& audioSources = registry.view<AudioSource, Transform>();
+        auto& audioSources = scene.registry().view<AudioSource, Transform>();
 
         AudioManager& audioManager = Engine::audioManager();
 

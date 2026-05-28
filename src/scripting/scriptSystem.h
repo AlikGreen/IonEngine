@@ -9,6 +9,6 @@ public:
     void sceneLoaded(Scene &scene) override;
     void sceneUnloaded(Scene &scene) override;
 
-    void update() override;
+    void update(Scene& scene) override;
 };
 }

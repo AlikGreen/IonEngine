@@ -8,6 +8,7 @@ namespace ion
 class MeshRendererSerializer final : public ComponentSerializer<MeshRenderer>
 {
 public:
+    static constexpr uint64_t typeId = grl::Hash::fnv1a64("ion::MeshRenderer");
     void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const MeshRenderer& renderer) override
     {
         deps.require(renderer.mesh);

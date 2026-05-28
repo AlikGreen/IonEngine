@@ -11,6 +11,7 @@ namespace ion
         m_format = m_texture->format();
         m_width = m_texture->width();
         m_height = m_texture->height();
+        m_uploaded = true;
     }
 
     Image::Image(const TextureData &data, const grl::Rc<urhi::Sampler> &sampler)
@@ -57,17 +58,26 @@ namespace ion
 
     std::vector<uint8_t> Image::pixels() const
     {
-        return m_pixels;
-    }
+        if(!m_uploaded)
+        {
+            return m_pixels;
+        }
 
-    uint32_t Image::width() const
-    {
-        return m_width;
-    }
+        const grl::Rc<urhi::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
+        const auto cmd = device->acquireCommandList(urhi::QueueType::Graphics);
 
-    uint32_t Image::height() const
-    {
-        return m_height;
+        urhi::TextureReadbackDesc desc;
+        desc.width = m_width;
+        desc.height = m_height;
+        desc.texture = m_texture;
+        const auto result = cmd->readback(desc);
+        device->submit(cmd);
+
+        std::vector<uint8_t> pixels{};
+        pixels.resize(result->size());
+
+        std::memcpy(pixels.data(), result->data(), result->size());
+        return pixels;
     }
 
     uint32_t Image::sizeInBytes() const
@@ -102,5 +112,7 @@ namespace ion
 
         m_pixels.clear();
         m_pixels.shrink_to_fit();
+        m_uploaded = true;
+
     }
 }

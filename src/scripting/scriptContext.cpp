@@ -8,6 +8,8 @@
 #include "bindings/ecsScriptBindings.h"
 #include "bindings/inputScriptBindings.h"
 #include "bindings/loggingScriptBindings.h"
+#include "bindings/materialScriptBindings.h"
+#include "bindings/meshScriptBindings.h"
 #include "Coral/HostInstance.hpp"
 #include "core/engine.h"
 #include "core/sceneManager.h"
@@ -54,13 +56,8 @@ namespace ion
             cb(*this);
         }
 
-        auto& registry = Engine::sceneManager().getCurrentScene().registry();
-
         if(m_loaded)
         {
-            for(const auto& [entity, comp] : registry.view<ScriptComponent>())
-                comp.unload();
-
             m_hostInstance->UnloadAssemblyLoadContext(m_loadContext);
         }
 
@@ -89,7 +86,7 @@ namespace ion
         m_componentScriptBaseType = findType("IonEngine.ComponentScript");
         m_systemScriptBaseType    = findType("IonEngine.SystemScript");
 
-        for(const auto& [name, assembly] : m_assemblies)
+        for(const auto &assembly: m_assemblies | std::views::values)
         {
             for(const auto& type : assembly->GetLocalTypes())
             {
@@ -97,20 +94,6 @@ namespace ion
                     m_componentScriptTypes.push_back(&type);
                 if(type.IsSubclassOf(*m_systemScriptBaseType))
                     m_systemScriptTypes.push_back(&type);
-            }
-        }
-
-        for(const auto& [entity, comp] : registry.view<ScriptComponent>())
-        {
-            comp.reload(*this, entity);
-        }
-
-        for(auto [entity, scriptComponent] : registry.view<ScriptComponent>())
-        {
-            for(auto& script : scriptComponent.scripts)
-            {
-                if(script.object().IsValid())
-                    script.object().InvokeMethod("Start");
             }
         }
 
@@ -129,5 +112,7 @@ namespace ion
         registerBindings<EcsScriptBindings>("IonEngine");
         registerBindings<InputScriptBindings>("IonEngine");
         registerBindings<LoggingScriptBindings>("IonEngine");
+        registerBindings<MeshScriptBindings>("IonEngine");
+        registerBindings<MaterialScriptBindings>("IonEngine");
     }
 }

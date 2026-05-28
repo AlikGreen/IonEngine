@@ -8,16 +8,9 @@ namespace ion
 {
     glm::mat4 Transform::getLocalMatrix() const
     {
-        const glm::mat4 localTranslationMatrix = glm::translate(glm::mat4(1.0f), position);
-
-        const glm::mat4 Rx = glm::rotate(glm::mat4(1.0f), rotation.x, glm::vec3(1, 0, 0));
-        const glm::mat4 Ry = glm::rotate(glm::mat4(1.0f), rotation.y, glm::vec3(0, 1, 0));
-        const glm::mat4 Rz = glm::rotate(glm::mat4(1.0f), rotation.z, glm::vec3(0, 0, 1));
-        const glm::mat4 localRotationMatrix = Rz * Ry * Rx;
-
-        const glm::mat4 localScaleMatrix = glm::scale(glm::mat4(1.0f), scale);
-
-        return localTranslationMatrix * localRotationMatrix * localScaleMatrix;
+        return glm::translate(glm::mat4(1.0f), position)
+         * glm::mat4_cast(rotation)
+         * glm::scale(glm::mat4(1.0f), scale);
     }
 
     void Transform::setLocalMatrix(const glm::mat4 &transform)
@@ -30,6 +23,15 @@ namespace ion
         rotation = glm::eulerAngles(rotQuat);
     }
 
+    glm::vec3 Transform::eulerAngles() const
+    {
+        return glm::eulerAngles(rotation);
+    }
+
+    void Transform::eulerAngles(const glm::vec3 vec)
+    {
+        rotation = glm::quat(vec);
+    }
 
     glm::vec3 Transform::forward() const
     {
@@ -62,23 +64,39 @@ namespace ion
     }
 
 
-    // TODO speed up and remove recursion
-
     glm::mat4 Transform::getWorldMatrix(entis::Entity entity, const glm::mat4& parentMatrix)
     {
         const auto parent = entity.get<Parent>();
 
-        // Get this entity's local transform matrix
         const glm::mat4 localMatrix = entity.get<Transform>().getLocalMatrix();
 
         if(parent.hasParent())
         {
-            // Recursively get the parent's world matrix and multiply with local
             const glm::mat4 parentWorldMatrix = getWorldMatrix(parent.getParent(), parentMatrix);
             return parentWorldMatrix * localMatrix;
         }
 
-        // No parent, so world matrix is just parent matrix * local matrix
         return parentMatrix * localMatrix;
+    }
+
+    glm::mat4 Transform::setWorldMatrix(entis::Entity entity, const glm::mat4& matrix)
+    {
+        const auto& parent = entity.get<Parent>();
+
+        glm::mat4 localMatrix = matrix;
+
+        if (parent.hasParent())
+        {
+            const glm::mat4 parentWorld = getWorldMatrix(parent.getParent(), glm::mat4(1.0f));
+            localMatrix = glm::inverse(parentWorld) * matrix;
+        }
+
+        auto& transform = entity.get<Transform>();
+
+        glm::vec3 skew;
+        glm::vec4 perspective;
+        glm::decompose(localMatrix, transform.scale, transform.rotation, transform.position, skew, perspective);
+
+        return localMatrix;
     }
 }
