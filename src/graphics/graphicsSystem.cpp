@@ -27,7 +27,7 @@ namespace ion
         clogr::defaultLogger()->addSink<clogr::FileSink>(R"(C:\Users\alikg\Downloads\log.log)");
         m_context = urhi::Context::create(
         {
-            .api = urhi::BackendAPI::Vulkan,
+            .api = urhi::BackendAPI::OpenGL,
             .cachePath = "./shaders"
         });
 
@@ -37,7 +37,7 @@ namespace ion
         urhi::SwapchainDesc swapchainDesc{};
         swapchainDesc.window = m_window;
         swapchainDesc.device = m_device;
-        swapchainDesc.presentMode = urhi::PresentMode::NoVSync;
+        swapchainDesc.presentMode = urhi::PresentMode::VSync;
 
         m_swapchain = m_context->createSwapchain(swapchainDesc);
 

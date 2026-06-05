@@ -64,6 +64,7 @@ namespace ion
 
         urhi::DepthStencilAttachment depthAttachment{};
         depthAttachment.target = sceneDepthTexture;
+        depthAttachment.loadOp = urhi::LoadOp::Clear;
 
         urhi::RenderPassDesc renderPassDesc{};
         renderPassDesc.colorAttachments = {colorAttachment};

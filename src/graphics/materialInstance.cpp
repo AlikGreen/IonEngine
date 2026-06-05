@@ -60,13 +60,13 @@ namespace ion
         for (const auto& [name, image] : m_textures)
         {
             pass.setTexture("material."+name, image->textureView());
-            boundNames.insert(name);
+            boundNames.insert("material."+name);
         }
 
         for (const auto& [name, image] : m_samplers)
         {
             pass.setSampler("material."+name, image->sampler());
-            boundNames.insert(name);
+            boundNames.insert("material."+name);
         }
 
         // Bind defaults for unbound resources

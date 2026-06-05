@@ -97,7 +97,7 @@ float4 fragmentMain(VertexOutput input) : SV_Target
         accumulatedLight += diffuse;
     }
 
-    float3 ambient = so.baseColor * 0.05;
+    float3 ambient = so.baseColor * 0.1;
     float3 finalColor = accumulatedLight * so.baseColor + ambient;
 
     // Tone mapping
