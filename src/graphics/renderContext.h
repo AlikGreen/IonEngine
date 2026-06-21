@@ -39,7 +39,7 @@ public:
         return defaultValue;
     }
 
-    bool has(const std::string& name) const
+    [[nodiscard]] bool has(const std::string& name) const
     {
         return m_data.contains(name);
     }

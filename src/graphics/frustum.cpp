@@ -12,24 +12,23 @@ namespace ion
     {
         glm::mat4 m = projection * view;
 
+        // GLM is column-major: m[col][row]
+        // So to get row i, you take m[0][i], m[1][i], m[2][i], m[3][i]
         const glm::vec4 r0(m[0][0], m[1][0], m[2][0], m[3][0]);
         const glm::vec4 r1(m[0][1], m[1][1], m[2][1], m[3][1]);
         const glm::vec4 r2(m[0][2], m[1][2], m[2][2], m[3][2]);
         const glm::vec4 r3(m[0][3], m[1][3], m[2][3], m[3][3]);
 
-        left  = r3 + r0;
-        right = r3 - r0;
-        bottom = r3 + r1;
-        top    = r3 - r1;
-        nearP  = r3 + r2;
-        farP   = r3 - r2;
+        m_planes[0] = r3 + r0;  // left
+        m_planes[1] = r3 - r0;  // right
+        m_planes[2] = r3 + r1;  // bottom
+        m_planes[3] = r3 - r1;  // top
+        // Vulkan NDC: depth in [0, 1] — use r2 for near, not r3+r2
+        m_planes[4] = r2;        // near
+        m_planes[5] = r3 - r2;  // far
 
-        normalize(left);
-        normalize(right);
-        normalize(bottom);
-        normalize(top);
-        normalize(nearP);
-        normalize(farP);
+        for (auto& plane : m_planes)
+            normalize(plane);
     }
 
     bool Frustum::intersects(const AABB &aabb) const
@@ -37,10 +36,10 @@ namespace ion
         const glm::vec3 c = (aabb.min + aabb.max) * 0.5f;
         const glm::vec3 e = (aabb.max - aabb.min) * 0.5f;
 
-        for (auto* p : {&left, &right, &bottom, &top, &nearP, &farP})
+        for (const auto& p : m_planes)
         {
-            glm::vec3 n(p->x, p->y, p->z);
-            const float d = p->w;
+            glm::vec3 n(p.x, p.y, p.z);
+            const float d = p.w;
             const float r = e.x * glm::abs(n.x) + e.y * glm::abs(n.y) + e.z * glm::abs(n.z);
             const float s = glm::dot(n, c) + d;
             if (s + r < 0.0f) return false;

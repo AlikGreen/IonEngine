@@ -44,13 +44,13 @@ type_param TMaterial : IMaterial;
 ParameterBlock<TMaterial> material;
 
 ConstantBuffer<PointLights> pointLights;
-
-[[vk::push_constant]]
-ModelInfo model;
+StructuredBuffer<ModelInfo> modelData;
 
 [shader("vertex")]
-VertexOutput vertexMain(VertexInput input)
+VertexOutput vertexMain(VertexInput input, uint primitiveIndex : SV_StartInstanceLocation)
 {
+    ModelInfo model = modelData[primitiveIndex];
+
     VertexOutput output;
 
     output.normal = normalize(mul((float3x3)model.normalMatrix, input.normal));
@@ -75,7 +75,8 @@ float4 fragmentMain(VertexOutput input) : SV_Target
     si.viewDirWS = viewDir;
     si.uv = input.uv;
 
-    SurfaceOutput so = material.evaluate(si);
+    SurfaceOutput so; // = material.evaluate(si);
+    so.baseColor = float3(1.0, 1.0, 1.0);
 
     float3 accumulatedLight = float3(0.0);
 

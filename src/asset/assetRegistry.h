@@ -89,7 +89,11 @@ public:
 
         for (const auto& loader : m_loaders)
         {
-            if (!loader->canLoad(id)) continue;
+            if (!loader->canLoad(id))
+            {
+                continue;
+            }
+
             auto bytes = loader->load(id);
             if (bytes.empty()) continue;
             auto serializer = m_serializers.find<T>();
@@ -155,13 +159,14 @@ public:
             it->second.name = name;
     }
 
-    const std::string& getName(const AssetId asset) const
+    [[nodiscard]] const std::string& getName(const AssetId asset) const
     {
         const auto it = m_assets.find(asset);
         if(it != m_assets.end())
             return it->second.name;
 
-        return "";
+        static std::string empty = "";
+        return empty;
     }
 
     template<typename T>

@@ -66,6 +66,9 @@ public:
 
     [[nodiscard]] const auto& resources() const { return m_template->resources(); }
     [[nodiscard]] const auto& properties() const { return m_template->properties(); }
+
+    bool dirty() const { return m_dirty; }
+    void dirty(const bool dirty) { m_dirty = dirty; }
 private:
     AssetRef<MaterialTemplate> m_template;
 

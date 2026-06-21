@@ -11,6 +11,7 @@ add_subdirectory(${DEPS_DIR}/urhi)
 add_subdirectory(${DEPS_DIR}/entis)
 add_subdirectory(${DEPS_DIR}/coral)
 add_subdirectory(${DEPS_DIR}/jsoncons)
+add_subdirectory(${DEPS_DIR}/meshoptimizer)
 
 file(GLOB_RECURSE
         SRC_FILES
@@ -42,4 +43,5 @@ target_link_libraries(ionEngine PUBLIC
         urhi::imgui
         miniaudio
         jsoncons
-        Coral.Native)
+        Coral.Native
+        meshoptimizer)

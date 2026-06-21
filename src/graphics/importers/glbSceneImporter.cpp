@@ -2,44 +2,18 @@
 
 #include <tiny_gltf.h>
 
-#include "graphics/components/meshRenderer.h"
-#include "core/engine.h"
-#include "glm/gtc/type_ptr.hpp"
-
-#include <urhi/urhi.h>
-#include <clogr.h>
-
-
 #include "asset/assetRegistry.h"
-#include "core/scene.h"
+#include "core/engine.h"
 #include "core/components/parentComponent.h"
 #include "core/components/tagComponent.h"
 #include "core/components/transformComponent.h"
+#include "glm/gtc/quaternion.hpp"
 #include "graphics/graphicsSystem.h"
-#include "graphics/image.h"
 #include "graphics/materialInstance.h"
+#include "graphics/components/meshRenderer.h"
 
 namespace ion
 {
-    grl::Box<Scene> GLBSceneImporter::import(const std::filesystem::path& filePath, const NoOptions&)
-    {
-        tinygltf::Model model;
-        if (!loadModel(model, filePath.string()))
-        {
-            return nullptr;
-        }
-
-        auto scene = grl::makeBox<Scene>();
-
-        scene->name = filePath.stem().string();
-
-        const auto materials = processMaterials(model);
-        static AssetRef<MaterialInstance> defaultMaterial = Engine::assetRegistry().create<MaterialInstance>(MaterialTemplates::pbr());
-        processNodes(model, *scene, materials, defaultMaterial);
-
-        return scene;
-    }
-
     bool isGlbFile(std::filesystem::path const& path)
     {
         std::ifstream file(path, std::ios::binary);
@@ -54,6 +28,29 @@ namespace ion
             && magic[1] == 'l'
             && magic[2] == 'T'
             && magic[3] == 'F';
+    }
+
+    grl::Box<Scene> GLBSceneImporter::import(const std::filesystem::path &filePath, const NoOptions &)
+    {
+        tinygltf::Model model;
+        if (!loadModel(model, filePath.string()))
+        {
+            return nullptr;
+        }
+
+        auto scene = grl::makeBox<Scene>();
+        scene->name = filePath.stem().string();
+
+        static AssetRef<MaterialInstance> defaultMaterial = Engine::assetRegistry().create<MaterialInstance>(MaterialTemplates::pbr());
+
+        auto materials = extractMaterials(model);
+        materials.push_back(defaultMaterial);
+
+        const auto meshes = extractMeshes(model);
+
+        processNodes(*scene, materials, meshes, model);
+
+        return scene;
     }
 
     bool GLBSceneImporter::canImport(const std::filesystem::path &src) const
@@ -85,282 +82,69 @@ namespace ion
         return success;
     }
 
-    std::vector<AssetRef<MaterialInstance>> GLBSceneImporter::processMaterials(const tinygltf::Model& model)
+    std::vector<AssetRef<MaterialInstance>> GLBSceneImporter::extractMaterials(const tinygltf::Model &model)
     {
-        std::vector<AssetRef<MaterialInstance>> materials;
+        std::vector<AssetRef<MaterialInstance>> materials{};
         materials.reserve(model.materials.size());
 
-        for (const auto& material : model.materials)
+        for(const auto& gltfMat : model.materials)
         {
-            materials.push_back(processMaterial(material, model));
+            auto material = processMaterial(model, gltfMat);
+            materials.push_back(material);
         }
 
         return materials;
     }
 
-    void GLBSceneImporter::processNodes(const tinygltf::Model& model, Scene& scene, const std::vector<AssetRef<MaterialInstance>>& materials, const AssetRef<MaterialInstance>& defaultMaterial)
-    {
-        std::unordered_map<int, entis::Entity> nodeEntityMap;
-
-        for (int i = 0; i < static_cast<int>(model.nodes.size()); ++i)
-        {
-            auto node = model.nodes[i];
-
-            entis::Entity entity = scene.createEntity();
-            entity.get<Tag>().name = node.name;
-            nodeEntityMap.emplace(i, entity);
-
-            if (node.mesh < 0) continue;
-
-            const tinygltf::Mesh& mesh = model.meshes[node.mesh];
-            const auto nMesh = grl::Rc<Mesh>(createMesh(mesh, model));
-            if (!nMesh) continue;
-
-            const auto meshHandle = Engine::assetRegistry().add(nMesh);
-            Engine::assetRegistry().setName(meshHandle.id(), mesh.name);
-
-            setupTransform(entity, node);
-            setupMeshRenderer(entity, meshHandle, mesh, defaultMaterial, materials);
-        }
-
-        for (int i = 0; i < static_cast<int>(model.nodes.size()); ++i)
-        {
-            const tinygltf::Node& node = model.nodes[i];
-            const entis::Entity parent = nodeEntityMap.at(i);;
-
-            for (int childIdx : node.children)
-            {
-                entis::Entity child = nodeEntityMap.at(childIdx);
-                child.get<Parent>().setParent(parent);
-            }
-        }
-    }
-
-    void GLBSceneImporter::setupTransform(entis::Entity& entity, const tinygltf::Node& node)
-    {
-        auto& transform = entity.get<Transform>();
-
-        if (node.translation.size() == 3)
-        {
-            transform.position = glm::vec3(node.translation[0], node.translation[1], node.translation[2]);
-        }
-        if (node.rotation.size() == 4)
-        {
-            transform.rotation = eulerAngles(glm::quat(
-                static_cast<float>(node.rotation[3]),
-                static_cast<float>(node.rotation[0]),
-                static_cast<float>(node.rotation[1]),
-                static_cast<float>(node.rotation[2])));
-        }
-        if (node.scale.size() == 3)
-        {
-            transform.scale = glm::vec3(node.scale[0], node.scale[1], node.scale[2]);
-        }
-    }
-
-    void GLBSceneImporter::setupMeshRenderer(entis::Entity& entity, const AssetRef<Mesh>& meshHandle, const tinygltf::Mesh& mesh, const AssetRef<MaterialInstance>& defaultMaterial, const std::vector<AssetRef<MaterialInstance>>& materials)
-    {
-        auto& meshRenderer = entity.emplace<MeshRenderer>();
-        meshRenderer.mesh = meshHandle;
-
-        if (mesh.primitives.empty() || mesh.primitives[0].material < 0)
-        {
-            meshRenderer.setMaterial(defaultMaterial);
-        }
-        else
-        {
-            for (const auto& primitive : mesh.primitives)
-            {
-                meshRenderer.materials.emplace_back(materials[primitive.material]);
-            }
-        }
-    }
-
-    AssetRef<MaterialInstance> GLBSceneImporter::processMaterial(const tinygltf::Material& material, const tinygltf::Model& model)
-    {
-        auto mat = Engine::assetRegistry().create<MaterialInstance>(MaterialTemplates::pbr());
-        // mat.name = material.name;
-
-        setupPBRProperties(mat, material, model);
-        setupTextureProperties(mat, material, model);
-        setupMaterialFlags(mat, material);
-
-        Engine::assetRegistry().setName(mat.id(), material.name);
-
-        return mat;
-    }
-
-    void GLBSceneImporter::setupPBRProperties(const AssetRef<MaterialInstance> &mat, const tinygltf::Material& material, const tinygltf::Model& model)
+    AssetRef<MaterialInstance> GLBSceneImporter::processMaterial(const tinygltf::Model &model, tinygltf::Material gltfMat)
     {
         const grl::Rc<urhi::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
-        const auto& pbr = material.pbrMetallicRoughness;
+        auto& assets = Engine::assetRegistry();
+
+        auto material = assets.create<MaterialInstance>(MaterialTemplates::pbr());
+        assets.setName(material.id(), gltfMat.name);
+
+        const auto& pbr = gltfMat.pbrMetallicRoughness;
 
         if (pbr.baseColorTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.baseColorTexture.index], model, true);
-            mat->setTexture("albedoMap", imageRef);
-            mat->setSampler("albedoSampler", imageRef);
+            material->setTexture("albedoMap", imageRef);
+            material->setSampler("albedoSampler", imageRef);
         }
 
         const auto& baseColor = pbr.baseColorFactor;
-        mat->set("baseColor", glm::vec4(baseColor[0], baseColor[1], baseColor[2], baseColor[3]));
+        material->set("baseColor", glm::vec4(baseColor[0], baseColor[1], baseColor[2], baseColor[3]));
         // mat.setProperty("matMetalness", static_cast<float>(pbr.metallicFactor));
-        mat->set("roughness", static_cast<float>(pbr.roughnessFactor));
+        material->set("roughness", static_cast<float>(pbr.roughnessFactor));
 
         if (pbr.metallicRoughnessTexture.index >= 0)
         {
             const AssetRef<Image> imageRef = loadTexture(model.textures[pbr.metallicRoughnessTexture.index], model, false);
-            mat->setTexture("metallicRoughnessMap", imageRef);
-            mat->setSampler("metallicRoughnessSampler", imageRef);
-
+            material->setTexture("metallicRoughnessMap", imageRef);
+            material->setSampler("metallicRoughnessSampler", imageRef);
         }
+
+        // TODO set other properties and textures eg normal, occlusion and emission
+
+        return material;
     }
 
-    void GLBSceneImporter::setupTextureProperties(const AssetRef<MaterialInstance> &mat, const tinygltf::Material& material, const tinygltf::Model& model)
+    std::vector<AssetRef<Mesh>> GLBSceneImporter::extractMeshes(tinygltf::Model &model)
     {
-        const grl::Rc<urhi::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
+        std::vector<AssetRef<Mesh>> meshes{};
+        meshes.reserve(model.meshes.size());
 
-        if (material.normalTexture.index >= 0)
+        for(const auto& gltfMesh : model.meshes)
         {
-            const AssetRef<Image> imageRef = loadTexture(model.textures[material.normalTexture.index], model, false);
-            mat->setTexture("normalMap", imageRef);
-            // mat->setSampler("material.normalSampler", imageRef);
-
-            // mat.setProperty("normalTextureStrength", static_cast<float>(material.normalTexture.scale));
+            auto mesh = processMesh(gltfMesh, model);
+            meshes.push_back(mesh);
         }
 
-        if (material.occlusionTexture.index >= 0)
-        {
-            const AssetRef<Image> imageRef = loadTexture(model.textures[material.occlusionTexture.index], model, false);
-            // mat->setTexture("occlusionTexture", imageRef);
-            // mat->setSampler("occlusionSampler", imageRef);
-            //
-            // mat->set("occlusionTextureStrength", static_cast<float>(material.occlusionTexture.strength));
-        }
-
-        if (material.emissiveTexture.index >= 0)
-        {
-            const AssetRef<Image> imageRef = loadTexture(model.textures[material.emissiveTexture.index], model, false);
-            // mat->setTexture("emissionTexture", imageRef);
-            // mat->setSampler("emissionSampler", imageRef);
-        }
-
-        const auto& emission = material.emissiveFactor;
-        // mat.setProperty("emission", glm::vec3(emission[0], emission[1], emission[2]));
+        return meshes;
     }
 
-    void GLBSceneImporter::setupMaterialFlags(AssetRef<MaterialInstance> mat, const tinygltf::Material& material)
-    {
-        // mat.setProperty("alphaCutoff", static_cast<float>(material.alphaCutoff));
-        // mat.setProperty<int>("doubleSided", material.doubleSided);
-    }
-
-    urhi::TextureFilter convertGLTFFilter(const int gltfFilter)
-    {
-        using namespace urhi;
-        switch (gltfFilter)
-        {
-            case TINYGLTF_TEXTURE_FILTER_NEAREST:
-            case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
-            case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:
-                return TextureFilter::Nearest;
-            case TINYGLTF_TEXTURE_FILTER_LINEAR:
-            case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
-            case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
-            default:
-                return TextureFilter::Linear;
-        }
-    }
-
-    urhi::MipmapFilter convertGLTFMipmapFilter(const int gltfFilter)
-    {
-        using namespace urhi;
-        switch (gltfFilter)
-        {
-            case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_NEAREST:
-            case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_NEAREST:
-                return MipmapFilter::Nearest;
-            case TINYGLTF_TEXTURE_FILTER_NEAREST_MIPMAP_LINEAR:
-            case TINYGLTF_TEXTURE_FILTER_LINEAR_MIPMAP_LINEAR:
-            default:
-                return MipmapFilter::Linear;
-        }
-    }
-
-    urhi::AddressMode convertGLTFWrap(const int gltfWrap)
-    {
-        using namespace urhi;
-        switch (gltfWrap)
-        {
-            case TINYGLTF_TEXTURE_WRAP_MIRRORED_REPEAT:
-                return AddressMode::MirroredRepeat;
-            case TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE:
-                return AddressMode::ClampToEdge;
-            case TINYGLTF_TEXTURE_WRAP_REPEAT:
-            default:
-                return AddressMode::Repeat;
-        }
-    }
-
-    urhi::PixelFormat determineTextureFormat(const tinygltf::Image& image, const bool isSRGB)
-    {
-        using namespace urhi;
-        const auto components = image.component;
-        const auto bits = image.bits;
-
-        if (components == 1)
-        {
-            if (bits == 8) return PixelFormat::R8UNorm;
-            if (bits == 16) return PixelFormat::R16Float;
-            if (bits == 32) return PixelFormat::R32Float;
-        }
-        else if (components == 2)
-        {
-            if (bits == 8) return PixelFormat::RG8UNorm;
-            if (bits == 16) return PixelFormat::RG16Float;
-            if (bits == 32) return PixelFormat::RG32Float;
-        }
-        else if (components == 3 || components == 4)
-        {
-            if (bits == 8) return isSRGB ? PixelFormat::RGBA8UNormSrgb : PixelFormat::RGBA8UNorm;
-            if (bits == 16) return PixelFormat::RGBA16Float;
-            if (bits == 32) return PixelFormat::RGBA32Float;
-        }
-
-        return PixelFormat::RGBA8UNorm;
-    }
-
-    AssetRef<Image> GLBSceneImporter::loadTexture(const tinygltf::Texture& texture, const tinygltf::Model& model, const bool isSrgb)
-    {
-        if (texture.source < 0)
-            return nullptr;
-
-        const tinygltf::Image& image = model.images[texture.source];
-        const std::vector<uint8_t>& data = image.image;
-
-        // if (texture.sampler >= 0)
-        // {
-        //     const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
-        //     samplerDescription.minFilter = convertGLTFFilter(sampler.minFilter);
-        //     samplerDescription.magFilter = convertGLTFFilter(sampler.magFilter);
-        //     samplerDescription.addressModeU = convertGLTFWrap(sampler.wrapS);
-        //     samplerDescription.addressModeV = convertGLTFWrap(sampler.wrapT);
-        // }
-
-        TextureData texData{};
-        texData.data.resize(data.size());
-        std::memcpy(texData.data.data(), data.data(), data.size());
-        texData.width = image.width;
-        texData.height = image.height;
-        texData.pixelFormat = determineTextureFormat(image, isSrgb);
-
-        auto& registry = Engine::assetRegistry();
-        auto asset = registry.create<Image>(texData);
-        registry.setName(asset.id(), texture.name);
-        return asset;
-    }
-
-    Mesh* GLBSceneImporter::createMesh(const tinygltf::Mesh& mesh, const tinygltf::Model& model)
+    AssetRef<Mesh> GLBSceneImporter::processMesh(const tinygltf::Mesh &mesh, const tinygltf::Model &model)
     {
         if (mesh.primitives.empty())
         {
@@ -370,7 +154,10 @@ namespace ion
         std::vector<Vertex> vertices{};
         std::vector<uint32_t> meshIndices{};
 
-        auto nMesh = std::make_unique<Mesh>();
+        auto& assets = Engine::assetRegistry();
+        auto nMesh = assets.create<Mesh>();
+        assets.setName(nMesh.id(), mesh.name);
+
 
         for(const auto& primitive : mesh.primitives)
         {
@@ -417,11 +204,10 @@ namespace ion
 
         nMesh->indices(meshIndices);
         nMesh->vertices(vertices);
-        return nMesh.release();
+        return nMesh;
     }
 
-
-    std::vector<glm::vec3> GLBSceneImporter::extractVertexPositions(const tinygltf::Primitive& primitive, const tinygltf::Model& model)
+    std::vector<glm::vec3> GLBSceneImporter::extractVertexPositions(const tinygltf::Primitive &primitive, const tinygltf::Model &model)
     {
         const auto it = primitive.attributes.find("POSITION");
         if (it == primitive.attributes.end())
@@ -446,7 +232,7 @@ namespace ion
         return positions;
     }
 
-    std::vector<glm::vec3> GLBSceneImporter::extractVertexNormals(const tinygltf::Primitive& primitive, const tinygltf::Model& model)
+    std::vector<glm::vec3> GLBSceneImporter::extractVertexNormals(const tinygltf::Primitive &primitive, const tinygltf::Model &model)
     {
         const auto it = primitive.attributes.find("NORMAL");
         if (it == primitive.attributes.end())
@@ -471,7 +257,7 @@ namespace ion
         return normals;
     }
 
-    std::vector<glm::vec2> GLBSceneImporter::extractVertexUVs(const tinygltf::Primitive& primitive, const tinygltf::Model& model)
+    std::vector<glm::vec2> GLBSceneImporter::extractVertexUVs(const tinygltf::Primitive &primitive, const tinygltf::Model &model)
     {
         const auto it = primitive.attributes.find("TEXCOORD_0");
         if (it == primitive.attributes.end())
@@ -496,7 +282,7 @@ namespace ion
         return uvs;
     }
 
-    std::vector<uint32_t> GLBSceneImporter::extractIndices(const tinygltf::Primitive& primitive, const tinygltf::Model& model)
+    std::vector<uint32_t> GLBSceneImporter::extractIndices(const tinygltf::Primitive &primitive, const tinygltf::Model &model)
     {
         if (primitive.indices < 0)
         {
@@ -532,4 +318,148 @@ namespace ion
         return newIndices;
     }
 
+    urhi::PixelFormat determineTextureFormat(const tinygltf::Image& image, const bool isSRGB)
+    {
+        using namespace urhi;
+        const auto components = image.component;
+        const auto bits = image.bits;
+
+        if (components == 1)
+        {
+            if (bits == 8) return PixelFormat::R8UNorm;
+            if (bits == 16) return PixelFormat::R16Float;
+            if (bits == 32) return PixelFormat::R32Float;
+        }
+        else if (components == 2)
+        {
+            if (bits == 8) return PixelFormat::RG8UNorm;
+            if (bits == 16) return PixelFormat::RG16Float;
+            if (bits == 32) return PixelFormat::RG32Float;
+        }
+        else if (components == 3 || components == 4)
+        {
+            if (bits == 8) return isSRGB ? PixelFormat::RGBA8UNormSrgb : PixelFormat::RGBA8UNorm;
+            if (bits == 16) return PixelFormat::RGBA16Float;
+            if (bits == 32) return PixelFormat::RGBA32Float;
+        }
+
+        return PixelFormat::RGBA8UNorm;
+    }
+
+    AssetRef<Image> GLBSceneImporter::loadTexture(const tinygltf::Texture &texture, const tinygltf::Model &model, bool isSrgb)
+    {
+        if (texture.source < 0)
+            return nullptr;
+
+        const tinygltf::Image& image = model.images[texture.source];
+        const std::vector<uint8_t>& data = image.image;
+
+        // if (texture.sampler >= 0)
+        // {
+        //     const tinygltf::Sampler& sampler = model.samplers[texture.sampler];
+        //     samplerDesc.minFilter = convertGLTFFilter(sampler.minFilter);
+        //     samplerDesc.magFilter = convertGLTFFilter(sampler.magFilter);
+        //     samplerDesc.addressModeU = convertGLTFWrap(sampler.wrapS);
+        //     samplerDesc.addressModeV = convertGLTFWrap(sampler.wrapT);
+        // }
+
+        TextureData texData{};
+        texData.data.resize(data.size());
+        std::memcpy(texData.data.data(), data.data(), data.size());
+        texData.width = image.width;
+        texData.height = image.height;
+        texData.pixelFormat = determineTextureFormat(image, isSrgb);
+
+        auto& registry = Engine::assetRegistry();
+        auto asset = registry.create<Image>(texData);
+        registry.setName(asset.id(), texture.name);
+        return asset;
+    }
+
+    void GLBSceneImporter::processNodes(
+        Scene &scene,
+        const std::vector<AssetRef<MaterialInstance>> &materials,
+        const std::vector<AssetRef<Mesh>> &meshes,
+        const tinygltf::Model &model)
+    {
+        std::unordered_map<int, entis::Entity> nodeEntityMap;
+
+        for (int i = 0; i < static_cast<int>(model.nodes.size()); ++i)
+        {
+            auto node = model.nodes[i];
+
+            entis::Entity entity = scene.createEntity();
+            entity.get<Tag>().name = node.name;
+            nodeEntityMap.emplace(i, entity);
+
+            setupTransform(entity, node);
+
+            if (node.mesh < 0 || node.mesh >= meshes.size())
+                continue;
+
+            setupMeshRenderer(entity, meshes.at(node.mesh), model.meshes[node.mesh], materials);
+        }
+
+        for (int i = 0; i < static_cast<int>(model.nodes.size()); ++i)
+        {
+            const tinygltf::Node& node = model.nodes[i];
+            const entis::Entity parent = nodeEntityMap.at(i);;
+
+            for (int childIdx : node.children)
+            {
+                entis::Entity child = nodeEntityMap.at(childIdx);
+                child.get<Parent>().setParent(parent);
+            }
+        }
+    }
+
+    void GLBSceneImporter::setupTransform(entis::Entity& entity, const tinygltf::Node& node)
+    {
+        auto& transform = entity.get<Transform>();
+
+        if (node.translation.size() == 3)
+        {
+            transform.position(glm::vec3(node.translation[0], node.translation[1], node.translation[2]));
+        }
+        if (node.rotation.size() == 4)
+        {
+            transform.rotation(glm::quat(
+                static_cast<float>(node.rotation[3]),
+                static_cast<float>(node.rotation[0]),
+                static_cast<float>(node.rotation[1]),
+                static_cast<float>(node.rotation[2])));
+        }
+        if (node.scale.size() == 3)
+        {
+            transform.scale(glm::vec3(node.scale[0], node.scale[1], node.scale[2]));
+        }
+    }
+
+    void GLBSceneImporter::setupMeshRenderer(
+        entis::Entity& entity,
+        const AssetRef<Mesh>& meshHandle,
+        const tinygltf::Mesh& mesh,
+        const std::vector<AssetRef<MaterialInstance>>& materials)
+    {
+        auto& meshRenderer = entity.emplace<MeshRenderer>();
+        meshRenderer.mesh = meshHandle;
+
+
+        if (mesh.primitives.empty())
+        {
+            meshRenderer.setMaterial(materials.back());
+        }
+
+        for (const auto& primitive : mesh.primitives)
+        {
+            if(primitive.material < 0 || primitive.material >= materials.size()-1)
+            {
+                meshRenderer.materials.emplace_back(materials.back());
+            }else
+            {
+                meshRenderer.materials.emplace_back(materials[primitive.material]);
+            }
+        }
+
+    }
 }

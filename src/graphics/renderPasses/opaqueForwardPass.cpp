@@ -4,6 +4,9 @@
 #include "core/engine.h"
 #include "core/components/transformComponent.h"
 #include "graphics/components/camera.h"
+#include "graphics/sceneRenderer/gpuMaterialRegistry.h"
+#include "graphics/sceneRenderer/gpuSceneBuffers.h"
+#include "graphics/sceneRenderer/meshletFrameResources.h"
 
 namespace ion
 {
@@ -43,7 +46,9 @@ namespace ion
     void OpaqueForwardPass::execute(const grl::Rc<urhi::CommandList>& cmd, RenderContext &ctx)
     {
         if(!ctx.has("camera_buffer")
-            || !ctx.has("opaque_renderables")
+            || !ctx.has("material_registry")
+            || !ctx.has("scene_buffers")
+            || !ctx.has("frame_resources")
             || !ctx.has("point_lights_buffer")
             || !ctx.has("scene_color_texture")
             || !ctx.has("scene_depth_texture")
@@ -58,6 +63,16 @@ namespace ion
         const auto sceneDepthTexture = ctx.get<grl::Rc<urhi::TextureView>>("scene_depth_texture");
         const auto passDataBuffer = ctx.get<grl::Rc<urhi::Buffer>>("pass_data_buffer");
 
+        auto& sceneBuffers = *ctx.get<GpuSceneBuffers*>("scene_buffers");
+        auto& frameResources = *ctx.get<MeshletFrameResources*>("frame_resources");
+        auto& materialRegistry = *ctx.get<GpuMaterialRegistry*>("material_registry");
+
+        auto vertexBuffer = sceneBuffers.vertexBuffer();
+        auto transformBuffer = sceneBuffers.transformBuffer();
+        auto indexBuffer = frameResources.indexScratchBuffer;
+        auto drawCmdsBuffer = frameResources.drawCmdBuffer;
+        auto drawCountsBuffer = frameResources.drawCountBuffer;
+
         urhi::ColorAttachment colorAttachment{};
         colorAttachment.target = sceneColorTexture;
         colorAttachment.loadOp = urhi::LoadOp::Clear;
@@ -71,28 +86,27 @@ namespace ion
         renderPassDesc.depthAttachment = depthAttachment;
         auto& pass = cmd->beginRenderPass(renderPassDesc);
 
-        const auto& renderables = *ctx.get<std::vector<Renderable>*>("opaque_renderables");
-
-        for (const auto& renderable: renderables)
+        uint32_t drawBufferIndex = 0;
+        for(uint32_t i = 0; i < materialRegistry.templates().size(); i++)
         {
-            const glm::mat4 normalMatrix = glm::transpose(glm::inverse(renderable.worldMatrix));
-            ModelUniforms modelUniforms = { renderable.worldMatrix, normalMatrix };
-
-            auto pipeline = renderable.material->materialTemplate()->getOrCreatePipeline(*m_shaderModule, m_pipelineDesc);
+            auto pipeline = materialRegistry.templates().at(i)->getOrCreatePipeline(*m_shaderModule, m_pipelineDesc);
             pass.setPipeline(pipeline);
+
 
             pass.setBuffer("camera", cameraBuffer);
             pass.setBuffer("pass", passDataBuffer);
             pass.setBuffer("pointLights", pointLightsBuffer);
-            pass.pushConstants(modelUniforms);
+            pass.setBuffer("modelData", transformBuffer);
 
-            renderable.material->applyBindings(cmd, pass);
+            // pass.pushConstants(modelUniforms); push constants needs to have index into global buffer
+            // renderable.material->applyBindings(cmd, pass); need to add bindless textures and a material buffer
 
-            const Primitive primitive = renderable.mesh->primitives().at(renderable.submeshIndex);
+            pass.setVertexBuffer(0, vertexBuffer);
+            pass.setIndexBuffer(indexBuffer, urhi::IndexFormat::UInt32);
+            pass.multiDrawIndexedIndirectCount(drawCmdsBuffer, drawCountsBuffer, drawBufferIndex, i);
 
-            pass.setVertexBuffer(0, renderable.mesh->vertexBuffer());
-            pass.setIndexBuffer(renderable.mesh->indexBuffer(), urhi::IndexFormat::UInt32);
-            pass.drawIndexed(primitive.indexCount, 1, primitive.indexStart);
+            auto templInfo = materialRegistry.templateInfos().at(i);
+            drawBufferIndex += templInfo.totalPrimitiveCount;
         }
 
         pass.end();

@@ -10,18 +10,18 @@ public:
     static constexpr uint64_t typeId = grl::Hash::fnv1a64("ion::Transform");
     void serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const Transform &transform) override
     {
-        assetStream.write(transform.position);
-        assetStream.write(transform.rotation);
-        assetStream.write(transform.scale);
+        assetStream.write(transform.position());
+        assetStream.write(transform.rotation());
+        assetStream.write(transform.scale());
     }
 
     Transform deserialize(AssetStream &assetStream, AssetRegistry &assetRegistry) override
     {
         Transform transform;
 
-        assetStream.read(transform.position);
-        assetStream.read(transform.rotation);
-        assetStream.read(transform.scale);
+        assetStream.read(transform.m_position);
+        assetStream.read(transform.m_rotation);
+        assetStream.read(transform.m_scale);
 
         return transform;
     }

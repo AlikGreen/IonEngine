@@ -7,75 +7,6 @@
 
 namespace ion
 {
-    CulledRenderables Renderer::performCulling(Scene &scene, entis::Entity camEntity)
-    {
-        const glm::mat4 cameraMat = Transform::getWorldMatrix(camEntity);
-        return performCulling(scene, cameraMat, camEntity.get<Camera>());
-    }
-
-    CulledRenderables Renderer::performCulling(Scene &scene, glm::mat4 camTransform, const Camera& camera)
-    {
-        const auto& meshRenderers = scene.registry().view<MeshRenderer, Transform>();
-        std::vector<Renderable> renderables;
-        renderables.reserve(meshRenderers.size());
-        std::vector<Renderable> opaqueRenderables;
-        opaqueRenderables.reserve(meshRenderers.size());
-        std::vector<Renderable> transparentRenderables;
-        transparentRenderables.reserve(meshRenderers.size());
-
-        const glm::mat4 flip = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, -1));
-        const glm::mat4 viewMat = glm::inverse(camTransform * flip);
-
-        for (auto[entity, meshRenderer, transform] : meshRenderers)
-        {
-            if(meshRenderer.mesh == nullptr || !meshRenderer.mesh->isDrawable()) continue;
-
-            const glm::mat4 worldMat = Transform::getWorldMatrix(entity);
-            AABB worldBounds = meshRenderer.mesh->bounds().transformed(worldMat);
-            if(camera.getFrustum(viewMat).intersects(worldBounds))
-            {
-                for(size_t i = 0; i < meshRenderer.mesh->primitives().size(); i++)
-                {
-                    Renderable renderable{};
-                    renderable.entity = entity;
-
-                    if(meshRenderer.materials.size() > i)
-                        renderable.material = meshRenderer.materials[i].get();
-                    else
-                        renderable.material = meshRenderer.getMaterial().get();
-
-                    renderable.mesh = meshRenderer.mesh.get();
-                    renderable.submeshIndex = i;
-                    renderable.worldMatrix = worldMat;
-
-                    auto camPos = glm::vec3(camTransform[3]);
-                    auto meshPos = glm::vec3(worldMat[3]);
-
-                    renderable.distanceToCamera = glm::distance(camPos, meshPos);
-
-                    renderables.emplace_back(renderable);
-
-                    if(renderable.material->isOpaque())
-                        opaqueRenderables.emplace_back(renderable);
-                    else
-                        transparentRenderables.emplace_back(renderable);
-                }
-            }
-        }
-
-        renderables.shrink_to_fit();
-        opaqueRenderables.shrink_to_fit();
-        transparentRenderables.shrink_to_fit();
-
-        CulledRenderables culledEntities{};
-        culledEntities.all = renderables;
-        culledEntities.opaques = opaqueRenderables;
-        culledEntities.transparent = transparentRenderables;
-
-        return culledEntities;
-    }
-
-
     CameraData Renderer::createCameraUniformData(entis::Entity camEntity)
     {
         const auto worldMat = Transform::getWorldMatrix(camEntity);
@@ -113,7 +44,7 @@ namespace ion
         {
             PointLightData pointLightData{};
             pointLightData.color = light.color;
-            pointLightData.position = transform.position;
+            pointLightData.position = transform.position();
             pointLightData.power = light.power;
             pointLightData.radius = 0.0f; // not used yet
 

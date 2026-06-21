@@ -13,7 +13,7 @@ namespace ion
 
     bool AssetStream::write(const void *data, const size_t size)
     {
-        if(m_cursor >= 128000)
+        if(m_cursor >= 16ull*1024*1024*1024) // 16 GB limit
             return false;
 
         auto* byteData = static_cast<const uint8_t*>(data);

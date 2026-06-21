@@ -3,79 +3,123 @@
 #include <tiny_gltf.h>
 
 #include <clogr.h>
+
+#include "meshoptimizer.h"
 #include "core/engine.h"
 #include "graphics/graphicsSystem.h"
 
 namespace ion
 {
-    Mesh::Mesh(const bool keepCpuData)
-        : m_keepCpuData(keepCpuData) {  }
-
-    bool Mesh::isDrawable() const
-    {
-        return (!m_verticesDirty && !m_indicesDirty) || (m_verticesDirty && m_indicesDirty && !m_vertices.empty() && !m_indices.empty());
-    }
+    Mesh::Mesh(const bool keepCpuData) {  }
 
     void Mesh::apply()
     {
-        const auto device = Engine::getSystem<GraphicsSystem>()->getDevice();
-
-        if(!isDrawable())
+        if(!m_dirty || m_vertices.empty() || m_indices.empty())
             return;
 
-        m_vertexBuffer = device->createBuffer({ urhi::BufferUsage::Vertex, m_vertices.size() * sizeof(Vertex) });
-        m_indexBuffer  = device->createBuffer({ urhi::BufferUsage::Index, m_indices.size() * sizeof(uint32_t) });
+        const auto device = Engine::getSystem<GraphicsSystem>()->getDevice();
 
-        const auto cl = device->acquireCommandList(urhi::QueueType::Graphics);
-        cl->begin();
+        buildInternals();
 
-        cl->updateBuffer(m_vertexBuffer, m_vertices);
-        cl->updateBuffer(m_indexBuffer, m_indices);
+        m_dirty = false;
+    }
 
-        device->submit(cl);
-
-        recalculateBounds();
-
-        if(!m_keepCpuData)
+    void Mesh::buildInternals()
+    {
+        for (const auto& prim : primitives())
         {
-            this->m_vertices.clear();
-            this->m_indices.clear();
-        }
+            const uint32_t* primIndices = m_indices.data() + prim.indexStart;
 
-        m_verticesDirty = false;
-        m_indicesDirty = false;
+            const size_t maxMeshlets = meshopt_buildMeshletsBound(prim.indexCount, 64, 124);
+
+            std::vector<meshopt_Meshlet> rawMeshlets(maxMeshlets);
+            std::vector<uint32_t>        rawVerts(maxMeshlets * 64);
+            std::vector<uint8_t>         rawTris(maxMeshlets * 124 * 3);
+
+            size_t meshletCount = meshopt_buildMeshlets(
+                rawMeshlets.data(), rawVerts.data(), rawTris.data(),
+                primIndices, prim.indexCount,
+                &m_vertices[0].position.x,
+                m_vertices.size(), sizeof(Vertex),
+                64, 124, 0.5f
+            );
+
+            MeshletPrimitive meshletPrim{};
+            meshletPrim.materialIndex = prim.materialIndex;
+            meshletPrim.meshletStart = m_meshlets.size();
+            meshletPrim.meshletCount = meshletCount;
+            m_meshletPrimitives.push_back(meshletPrim);
+
+
+            for (size_t m = 0; m < meshletCount; m++)
+            {
+                meshopt_Bounds b = meshopt_computeMeshletBounds(
+                    &rawVerts[rawMeshlets[m].vertex_offset],
+                    &rawTris[rawMeshlets[m].triangle_offset],
+                    rawMeshlets[m].triangle_count,
+                    &m_vertices[0].position.x,
+                    m_vertices.size(), sizeof(Vertex)
+                );
+
+                AABB meshletBounds{};
+                for (uint32_t j = 0; j < rawMeshlets[m].vertex_count; j++)
+                {
+                    uint32_t globalIdx = rawVerts[rawMeshlets[m].vertex_offset + j];
+                    meshletBounds.expand(m_vertices[globalIdx].position);
+                }
+
+                uint32_t indexStart = m_cookedIndices.size();
+
+                for (uint32_t t = 0; t < rawMeshlets[m].triangle_count; t++)
+                {
+                    uint32_t base = (rawMeshlets[m].triangle_offset + t) * 3;
+                    for (int v = 0; v < 3; v++)
+                    {
+                        uint8_t  localIdx  = rawTris[base + v];
+                        uint32_t globalIdx = rawVerts[rawMeshlets[m].vertex_offset + localIdx];
+                        m_cookedIndices.push_back(globalIdx);
+                    }
+                }
+
+                Meshlet desc{};
+                desc.indexStart = indexStart;
+                desc.indexCount = rawMeshlets[m].triangle_count * 3;
+                desc.coneApex       = {b.cone_apex[0], b.cone_apex[1], b.cone_apex[2]};
+                desc.coneAxis       = {b.cone_axis[0], b.cone_axis[1], b.cone_axis[2]};
+                desc.coneCutoff     = b.cone_cutoff;
+                desc.aabbMin = meshletBounds.min;
+                desc.aabbMax = meshletBounds.max;
+
+                desc.materialIndex = prim.materialIndex; // I don't know how this will work yet
+
+                m_meshlets.push_back(desc);
+            }
+        }
     }
 
     void Mesh::recalculateBounds()
     {
-        if(!m_boundsDirty) return;
+        if(!m_dirty) return;
 
-        m_bounds.min = glm::vec3(std::numeric_limits<float>::max());
-        m_bounds.max = glm::vec3(std::numeric_limits<float>::lowest());
+        m_bounds = {};
 
-        for(Vertex vert : m_vertices)
+        for(const Vertex& vert : m_vertices)
         {
-            m_bounds.min = glm::min(m_bounds.min, vert.position);
-            m_bounds.max = glm::max(m_bounds.max, vert.position);
+            m_bounds.expand(vert.position);
         }
-
-        m_boundsDirty = false;
     }
 
     void Mesh::vertices(std::vector<Vertex> vertices)
     {
-        m_vertexCount = vertices.size();
         m_vertices = std::move(vertices);
-        m_verticesDirty = true;
-        m_boundsDirty = true;
+        m_dirty = true;
     }
 
     void Mesh::indices(std::vector<uint32_t> indices)
     {
         m_indexCount = indices.size();
         m_indices = std::move(indices);
-        m_indicesDirty = true;
-        m_boundsDirty = true;
+        m_dirty = true;
     }
 
     void Mesh::primitives(std::vector<Primitive> primitives)
@@ -96,85 +140,9 @@ namespace ion
         return m_primitives;
     }
 
-    const std::vector<Vertex>& Mesh::vertices() const
-    {
-        clogr::ensure(m_keepCpuData, "Mesh CPU data is not retained. Set keepCpuData = true or use readbackVertices().");
-        return m_vertices;
-    }
-
-    const std::vector<uint32_t>& Mesh::indices() const
-    {
-        clogr::ensure(m_keepCpuData, "Mesh CPU data is not retained. Set keepCpuData = true or use readbackIndices().");
-        return m_indices;
-    }
-
     AABB Mesh::bounds()
     {
         recalculateBounds();
         return m_bounds;
-    }
-
-    grl::Rc<urhi::Buffer> Mesh::vertexBuffer()
-    {
-        if(m_verticesDirty)
-            apply();
-
-        return m_vertexBuffer;
-    }
-
-    grl::Rc<urhi::Buffer> Mesh::indexBuffer()
-    {
-        if(m_indicesDirty)
-            apply();
-
-        return m_indexBuffer;
-    }
-
-    size_t Mesh::vertexCount() const
-    {
-        return m_vertexCount;
-    }
-
-    size_t Mesh::indexCount() const
-    {
-        return m_indexCount;
-    }
-
-    std::vector<Vertex> Mesh::readbackVertices() const
-    {
-        if(m_vertices.size() == m_vertexCount)
-            return m_vertices;
-
-        const auto device = Engine::getSystem<GraphicsSystem>()->getDevice();
-
-        const auto cl = device->acquireCommandList(urhi::QueueType::Graphics);
-        cl->begin();
-
-        const auto request = cl->readback(m_vertexBuffer);
-
-        device->submit(cl);
-
-        request->wait();
-        const auto* data = static_cast<const Vertex*>(request->data());
-        return {data, data + request->size() / sizeof(Vertex)};
-    }
-
-    std::vector<uint32_t> Mesh::readbackIndices() const
-    {
-        if(m_indices.size() == m_indexCount)
-            return m_indices;
-
-        const auto device = Engine::getSystem<GraphicsSystem>()->getDevice();
-
-        const auto cl = device->acquireCommandList(urhi::QueueType::Graphics);
-        cl->begin();
-
-        const auto request = cl->readback(m_indexBuffer);
-
-        device->submit(cl);
-
-        request->wait();
-        const auto* data = static_cast<const uint32_t*>(request->data());
-        return {data, data + request->size() / sizeof(uint32_t)};
     }
 }

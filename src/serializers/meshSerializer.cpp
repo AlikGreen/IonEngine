@@ -6,8 +6,8 @@ namespace ion
 {
     void MeshSerializer::serialize(AssetStream &assetStream, AssetRegistry &assetRegistry, AssetDeps& deps, const Mesh& mesh)
     {
-        assetStream.write(mesh.readbackIndices());
-        assetStream.write(mesh.readbackVertices());
+        assetStream.write(mesh.indices());
+        assetStream.write(mesh.vertices());
         assetStream.write(mesh.primitives());
     }
 

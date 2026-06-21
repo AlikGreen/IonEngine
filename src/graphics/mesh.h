@@ -17,12 +17,19 @@ namespace ion
     {
         uint32_t indexStart;
         uint32_t indexCount;
+        uint32_t materialIndex;
     };
 
     struct AABB
     {
-        glm::vec3 min;
-        glm::vec3 max;
+        glm::vec3 min =  glm::vec3(FLT_MAX);
+        glm::vec3 max = -glm::vec3(FLT_MAX);
+
+        void expand(const glm::vec3 point)
+        {
+            min = glm::min(point, min);
+            max = glm::max(point, max);
+        }
 
         AABB transformed(const glm::mat4& mat)
         {
@@ -51,14 +58,46 @@ namespace ion
 
             return { newMin, newMax };
         }
+
+        [[nodiscard]] glm::vec3 center() const
+        {
+            return (min + max) * 0.5f;
+        }
+
+        float surfaceArea() const
+        {
+            const glm::vec3 dist = max - min;
+            return 2*(dist.x*dist.y + dist.y*dist.z + dist.z*dist.x);
+        }
+    };
+
+
+    struct Meshlet
+    {
+        glm::vec3 aabbMin;
+        uint32_t   indexStart;
+        glm::vec3 aabbMax;
+        uint32_t   indexCount;
+
+        glm::vec3 coneApex;
+        float  coneCutoff;
+        glm::vec3 coneAxis;
+        uint32_t   materialIndex;
+    };
+
+    struct MeshletPrimitive
+    {
+        uint32_t meshletStart;
+        uint32_t meshletCount;
+        uint32_t materialIndex;
     };
 
     class Mesh
     {
     public:
-        explicit Mesh(bool keepCpuData = false);
+        struct PrimitiveMeshletInfo;
 
-        bool isDrawable() const;
+        explicit Mesh(bool keepCpuData = false);
 
         void vertices(std::vector<Vertex> vertices);
         void indices(std::vector<uint32_t> indices);
@@ -69,36 +108,38 @@ namespace ion
 
         AABB bounds();
 
-        [[nodiscard]] const std::vector<Vertex>& vertices() const;
-        [[nodiscard]] const std::vector<uint32_t>& indices() const;
+        [[nodiscard]] const std::vector<Vertex>& vertices() const { return m_vertices; }
+        [[nodiscard]] const std::vector<uint32_t>& indices() const { return m_indices; }
+        [[nodiscard]] const std::vector<uint32_t>& cookedIndices() const { return m_cookedIndices; }
+        [[nodiscard]] const std::vector<Meshlet>& meshlets() const { return m_meshlets; }
+        [[nodiscard]] const std::vector<MeshletPrimitive>& meshletPrimitives() const { return m_meshletPrimitives; }
 
-        [[nodiscard]] grl::Rc<urhi::Buffer> vertexBuffer();
-        [[nodiscard]] grl::Rc<urhi::Buffer> indexBuffer();
-        [[nodiscard]] size_t vertexCount() const;
-        [[nodiscard]] size_t indexCount() const;
-
-        [[nodiscard]] std::vector<Vertex> readbackVertices() const;
-        [[nodiscard]] std::vector<uint32_t> readbackIndices() const;
-    private:
         void apply();
+    private:
+        void buildInternals();
         void recalculateBounds();
 
-        bool m_verticesDirty = false;
-        bool m_indicesDirty = false;
-        bool m_boundsDirty = false;
+        struct PrimitiveMeshletInfo
+        {
+            uint32_t meshletOffset;
+            uint32_t meshletCount;
+            uint32_t bvhRoot;
+        };
 
-        bool m_keepCpuData = false;
+        bool m_dirty = false;
 
-        std::vector<Vertex>    m_vertices{};
-        std::vector<uint32_t>  m_indices{};
-        std::vector<Primitive> m_primitives{};
+        uint32_t m_indexCount{};
+        uint32_t m_vertexCount{};
+        uint32_t m_meshletCount{};
+
+        std::vector<Vertex> m_vertices;
+        std::vector<uint32_t> m_indices;
+        std::vector<Primitive> m_primitives;
+
+        std::vector<uint32_t> m_cookedIndices;
+        std::vector<Meshlet>  m_meshlets;
+        std::vector<MeshletPrimitive>  m_meshletPrimitives;
 
         AABB m_bounds{};
-
-        grl::Rc<urhi::Buffer> m_vertexBuffer = nullptr;
-        grl::Rc<urhi::Buffer> m_indexBuffer = nullptr;
-
-        size_t m_vertexCount = 0;
-        size_t m_indexCount = 0;
     };
 }

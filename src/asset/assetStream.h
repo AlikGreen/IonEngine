@@ -103,7 +103,7 @@ public:
     [[nodiscard]] std::vector<uint8_t> buffer() const;
     [[nodiscard]] size_t size() const;
 private:
-    size_t m_cursor = 0;
+    uint64_t m_cursor = 0;
     std::vector<uint8_t> m_buffer{};
 };
 }

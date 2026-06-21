@@ -2,28 +2,41 @@
 
 #include "asset/assetImportPipeline.h"
 #include "core/engine.h"
+#include "graphics/graphicsSystem.h"
 
 namespace ion
 {
+    struct ScreenVert
+    {
+        glm::vec2 pos;
+        glm::vec2 uv;
+    };
+
     SkyboxRenderPass::SkyboxRenderPass()
     {
-        m_screenMesh = Mesh();
         const std::vector screenVertices =
         {
-            Vertex { {-1, -1, 1 }, { }, { 0, 0} },
-            Vertex { { 1, -1, 1 }, { }, { 1, 0} },
-            Vertex { { 1,  1, 1 }, { }, { 1, 1} },
-            Vertex { {-1,  1, 1 }, { }, { 0, 1} },
+            ScreenVert { {-1, -1 }, { 0, 0} },
+            ScreenVert { { 1, -1 }, { 1, 0} },
+            ScreenVert { { 1,  1 }, { 1, 1} },
+            ScreenVert { {-1,  1 }, { 0, 1} },
         };
 
-        const std::vector<uint32_t> quadIndices =
+        const std::vector<uint16_t> quadIndices =
         {
             0, 2, 1,
             0, 3, 2
         };
 
-        m_screenMesh.vertices(screenVertices);
-        m_screenMesh.indices(quadIndices);
+        auto device = Engine::getSystem<GraphicsSystem>()->getDevice();
+
+        m_screenVertexBuffer = device->createBuffer({ urhi::BufferUsage::Vertex, sizeof(ScreenVert) * screenVertices.size() });
+        m_screenIndexBuffer = device->createBuffer({ urhi::BufferUsage::Index, sizeof(uint16_t) * quadIndices.size() });
+
+        auto cmd = device->acquireCommandList(urhi::QueueType::Graphics);
+        cmd->updateBuffer(m_screenVertexBuffer, screenVertices);
+        cmd->updateBuffer(m_screenIndexBuffer, quadIndices);
+        device->submit(cmd);
 
 
         urhi::DepthState depthState{};
@@ -91,8 +104,8 @@ namespace ion
         pass.setBuffer("camera", cameraBuffer);
         pass.setBuffer("pass", passDataBuffer);
 
-        pass.setVertexBuffer(0, m_screenMesh.vertexBuffer());
-        pass.setIndexBuffer(m_screenMesh.indexBuffer(), urhi::IndexFormat::UInt32);
+        pass.setVertexBuffer(0, m_screenVertexBuffer);
+        pass.setIndexBuffer(m_screenIndexBuffer, urhi::IndexFormat::UInt16);
         pass.drawIndexed(6);
 
         pass.end();

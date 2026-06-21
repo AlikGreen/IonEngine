@@ -4,8 +4,7 @@ static const int MAX_POINT_LIGHTS = 64;
 
 struct VertexInput
 {
-    float3 position : POSITION;
-    float3 normal   : NORMAL;
+    float2 position : POSITION;
     float2 uv       : TEXCOORD0;
 };
 
@@ -15,7 +14,6 @@ struct VertexOutput
     float3 clipPos  : TEXCOORD0;
     float2 uv  : TEXCOORD1;
 };
-
 
 struct ModelInfo
 {
@@ -34,12 +32,13 @@ VertexOutput vertexMain(VertexInput input)
 {
     VertexOutput output;
 
-    output.position = float4(input.position, 1.0);
+    output.position = float4(input.position, 1.0, 1.0);
     output.uv = input.uv;
-    output.clipPos = input.position.xyz;
+    output.clipPos = float3(input.position.xy, 0.0);
 
     return output;
 }
+
 
 [shader("fragment")]
 float4 fragmentMain(VertexOutput input) : SV_Target

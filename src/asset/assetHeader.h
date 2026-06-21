@@ -16,10 +16,7 @@ struct AssetHeader
     uint64_t typeId{};
     Compression compression{};
     uint32_t  flags{};
-
     uint32_t  sectionCount{};
-
-    uint64_t  bodyOffset{};
     uint64_t  bodySize{};
 };
 

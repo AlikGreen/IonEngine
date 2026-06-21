@@ -28,6 +28,7 @@
 #include "audio/audioSystem.h"
 #include "graphics/imGuiSystem.h"
 #include "input/inputSystem.h"
+#include "graphics/sceneRenderer/rendererSystem.h"
 
 // graphics
 #include "graphics/image.h"

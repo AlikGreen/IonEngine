@@ -13,7 +13,8 @@ public:
   void update(const glm::mat4 &projection, const glm::mat4 &view);
 
   [[nodiscard]] bool intersects(const AABB &aabb) const;
+  [[nodiscard]] const std::array<glm::vec4, 6>& planes() const { return m_planes; }
 private:
-  glm::vec4 left, right, bottom, top, nearP, farP;
+  std::array<glm::vec4, 6> m_planes;
 };
 }
