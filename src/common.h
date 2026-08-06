@@ -15,3 +15,4 @@
 #pragma once
 #include <clogr/clogr.h>
 #include <grl/grl.h>
+#include "dg.h"

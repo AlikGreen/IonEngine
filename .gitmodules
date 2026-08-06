@@ -10,13 +10,37 @@
 [submodule "external/tinygltf"]
 	path = external/tinygltf
 	url = https://github.com/syoyo/tinygltf.git
-[submodule "external/urhi"]
-	path = external/urhi
-	url = https://github.com/AlikGreen/urhi.git
-	branch = d3d12
 [submodule "external/jsoncons"]
 	path = external/jsoncons
 	url = https://github.com/danielaparker/jsoncons.git
 [submodule "external/meshoptimizer"]
 	path = external/meshoptimizer
 	url = https://github.com/zeux/meshoptimizer.git
+[submodule "external/DiligentCore"]
+	path = external/DiligentCore
+	url = https://github.com/DiligentGraphics/DiligentCore
+[submodule "external/DiligentTools"]
+	path = external/DiligentTools
+	url = https://github.com/DiligentGraphics/DiligentTools
+[submodule "external/clogr"]
+	path = external/clogr
+	url = https://github.com/AlikGreen/clogr.git
+[submodule "external/glfw"]
+	path = external/glfw
+	url = https://github.com/glfw/glfw
+[submodule "external/glm"]
+	path = external/glm
+	url = https://github.com/g-truc/glm.git
+[submodule "external/imgui"]
+	path = external/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "external/imguizmo"]
+	path = external/imguizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "external/spirv-reflect"]
+	path = external/spirv-reflect
+	url = https://github.com/KhronosGroup/SPIRV-Reflect.git
+[submodule "external/ionsl"]
+	path = external/ionsl
+	url = https://github.com/AlikGreen/ionsl.git

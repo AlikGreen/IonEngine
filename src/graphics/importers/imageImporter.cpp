@@ -29,7 +29,7 @@ namespace ion
         texData.width = w;
         texData.height = h;
         texData.data = buffer;
-        texData.pixelFormat = hdr ? urhi::PixelFormat::RGBA32Float : urhi::PixelFormat::RGBA8UNorm;
+        texData.pixelFormat = hdr ? dg::TEX_FORMAT_RGBA32_FLOAT : dg::TEX_FORMAT_RGBA8_UNORM;
 
         return grl::makeBox<Image>(texData);
     }

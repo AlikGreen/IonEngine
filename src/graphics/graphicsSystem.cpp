@@ -1,65 +1,77 @@
 #include "graphicsSystem.h"
 
+#include "EngineFactoryVk.h"
 #include "window.h"
 #include "core/engine.h"
 #include "core/eventManager.h"
 #include "events/dropFileEvent.h"
-#include "events/quitEvent.h"
-#include "events/rhiWindowEvent.h"
-#include "events/windowResizeEvent.h"
-#include "input/events/keyDownEvent.h"
-#include "input/events/keyUpEvent.h"
-#include "input/events/mouseButtonDownEvent.h"
-#include "input/events/mouseButtonUpEvent.h"
-#include "input/events/mouseMoveEvent.h"
-#include "input/events/mouseWheelEvent.h"
-#include "input/events/textInputEvent.h"
 
-#include "sinks/fileSink.h"
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+
+#include "helpers/gfx.h"
+
 
 namespace ion
 {
-    GraphicsSystem::GraphicsSystem(const urhi::WindowDesc &windowOptions)
+    GraphicsSystem::GraphicsSystem(const WindowDesc &windowOptions)
         : m_windowDesc(windowOptions) { }
 
     void GraphicsSystem::preStartup()
     {
-        clogr::defaultLogger()->addSink<clogr::FileSink>(R"(C:\Users\alikg\Downloads\log.log)");
-        m_context = urhi::Context::create(
-        {
-            .api = urhi::BackendAPI::OpenGL,
-            .cachePath = "./shaders"
-        });
+        m_window = grl::makeBox<Window>(m_windowDesc);
 
-        m_window = m_context->createWindow(m_windowDesc);
-        m_device = m_context->createDevice({ m_window });
+        dg::EngineVkCreateInfo engineCI{};
 
-        urhi::SwapchainDesc swapchainDesc{};
-        swapchainDesc.window = m_window;
-        swapchainDesc.device = m_device;
-        swapchainDesc.presentMode = urhi::PresentMode::VSync;
+        dg::IEngineFactoryVk* pFactoryVk = dg::LoadAndGetEngineFactoryVk();
+        pFactoryVk->CreateDeviceAndContextsVk(engineCI, &m_device, &m_immediateContext);
 
-        m_swapchain = m_context->createSwapchain(swapchainDesc);
+        HWND hwnd = glfwGetWin32Window(m_window->handle());
 
-        constexpr uint32_t texSize = 1;
-        const urhi::TextureDesc desc = urhi::TextureDesc::Texture2D(
-            texSize,
-            texSize,
-            urhi::PixelFormat::RGBA8UNorm,
-            urhi::TextureUsage::Sampled
+        dg::SwapChainDesc swapChainDesc;
+
+        const dg::Win32NativeWindow window{hwnd};
+        pFactoryVk->CreateSwapChainVk(m_device, m_immediateContext, swapChainDesc, window, &m_swapChain);
+
+        dg::SetDebugMessageCallback(
+            [](dg::DEBUG_MESSAGE_SEVERITY severity, const Diligent::Char* message,
+               const Diligent::Char* function, const Diligent::Char* file, int line)
+            {
+                if (severity == dg::DEBUG_MESSAGE_SEVERITY_ERROR)
+                {
+                    clogr::abort("{}", message);
+                }
+            }
         );
 
-        const grl::Rc<urhi::Texture> texture = m_device->createTexture(desc);
 
-        const auto cmd = m_device->acquireCommandList(urhi::QueueType::Graphics);
-        cmd->begin();
-        urhi::TextureUploadDesc uploadDesc;
-        uploadDesc.data = new uint8_t[]{ 255, 255, 255, 255 };
-        uploadDesc.texture = texture;
-        cmd->updateTexture(uploadDesc);
-        m_device->submit(cmd);
+        dg::TextureDesc texDesc{};
+        texDesc.Format = dg::TEX_FORMAT_RGBA8_UNORM;
+        texDesc.Width = 1;
+        texDesc.Height = 1;
+        texDesc.BindFlags = dg::BIND_SHADER_RESOURCE;
+        texDesc.Usage     = dg::USAGE_IMMUTABLE;
+        texDesc.Type = dg::RESOURCE_DIM_TEX_2D;
 
-        m_defaultTexture = m_device->createTextureView(texture);
+        auto data = new uint8_t[]{ 255, 255, 255, 255 };
+
+        dg::TextureSubResData subResData;
+        subResData.pData  = data;
+        subResData.Stride = 4;
+
+        dg::TextureData texData;
+        texData.pSubResources   = &subResData;
+        texData.NumSubresources = 1;
+
+        dg::Ref<dg::ITexture> defaultTex;
+        m_device->CreateTexture(texDesc, &texData, &defaultTex);
+
+        m_defaultTexView = defaultTex->GetDefaultView(dg::TEXTURE_VIEW_SHADER_RESOURCE);
+
+        m_shaderRegistry = grl::makeBox<ShaderRegistry>(m_device);
+        m_pipelineRegistry = grl::makeBox<PipelineRegistry>(m_device);
+
+        gfx::init(*this);
     }
 
     void GraphicsSystem::postStartup()
@@ -69,83 +81,13 @@ namespace ion
 
     void GraphicsSystem::preUpdate()
     {
-        std::vector<urhi::Event> events = m_window->pollEvents();
-
-        EventManager& eventManager = Engine::eventManager();
-
-        for(const auto& event : events)
-        {
-            eventManager.queueEvent<RhiWindowEvent>(event);
-
-            switch (event.type)
-            {
-                case urhi::Event::Type::Quit:
-                {
-                    eventManager.queueEvent<QuitEvent>();
-                    break;
-                }
-                case urhi::Event::Type::WindowResize:
-                {
-                    const auto& windowEvent = std::get<urhi::Event::WindowResizeEvent>(event.data);
-                    eventManager.queueEvent<WindowResizeEvent>(windowEvent.width, windowEvent.height);
-                    m_swapchain->resize(windowEvent.width, windowEvent.height);
-                    break;
-                }
-                case urhi::Event::Type::KeyDown:
-                {
-                    const auto& keyEvent = std::get<urhi::Event::KeyEvent>(event.data);
-                    eventManager.queueEvent<KeyDownEvent>(keyEvent.key, keyEvent.repeat);
-                    break;
-                }
-                case urhi::Event::Type::KeyUp:
-                {
-                    const auto& keyEvent = std::get<urhi::Event::KeyEvent>(event.data);
-                    eventManager.queueEvent<KeyUpEvent>(keyEvent.key);
-                    break;
-                }
-                case urhi::Event::Type::MouseButtonDown:
-                {
-                    const auto& buttonEvent = std::get<urhi::Event::MouseButtonEvent>(event.data);
-                    eventManager.queueEvent<MouseButtonDownEvent>(buttonEvent.button);
-                    break;
-                }
-                case urhi::Event::Type::MouseButtonUp:
-                {
-                    const auto& buttonEvent = std::get<urhi::Event::MouseButtonEvent>(event.data);
-                    eventManager.queueEvent<MouseButtonUpEvent>(buttonEvent.button);
-                    break;
-                }
-                case urhi::Event::Type::MouseMotion:
-                {
-                    const auto& motionEvent = std::get<urhi::Event::MouseMotionEvent>(event.data);
-                    eventManager.queueEvent<MouseMoveEvent>(motionEvent.x, motionEvent.y);
-                    break;
-                }
-                case urhi::Event::Type::MouseWheel:
-                {
-                    const auto& wheelEvent = std::get<urhi::Event::MouseWheelEvent>(event.data);
-                    eventManager.queueEvent<MouseWheelEvent>(wheelEvent.x, wheelEvent.y);
-                    break;
-                }
-                case urhi::Event::Type::TextInput:
-                {
-                    const auto& textEvent = std::get<urhi::Event::TextInputEvent>(event.data);
-                    eventManager.queueEvent<TextInputEvent>(textEvent.codepoint);
-                    break;
-                }
-                case urhi::Event::Type::DropFile:
-                {
-                    const auto& dropEvent = std::get<urhi::Event::DropFileEvent>(event.data);
-                    eventManager.queueEvent<DropFileEvent>(dropEvent.path);
-                    break;
-                }
-            }
-        }
+        m_window->pollEvents();
     }
 
     void GraphicsSystem::preRender()
     {
-        m_renderView = m_swapchain->acquireNextImage();
+        m_renderView = m_swapChain->GetCurrentBackBufferRTV();
+        m_depthView = m_swapChain->GetDepthBufferDSV();
     }
 
     void GraphicsSystem::postRender()
@@ -153,7 +95,7 @@ namespace ion
         auto endTime = std::chrono::high_resolution_clock::now();
         auto frameTime = std::chrono::duration<float>(endTime - m_frameStartTime);
         m_frameDuration = frameTime.count();
-        m_swapchain->present();
+        m_swapChain->Present();
         m_frameStartTime = std::chrono::high_resolution_clock::now();
     }
 
@@ -162,20 +104,21 @@ namespace ion
         m_window->close();
     }
 
-    void GraphicsSystem::drawTexture(const grl::Rc<urhi::Texture> &texture, const urhi::TextureFilter filter) const
+    void GraphicsSystem::drawTexture(const dg::Ref<dg::ITextureView>& texture, dg::FILTER_TYPE filter) const
     {
-        const grl::Rc<urhi::CommandList> cmd = m_device->acquireCommandList(urhi::QueueType::Graphics);
+        clogr::abort("Not implemented");
+        // TODO make a blit texture pipeline
 
-        cmd->begin();
-
-        urhi::BlitTextureDesc blitDesc;
-        blitDesc.src = texture;
-        blitDesc.dst = m_renderView->texture();
-        blitDesc.filter = filter;
-
-        cmd->blitTexture(blitDesc);
-
-        m_device->submit(cmd);
+        // cmd->begin();
+        //
+        // urhi::BlitTextureDesc blitDesc;
+        // blitDesc.src = texture;
+        // blitDesc.dst = m_renderView->texture();
+        // blitDesc.filter = filter;
+        //
+        // cmd->blitTexture(blitDesc);
+        //
+        // m_device->submit(cmd);
     }
 
     grl::Rc<RenderTarget> GraphicsSystem::createRenderTarget(const uint32_t width, const uint32_t height, const bool useDepth) const

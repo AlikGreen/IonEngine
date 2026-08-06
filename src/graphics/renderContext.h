@@ -24,8 +24,7 @@ public:
             return std::any_cast<T>(it->second);
         }
 
-        clogr::ensure(false, "name was not found in data");
-        return nullptr;
+        clogr::abort("Name ({}) was not found in data", name);
     }
 
     template<typename T>

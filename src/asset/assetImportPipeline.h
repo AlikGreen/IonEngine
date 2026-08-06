@@ -111,7 +111,11 @@ public:
 
         auto src = m_rfs.resolve(srcPath.string());
         if (src.empty()) src = fs::path(srcPath);
-        if (!exists(src)) return nullptr;
+        if (!exists(src))
+        {
+            clogr::error("Could not find file at path: {}", srcPath.string());
+            return nullptr;
+        }
 
         auto* base = m_importers.at(typeid(T)).get();
         if (!base->canImport(src)) return nullptr;

@@ -9,7 +9,7 @@ namespace ion
         assetStream.write(image.width());
         assetStream.write(image.height());
 
-        assetStream.write<uint16_t>(static_cast<uint16_t>(image.format()));
+        assetStream.write<uint16_t>(image.format());
 
         assetStream.write(image.pixels());
     }
@@ -29,7 +29,7 @@ namespace ion
         TextureData data{};
         data.width = width;
         data.height = height;
-        data.pixelFormat = static_cast<urhi::PixelFormat>(formatInt);
+        data.pixelFormat = static_cast<dg::TEXTURE_FORMAT>(formatInt);
         data.data = std::move(pixels);
 
         return grl::makeRc<Image>(data);

@@ -33,22 +33,22 @@ public:
         uint32_t padding;
     };
 
-    explicit GpuSceneBuffers(const grl::Rc<urhi::Device> &device);
+    explicit GpuSceneBuffers(const dg::Ref<dg::IRenderDevice> &device);
 
-    void upload(entis::Entity entity, const MeshRenderer& mr, GpuMaterialRegistry& matRegistry, const grl::Rc<urhi::CommandList>& cmd);
+    void upload(entis::Entity entity, const MeshRenderer& mr, GpuMaterialRegistry& matRegistry, const dg::Ref<dg::IDeviceContext>& ctx);
     void unload(MeshRenderer& mr);
 
-    uint32_t updateTransform(entis::Entity entity, const grl::Rc<urhi::CommandList>& cmd);
+    uint32_t updateTransform(entis::Entity entity, const dg::Ref<dg::IDeviceContext>& ctx);
 
     [[nodiscard]] uint32_t meshletInstanceCount() const { return m_meshletInstanceCount; }
     [[nodiscard]] uint32_t primitiveCount() const { return m_primitiveCount; }
 
-    [[nodiscard]] const grl::Rc<urhi::Buffer>& vertexBuffer() const { return m_globalVertexBuffer; }
-    [[nodiscard]] const grl::Rc<urhi::Buffer>& indexBuffer() const { return m_globalIndexBuffer; }
-    [[nodiscard]] const grl::Rc<urhi::Buffer>& meshletBuffer() const { return m_globalMeshletBuffer; }
-    [[nodiscard]] const grl::Rc<urhi::Buffer>& primitiveBuffer() const { return m_globalPrimitiveBuffer; }
-    [[nodiscard]] const grl::Rc<urhi::Buffer>& meshletInstanceBuffer() const { return m_globalMeshletInstanceBuffer; }
-    [[nodiscard]] const grl::Rc<urhi::Buffer>& transformBuffer() const { return m_globalModelDataBuffer; }
+    [[nodiscard]] const dg::Ref<dg::IBuffer>& vertexBuffer() const { return m_globalVertexBuffer; }
+    [[nodiscard]] const dg::Ref<dg::IBuffer>& indexBuffer() const { return m_globalIndexBuffer; }
+    [[nodiscard]] const dg::Ref<dg::IBuffer>& meshletBuffer() const { return m_globalMeshletBuffer; }
+    [[nodiscard]] const dg::Ref<dg::IBuffer>& primitiveBuffer() const { return m_globalPrimitiveBuffer; }
+    [[nodiscard]] const dg::Ref<dg::IBuffer>& meshletInstanceBuffer() const { return m_globalMeshletInstanceBuffer; }
+    [[nodiscard]] const dg::Ref<dg::IBuffer>& transformBuffer() const { return m_globalModelDataBuffer; }
 private:
     struct SubMeshAllocation
     {
@@ -67,7 +67,7 @@ private:
         std::vector<SubMeshAllocation> subMeshes;
     };
 
-    const MeshAllocation& getOrCreateMeshAllocation(const AssetRef<Mesh> &mesh, const grl::Rc<urhi::CommandList>& cmd);
+    const MeshAllocation& getOrCreateMeshAllocation(const AssetRef<Mesh> &mesh, const dg::Ref<dg::IDeviceContext>& ctx);
 
     std::unordered_map<entis::Entity, uint32_t> m_entityIndexMap;
     std::vector<uint32_t> m_freeEntityIndices;
@@ -78,14 +78,14 @@ private:
     uint32_t m_primitiveCount = 0;
     uint32_t m_meshletInstanceCount = 0;
 
-    grl::Rc<urhi::Device> m_device;
+    dg::Ref<dg::IRenderDevice> m_device;
 
-    grl::Rc<urhi::Buffer> m_globalIndexBuffer;
-    grl::Rc<urhi::Buffer> m_globalVertexBuffer;
-    grl::Rc<urhi::Buffer> m_globalModelDataBuffer;
-    grl::Rc<urhi::Buffer> m_globalMeshletBuffer;
-    grl::Rc<urhi::Buffer> m_globalMeshletInstanceBuffer;
-    grl::Rc<urhi::Buffer> m_globalPrimitiveBuffer;
+    dg::Ref<dg::IBuffer> m_globalIndexBuffer;
+    dg::Ref<dg::IBuffer> m_globalVertexBuffer;
+    dg::Ref<dg::IBuffer> m_globalModelDataBuffer;
+    dg::Ref<dg::IBuffer> m_globalMeshletBuffer;
+    dg::Ref<dg::IBuffer> m_globalMeshletInstanceBuffer;
+    dg::Ref<dg::IBuffer> m_globalPrimitiveBuffer;
 
     uint32_t m_nextFreeGlobalIndex = 0;
     uint32_t m_nextFreeGlobalVertex = 0;

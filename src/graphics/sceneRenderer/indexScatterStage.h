@@ -1,5 +1,4 @@
 #pragma once
-#include <urhi/urhi.h>
 
 #include "gpuSceneBuffers.h"
 #include "meshletFrameResources.h"
@@ -9,11 +8,11 @@ namespace ion
 class IndexScatterStage
 {
 public:
-    explicit IndexScatterStage(const grl::Rc<urhi::Device> &device);
-    void execute(urhi::ComputePass& pass, const GpuSceneBuffers &sceneBuffers, const MeshletFrameResources &frame);
+    explicit IndexScatterStage(const dg::Ref<dg::IRenderDevice> &device, const GpuSceneBuffers &sceneBuffers, const MeshletFrameResources &frame);
+    void execute(const dg::Ref<dg::IDeviceContext>& ctx, const MeshletFrameResources &frame);
 private:
-    grl::Rc<urhi::Device> m_device;
-
-    grl::Rc<urhi::Pipeline> m_pipeline;
+    dg::Ref<dg::IRenderDevice> m_device{};
+    dg::Ref<dg::IPipelineState> m_pso{};
+    dg::Ref<dg::IShaderResourceBinding> m_srb{};
 };
 }

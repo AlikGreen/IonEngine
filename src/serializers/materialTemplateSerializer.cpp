@@ -28,7 +28,7 @@ namespace ion
         AssetId moduleId{};
         assetStream.read(moduleId);
 
-        auto module = assetRegistry.load<urhi::slang::Module>(moduleId);
+        auto module = assetRegistry.load<ShaderModule>(moduleId);
 
         return grl::makeRc<MaterialTemplate>(name, isOpaque, isLit, module);
     }

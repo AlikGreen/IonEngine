@@ -1,17 +1,16 @@
 #pragma once
-#include "context.h"
-#include "device.h"
+#include "pipelineRegistry.h"
 #include "renderTarget.h"
-#include "swapchain.h"
+#include "window.h"
 #include "core/system.h"
-#include "descriptions/windowDesc.h"
+#include "shaders/shaderRegistry.h"
 
 namespace ion
 {
 class GraphicsSystem final : public System
 {
 public:
-    explicit GraphicsSystem(const urhi::WindowDesc &windowOptions);
+    explicit GraphicsSystem(const WindowDesc &windowOptions);
 
     void preStartup() override;
     void postStartup() override;
@@ -20,26 +19,36 @@ public:
     void postRender() override;
     void shutdown() override;
 
-    void drawTexture(const grl::Rc<urhi::Texture> &texture, urhi::TextureFilter filter = urhi::TextureFilter::Linear) const;
+    void drawTexture(const dg::Ref<dg::ITextureView>& texture, dg::FILTER_TYPE filter = dg::FILTER_TYPE_LINEAR) const;
 
     [[nodiscard]] grl::Rc<RenderTarget> createRenderTarget(uint32_t width, uint32_t height, bool useDepth = true) const;
 
-    [[nodiscard]] grl::Rc<urhi::TextureView> getDefaultTexture() { return m_defaultTexture; }
-    [[nodiscard]] grl::Rc<urhi::Device> getDevice() const { return m_device; }
-    [[nodiscard]] grl::Rc<urhi::Window> getWindow() const { return m_window; }
-    [[nodiscard]] grl::Rc<urhi::Swapchain> getSwapchain() const { return m_swapchain; }
+    [[nodiscard]] dg::Ref<dg::ITextureView> defaultTexture() { return m_defaultTexView; }
+    [[nodiscard]] dg::Ref<dg::IRenderDevice> device() const { return m_device; }
+    [[nodiscard]] dg::Ref<dg::IDeviceContext> imContext() const { return m_immediateContext; }
+
+    [[nodiscard]] ShaderRegistry& shaderRegistry() const { return *m_shaderRegistry; }
+    [[nodiscard]] PipelineRegistry& pipelineRegistry() const { return *m_pipelineRegistry; }
+
+    [[nodiscard]] grl::Rc<Window> window() const { return m_window; }
+    [[nodiscard]] dg::Ref<dg::ISwapChain> swapchain() const { return m_swapChain; }
 
     [[nodiscard]] float frameDuration() const { return m_frameDuration; }
 private:
-    urhi::WindowDesc m_windowDesc;
+    WindowDesc m_windowDesc;
+    grl::Rc<Window> m_window;
 
-    grl::Rc<urhi::Context> m_context;
-    grl::Rc<urhi::Device> m_device;
-    grl::Rc<urhi::Window> m_window;
-    grl::Rc<urhi::Swapchain> m_swapchain{};
+    grl::Box<ShaderRegistry> m_shaderRegistry{};
+    grl::Box<PipelineRegistry> m_pipelineRegistry{};
 
-    grl::Rc<urhi::TextureView> m_renderView{};
-    grl::Rc<urhi::TextureView> m_defaultTexture{};
+    dg::Ref<dg::IRenderDevice>  m_device;
+    dg::Ref<dg::IDeviceContext> m_immediateContext;
+    dg::Ref<dg::ISwapChain>     m_swapChain;
+
+    dg::Ref<dg::ITextureView> m_defaultTexView{};
+
+    dg::ITextureView* m_renderView{};
+    dg::ITextureView* m_depthView{};
 
     std::chrono::time_point<std::chrono::high_resolution_clock> m_frameStartTime;
     float m_frameDuration{};

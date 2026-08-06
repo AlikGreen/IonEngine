@@ -17,7 +17,7 @@ namespace ion
         if(!m_dirty || m_vertices.empty() || m_indices.empty())
             return;
 
-        const auto device = Engine::getSystem<GraphicsSystem>()->getDevice();
+        const auto device = Engine::getSystem<GraphicsSystem>()->device();
 
         buildInternals();
 

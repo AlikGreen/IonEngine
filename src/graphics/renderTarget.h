@@ -1,5 +1,4 @@
 #pragma once
-#include "device.h"
 #include "textureView.h"
 
 namespace ion
@@ -9,18 +8,25 @@ class RenderTarget
 public:
     bool resize(uint32_t w, uint32_t h);
 
-    grl::Rc<urhi::TextureView> getColorAttachment() { return m_colorAttachment; }
-    grl::Rc<urhi::TextureView> getDepthAttachment() { return m_depthAttachment; }
+    dg::Ref<dg::ITextureView>  getColorRTV() { return m_colorRTV; }
+    dg::Ref<dg::ITextureView>  getColorSRV() { return m_colorSRV; }
+
+    dg::Ref<dg::ITextureView>  getDepthDTV() { return m_depthDSV; }
+    dg::Ref<dg::ITextureView>  getDepthSRV() { return m_depthSRV; }
+
     [[nodiscard]] uint32_t getWidth() const { return m_width; }
     [[nodiscard]] uint32_t getHeight() const { return m_height; }
 private:
     friend class GraphicsSystem;
-    RenderTarget(const grl::Rc<urhi::Device> &device, uint32_t w, uint32_t h, bool useDepth);
+    RenderTarget(const dg::Ref<dg::IRenderDevice>& device, uint32_t w, uint32_t h, bool useDepth);
 
-    grl::Rc<urhi::Device> m_device;
+    dg::Ref<dg::IRenderDevice> m_device;
 
-    grl::Rc<urhi::TextureView> m_colorAttachment;
-    grl::Rc<urhi::TextureView> m_depthAttachment;
+    dg::Ref<dg::ITextureView> m_colorRTV;
+    dg::Ref<dg::ITextureView> m_colorSRV;
+
+    dg::Ref<dg::ITextureView> m_depthDSV;
+    dg::Ref<dg::ITextureView> m_depthSRV;
 
     bool m_useDepth;
     uint32_t m_width{};

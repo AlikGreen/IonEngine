@@ -28,86 +28,70 @@ namespace ion
             0, 3, 2
         };
 
-        auto device = Engine::getSystem<GraphicsSystem>()->getDevice();
+        auto device = Engine::getSystem<GraphicsSystem>()->device();
 
-        m_screenVertexBuffer = device->createBuffer({ urhi::BufferUsage::Vertex, sizeof(ScreenVert) * screenVertices.size() });
-        m_screenIndexBuffer = device->createBuffer({ urhi::BufferUsage::Index, sizeof(uint16_t) * quadIndices.size() });
+        dg::BufferData vertexBufferData{screenVertices.data(), screenVertices.size() * sizeof(ScreenVert)};
 
-        auto cmd = device->acquireCommandList(urhi::QueueType::Graphics);
-        cmd->updateBuffer(m_screenVertexBuffer, screenVertices);
-        cmd->updateBuffer(m_screenIndexBuffer, quadIndices);
-        device->submit(cmd);
+        dg::BufferDesc screenVertBufferDesc{};
+        screenVertBufferDesc.Name      = "Fullscreen quad vertices";
+        screenVertBufferDesc.Size      = sizeof(ScreenVert) * screenVertices.size();
+        screenVertBufferDesc.Usage     = dg::USAGE_IMMUTABLE;
+        screenVertBufferDesc.BindFlags = dg::BIND_VERTEX_BUFFER;
+        device->CreateBuffer(screenVertBufferDesc, &vertexBufferData, &m_screenVertexBuffer);
 
 
-        urhi::DepthState depthState{};
-        depthState.hasDepthTarget   = true;
-        depthState.enableDepthTest  = true;
-        depthState.enableDepthWrite = false;
-        depthState.compareOp = urhi::CompareOp::LessOrEqual;
+        dg::BufferData indexBufferData{quadIndices.data(), quadIndices.size() * sizeof(uint16_t)};
 
-        urhi::RasterizerState rasterState{};
-        rasterState.cullMode = urhi::CullMode::Back;
-
-        urhi::BlendState blendState{};
-        blendState.enableBlend    = false;
-
-        urhi::ColorAttachmentDesc colorAttach{};
-        colorAttach.blend  = blendState;
-        colorAttach.format = urhi::PixelFormat::RGBA8UNorm;
-
-        m_pipelineDesc.depthState       = depthState;
-        m_pipelineDesc.rasterizerState  = rasterState;
-        m_pipelineDesc.colorAttachments = { colorAttach };
-
-        m_pipelineDesc.depthAttachmentFormat = urhi::PixelFormat::Depth32Float;
+        dg::BufferDesc screenIndexBufferDesc{};
+        screenIndexBufferDesc.Name      = "Fullscreen quad indices";
+        screenIndexBufferDesc.Size      = sizeof(uint16_t) * quadIndices.size();
+        screenIndexBufferDesc.Usage     = dg::USAGE_IMMUTABLE;
+        screenIndexBufferDesc.BindFlags = dg::BIND_INDEX_BUFFER;
+        device->CreateBuffer(screenIndexBufferDesc, &indexBufferData, &m_screenIndexBuffer);
 
         AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-        m_shaderModule = importPipeline.import<urhi::slang::Module>("shaders/genericSkybox.slang");
+        m_shaderModule = importPipeline.import<ShaderModule>("shaders/genericSkybox.hlsl");
     }
 
-    void SkyboxRenderPass::execute(const grl::Rc<urhi::CommandList> &cmd, RenderContext &ctx)
+    void SkyboxRenderPass::execute(const dg::Ref<dg::IDeviceContext>& dc, RenderContext &ctx)
     {
         if(!ctx.has("skybox_material")
             || !ctx.has("camera_buffer")
-            || !ctx.has("scene_color_texture")
-            || !ctx.has("scene_depth_texture")
+            || !ctx.has("scene_rtv")
+            || !ctx.has("scene_dtv")
             || !ctx.has("pass_data_buffer"))
             return;
 
         const auto material = ctx.get<MaterialInstance*>("skybox_material");
         if(material == nullptr) return;
 
-        const auto cameraBuffer = ctx.get<grl::Rc<urhi::Buffer>>("camera_buffer");
-        const auto sceneColorTexture = ctx.get<grl::Rc<urhi::TextureView>>("scene_color_texture");
-        const auto sceneDepthTexture = ctx.get<grl::Rc<urhi::TextureView>>("scene_depth_texture");
-        const auto passDataBuffer = ctx.get<grl::Rc<urhi::Buffer>>("pass_data_buffer");
+        const auto cameraBuffer = ctx.get<dg::Ref<dg::IBuffer>>("camera_buffer");
+        const auto sceneRtv = ctx.get<dg::Ref<dg::ITextureView>>("scene_rtv");
+        const auto sceneDtv = ctx.get<dg::Ref<dg::ITextureView>>("scene_dtv");
+        const auto passDataBuffer = ctx.get<dg::Ref<dg::IBuffer>>("pass_data_buffer");
 
-        urhi::ColorAttachment colorAttachment{};
-        colorAttachment.target = sceneColorTexture;
-        colorAttachment.loadOp = urhi::LoadOp::Load;
-        colorAttachment.storeOp = urhi::StoreOp::Store;
 
-        urhi::DepthStencilAttachment depthAttachment{};
-        depthAttachment.target = sceneDepthTexture;
-        depthAttachment.loadOp = urhi::LoadOp::Load;
-        depthAttachment.storeOp = urhi::StoreOp::DontCare;
+        PassDefinition passDef{};
+        passDef.name = "skybox_pass";
+        passDef.topology = dg::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        passDef.rtvFormats = { dg::TEX_FORMAT_RGBA8_UNORM };
+        passDef.dtvFormat = dg::TEX_FORMAT_D32_FLOAT;
 
-        urhi::RenderPassDesc renderPassDesc{};
-        renderPassDesc.colorAttachments = {colorAttachment};
-        renderPassDesc.depthAttachment = depthAttachment;
-        auto& pass = cmd->beginRenderPass(renderPassDesc);
+        passDef.overrides.depth = DepthPreset::ReadOnly;
 
-        const auto pipeline = material->materialTemplate()->getOrCreatePipeline(*m_shaderModule, m_pipelineDesc);
-        pass.setPipeline(pipeline);
+        dg::ITextureView* pRTVs[] = { sceneRtv };
+        dc->SetRenderTargets(1, pRTVs, sceneDtv, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-        material->applyBindings(cmd, pass);
-        pass.setBuffer("camera", cameraBuffer);
-        pass.setBuffer("pass", passDataBuffer);
+        const auto [pso, srb] = material->materialTemplate()->getOrCreatePipeline(*m_shaderModule, passDef);
+        dc->SetPipelineState(pso);
 
-        pass.setVertexBuffer(0, m_screenVertexBuffer);
-        pass.setIndexBuffer(m_screenIndexBuffer, urhi::IndexFormat::UInt16);
-        pass.drawIndexed(6);
+        srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "camera")->Set(cameraBuffer);
+        srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "pass")->Set(passDataBuffer);
 
-        pass.end();
+        dc->CommitShaderResources(srb, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+        dc->SetVertexBuffers(0, 1, &m_screenVertexBuffer, nullptr, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        dc->SetIndexBuffer(m_screenIndexBuffer, 0, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        dc->DrawIndexed({ 6, dg::VT_INT16, dg::DRAW_FLAG_NONE });
     }
 }

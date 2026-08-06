@@ -1,14 +1,15 @@
 #include "imGuiSystem.h"
 
+#include <imgui_impl_glfw.h>
+
 #include "consoleWindowSink.h"
 #include "graphicsSystem.h"
+#include "ImGuiImplDiligent.hpp"
 #include "imGuiStyleSerializer.h"
 #include "components/camera.h"
 #include "core/engine.h"
 #include "core/resourceFS.h"
 #include "core/sceneManager.h"
-#include "events/rhiWindowEvent.h"
-#include "imgui/imGuiExtensions.h"
 #include "util/ansiParser.h"
 
 namespace ion
@@ -27,8 +28,9 @@ namespace ion
     void ImGuiSystem::preStartup()
     {
         m_graphicsSystem = Engine::getSystem<GraphicsSystem>();
-        m_device = m_graphicsSystem->getDevice();
-        m_window = m_graphicsSystem->getWindow();
+        m_device = m_graphicsSystem->device();
+        m_window = m_graphicsSystem->window();
+        m_swapChain = m_graphicsSystem->swapchain();
 
         clogr::defaultLogger()->addSink<ConsoleWindowSink>();
 
@@ -85,16 +87,17 @@ namespace ion
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
-        urhi::SamplerDesc samplerDesc{};
-        samplerDesc.addressModeU = urhi::AddressMode::ClampToEdge;
-        samplerDesc.addressModeV = urhi::AddressMode::ClampToEdge;
-        m_colorTextureSampler = m_device->createSampler(samplerDesc);
+        dg::SamplerDesc samplerDesc{};
+        samplerDesc.AddressU = dg::TEXTURE_ADDRESS_CLAMP;
+        samplerDesc.AddressV = dg::TEXTURE_ADDRESS_CLAMP;
+        m_device->CreateSampler(samplerDesc, &m_colorTextureSampler);
 
-        urhi::ImGuiController::InitInfo initInfo{};
-        initInfo.device = m_device;
-        initInfo.window = m_window;
+        ImGui::CreateContext();
+        ImGui_ImplGlfw_InitForOther(m_window->handle(), true);
 
-        m_imGuiController = grl::makeBox<urhi::ImGuiController>(initInfo);
+        dg::ImGuiDiligentCreateInfo imguiCI{m_device, m_graphicsSystem->swapchain()->GetDesc()};
+        m_imGuiController = grl::makeBox<dg::ImGuiImplDiligent>(imguiCI);
+
 
         m_frameCountStart = std::chrono::high_resolution_clock::now();
 
@@ -125,7 +128,7 @@ namespace ion
         );
         io.DeltaTime = Engine::getDeltaTime();
 
-        m_imGuiController->newFrame();
+        m_imGuiController->NewFrame(m_window->width(), m_window->height(), dg::SURFACE_TRANSFORM_IDENTITY);
 
         if(shouldDrawDockSpace)
             drawDockSpace();
@@ -138,17 +141,31 @@ namespace ion
             callback();
         }
 
-        m_imGuiController->endFrame();
+        m_imGuiController->EndFrame();
 
-        const grl::Rc<urhi::Texture> imGuiTexture = m_imGuiController->getFramebufferTexture();;
-        if(!m_imguiTexture || m_imguiTexture != imGuiTexture)
-        {
-            m_imguiTexture = imGuiTexture;
-            const auto viewDesc = urhi::TextureViewDesc(imGuiTexture);
-            m_colorTextureView = m_device->createTextureView(viewDesc);
-        }
+        auto* pRTV = m_swapChain->GetCurrentBackBufferRTV();
+        auto* pDSV = m_swapChain->GetDepthBufferDSV();
 
-        m_graphicsSystem->drawTexture(m_colorTextureView->texture());
+        auto ctx = m_graphicsSystem->imContext();
+
+        // Clear
+        const float clearColor[] = {0.1f, 0.1f, 0.1f, 1.0f};
+        ctx->SetRenderTargets(
+            1, &pRTV, pDSV,
+            dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+        );
+        ctx->ClearRenderTarget(
+            pRTV, clearColor,
+            dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+        );
+        ctx->ClearDepthStencil(
+            pDSV,
+            dg::CLEAR_DEPTH_FLAG,
+            1.0f, 0,
+            dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+        );
+
+        m_imGuiController->Render(ctx);
     }
 
     void ImGuiSystem::addRenderCallback(const std::function<void()> &callback)
@@ -171,8 +188,8 @@ namespace ion
 
         const ImGuiViewport *viewport = ImGui::GetMainViewport();
 
-        ImGui::PushStyleColor(ImGuiCol_WindowBg,      ImVec4(0, 0, 0, 0));
-        ImGui::PushStyleColor(ImGuiCol_DockingEmptyBg,ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg,       ImVec4(0, 0, 0, 0));
+        ImGui::PushStyleColor(ImGuiCol_DockingEmptyBg, ImVec4(0, 0, 0, 0));
 
         ImGui::DockSpaceOverViewport(
             0,
@@ -315,13 +332,5 @@ namespace ion
         }
 
         return { input.substr(0, lastGood), input.substr(lastGood) };
-    }
-
-    void ImGuiSystem::event(Event *event)
-    {
-        if(const auto* rhiWindowEvent = dynamic_cast<RhiWindowEvent*>(event))
-        {
-            urhi::ImGuiController::processEvent(rhiWindowEvent->event);
-        }
     }
 }

@@ -58,11 +58,11 @@ namespace ion
 
     void Input::setCursorLocked(const bool locked)
     {
-        Engine::getSystem<GraphicsSystem>()->getWindow()->setCursorLocked(locked);
+        Engine::getSystem<GraphicsSystem>()->window()->setCursorLocked(locked);
     }
 
     void Input::setCursorVisible(const bool visible)
     {
-        Engine::getSystem<GraphicsSystem>()->getWindow()->setCursorVisible(visible);
+        Engine::getSystem<GraphicsSystem>()->window()->setCursorVisible(visible);
     }
 }

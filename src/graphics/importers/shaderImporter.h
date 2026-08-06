@@ -1,20 +1,13 @@
 #pragma once
-#include <slang/compiler.h>
-
 #include "asset/assetImporter.h"
+#include "graphics/shaders/shaderModule.h"
 
 namespace ion
 {
-struct ShaderImportOpts
-{
-    std::vector<std::string> includeDirs{};
-    std::vector<std::string> defines{};
-};
-
-class ShaderImporter final : public AssetImporter<urhi::slang::Module, ShaderImportOpts>
+class ShaderImporter final : public AssetImporter<ShaderModule>
 {
 public:
-    grl::Box<urhi::slang::Module> import(const std::filesystem::path &src, const ShaderImportOpts& options) override;
+    grl::Box<ShaderModule> import(const std::filesystem::path &path, const NoOptions&) override;
     [[nodiscard]] bool canImport(const std::filesystem::path &src) const override;
 };
 }

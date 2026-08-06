@@ -7,6 +7,7 @@
 #include "graphics/sceneRenderer/gpuMaterialRegistry.h"
 #include "graphics/sceneRenderer/gpuSceneBuffers.h"
 #include "graphics/sceneRenderer/meshletFrameResources.h"
+#include "graphics/graphicsSystem.h"
 
 namespace ion
 {
@@ -16,56 +17,36 @@ namespace ion
         glm::mat4 normalMatrix{};
     };
 
-    OpaqueForwardPass::OpaqueForwardPass()
+    OpaqueForwardPass::OpaqueForwardPass(const dg::Ref<dg::IRenderDevice>& device)
     {
-        urhi::DepthState depthState{};
-        depthState.hasDepthTarget   = true;
-        depthState.enableDepthTest  = true;
-        depthState.enableDepthWrite = true;
-
-        urhi::RasterizerState rasterState{};
-        rasterState.cullMode = urhi::CullMode::Back;
-
-        urhi::BlendState blendState{};
-        blendState.enableBlend    = false;
-
-        urhi::ColorAttachmentDesc colorAttach{};
-        colorAttach.blend  = blendState;
-        colorAttach.format = urhi::PixelFormat::RGBA8UNorm;
-
-        m_pipelineDesc.depthState       = depthState;
-        m_pipelineDesc.rasterizerState  = rasterState;
-        m_pipelineDesc.colorAttachments = { colorAttach };
-
-        m_pipelineDesc.depthAttachmentFormat = urhi::PixelFormat::Depth32Float;
-
         AssetImportPipeline& importPipeline = Engine::assetImportPipeline();
-        m_shaderModule = importPipeline.import<urhi::slang::Module>("shaders/genericOpaqueForward.slang");
+        m_shaderModule = importPipeline.import<ShaderModule>("shaders/genericOpaqueForward.hlsl");
     }
 
-    void OpaqueForwardPass::execute(const grl::Rc<urhi::CommandList>& cmd, RenderContext &ctx)
+    void OpaqueForwardPass::execute(const dg::Ref<dg::IDeviceContext>& dc, RenderContext &ctx)
     {
         if(!ctx.has("camera_buffer")
             || !ctx.has("material_registry")
             || !ctx.has("scene_buffers")
             || !ctx.has("frame_resources")
             || !ctx.has("point_lights_buffer")
-            || !ctx.has("scene_color_texture")
-            || !ctx.has("scene_depth_texture")
+            || !ctx.has("scene_rtv")
+            || !ctx.has("scene_dtv")
             || !ctx.has("pass_data_buffer"))
         {
             return;
         }
 
-        const auto cameraBuffer = ctx.get<grl::Rc<urhi::Buffer>>("camera_buffer");
-        const auto pointLightsBuffer = ctx.get<grl::Rc<urhi::Buffer>>("point_lights_buffer");
-        const auto sceneColorTexture = ctx.get<grl::Rc<urhi::TextureView>>("scene_color_texture");
-        const auto sceneDepthTexture = ctx.get<grl::Rc<urhi::TextureView>>("scene_depth_texture");
-        const auto passDataBuffer = ctx.get<grl::Rc<urhi::Buffer>>("pass_data_buffer");
+        const auto cameraBuffer = ctx.get<dg::Ref<dg::IBuffer>>("camera_buffer");
+        const auto pointLightsBuffer = ctx.get<dg::Ref<dg::IBuffer>>("point_lights_buffer");
+        const auto passDataBuffer = ctx.get<dg::Ref<dg::IBuffer>>("pass_data_buffer");
 
-        auto& sceneBuffers = *ctx.get<GpuSceneBuffers*>("scene_buffers");
-        auto& frameResources = *ctx.get<MeshletFrameResources*>("frame_resources");
-        auto& materialRegistry = *ctx.get<GpuMaterialRegistry*>("material_registry");
+        const auto sceneColorRTV = ctx.get<dg::Ref<dg::ITextureView>>("scene_rtv");
+        const auto sceneDepthDSV = ctx.get<dg::Ref<dg::ITextureView>>("scene_dtv");
+
+        const auto& sceneBuffers = *ctx.get<GpuSceneBuffers*>("scene_buffers");
+        const auto& frameResources = *ctx.get<MeshletFrameResources*>("frame_resources");
+        const auto& materialRegistry = *ctx.get<GpuMaterialRegistry*>("material_registry");
 
         auto vertexBuffer = sceneBuffers.vertexBuffer();
         auto transformBuffer = sceneBuffers.transformBuffer();
@@ -73,42 +54,58 @@ namespace ion
         auto drawCmdsBuffer = frameResources.drawCmdBuffer;
         auto drawCountsBuffer = frameResources.drawCountBuffer;
 
-        urhi::ColorAttachment colorAttachment{};
-        colorAttachment.target = sceneColorTexture;
-        colorAttachment.loadOp = urhi::LoadOp::Clear;
 
-        urhi::DepthStencilAttachment depthAttachment{};
-        depthAttachment.target = sceneDepthTexture;
-        depthAttachment.loadOp = urhi::LoadOp::Clear;
+        PassDefinition passDef;
+        passDef.name = "opaque_forward_pass";
+        passDef.topology = dg::PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        passDef.rtvFormats.push_back(dg::TEX_FORMAT_RGBA8_UNORM);
+        passDef.dtvFormat = dg::TEX_FORMAT_D32_FLOAT;
 
-        urhi::RenderPassDesc renderPassDesc{};
-        renderPassDesc.colorAttachments = {colorAttachment};
-        renderPassDesc.depthAttachment = depthAttachment;
-        auto& pass = cmd->beginRenderPass(renderPassDesc);
+        passDef.overrides.cullMode = dg::CULL_MODE_NONE; // TODO set to back once working
+        passDef.overrides.depth = DepthPreset::ReadWrite;
+        passDef.overrides.blend = BlendPreset::Opaque;
+
+
+
+        dg::ITextureView* pRTVs[] = { sceneColorRTV };
+        dc->SetRenderTargets(1, pRTVs, sceneDepthDSV, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+        constexpr float clearColor[] = { 0.f, 0.f, 0.f, 1.f };
+        dc->ClearRenderTarget(sceneColorRTV, clearColor, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+        dc->ClearDepthStencil(sceneDepthDSV, dg::CLEAR_DEPTH_FLAG, 1.0f, 0, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
         uint32_t drawBufferIndex = 0;
         for(uint32_t i = 0; i < materialRegistry.templates().size(); i++)
         {
-            auto pipeline = materialRegistry.templates().at(i)->getOrCreatePipeline(*m_shaderModule, m_pipelineDesc);
-            pass.setPipeline(pipeline);
+            auto [pso, srb] = materialRegistry.templates().at(i)->getOrCreatePipeline(*m_shaderModule, passDef);
+            dc->SetPipelineState(pso);
 
-
-            pass.setBuffer("camera", cameraBuffer);
-            pass.setBuffer("pass", passDataBuffer);
-            pass.setBuffer("pointLights", pointLightsBuffer);
-            pass.setBuffer("modelData", transformBuffer);
+            srb->GetVariableByName(dg::SHADER_TYPE_VERTEX, "camera")->Set(cameraBuffer);
+            srb->GetVariableByName(dg::SHADER_TYPE_VERTEX, "modelData")->Set(transformBuffer);
+            srb->GetVariableByName(dg::SHADER_TYPE_PIXEL, "pass")->Set(passDataBuffer);
+            srb->GetVariableByName(dg::SHADER_TYPE_PIXEL, "pointLights")->Set(pointLightsBuffer);
 
             // pass.pushConstants(modelUniforms); push constants needs to have index into global buffer
             // renderable.material->applyBindings(cmd, pass); need to add bindless textures and a material buffer
 
-            pass.setVertexBuffer(0, vertexBuffer);
-            pass.setIndexBuffer(indexBuffer, urhi::IndexFormat::UInt32);
-            pass.multiDrawIndexedIndirectCount(drawCmdsBuffer, drawCountsBuffer, drawBufferIndex, i);
+            dc->CommitShaderResources(srb, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-            auto templInfo = materialRegistry.templateInfos().at(i);
+            dc->SetVertexBuffers(0, 1, &vertexBuffer, nullptr, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+            dc->SetIndexBuffer(indexBuffer, 0, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+            dg::DrawIndexedIndirectAttribs drawAttribs{};
+            drawAttribs.pAttribsBuffer = drawCmdsBuffer;
+            drawAttribs.pCounterBuffer = drawCountsBuffer;
+            drawAttribs.IndexType = dg::VT_INT32;
+            drawAttribs.DrawArgsOffset = drawBufferIndex * sizeof(DrawIndexedIndirectCommand);
+            drawAttribs.CounterOffset = i * sizeof(uint32_t);
+            drawAttribs.DrawCount = 2048;
+
+            dc->DrawIndexedIndirect(drawAttribs);
+
+            const auto templInfo = materialRegistry.templateInfos().at(i);
             drawBufferIndex += templInfo.totalPrimitiveCount;
         }
-
-        pass.end();
     }
 }

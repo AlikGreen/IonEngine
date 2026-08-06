@@ -98,7 +98,6 @@ namespace ion
 
     AssetRef<MaterialInstance> GLBSceneImporter::processMaterial(const tinygltf::Model &model, tinygltf::Material gltfMat)
     {
-        const grl::Rc<urhi::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
         auto& assets = Engine::assetRegistry();
 
         auto material = assets.create<MaterialInstance>(MaterialTemplates::pbr());
@@ -318,32 +317,31 @@ namespace ion
         return newIndices;
     }
 
-    urhi::PixelFormat determineTextureFormat(const tinygltf::Image& image, const bool isSRGB)
+    dg::TEXTURE_FORMAT determineTextureFormat(const tinygltf::Image& image, const bool isSRGB)
     {
-        using namespace urhi;
         const auto components = image.component;
         const auto bits = image.bits;
 
         if (components == 1)
         {
-            if (bits == 8) return PixelFormat::R8UNorm;
-            if (bits == 16) return PixelFormat::R16Float;
-            if (bits == 32) return PixelFormat::R32Float;
+            if (bits == 8) return dg::TEX_FORMAT_R8_UNORM;
+            if (bits == 16) return dg::TEX_FORMAT_R16_UNORM;
+            if (bits == 32) return dg::TEX_FORMAT_R32_FLOAT;
         }
         else if (components == 2)
         {
-            if (bits == 8) return PixelFormat::RG8UNorm;
-            if (bits == 16) return PixelFormat::RG16Float;
-            if (bits == 32) return PixelFormat::RG32Float;
+            if (bits == 8) return dg::TEX_FORMAT_RG8_UNORM;
+            if (bits == 16) return dg::TEX_FORMAT_RG16_UNORM;
+            if (bits == 32) return dg::TEX_FORMAT_R32_FLOAT;
         }
         else if (components == 3 || components == 4)
         {
-            if (bits == 8) return isSRGB ? PixelFormat::RGBA8UNormSrgb : PixelFormat::RGBA8UNorm;
-            if (bits == 16) return PixelFormat::RGBA16Float;
-            if (bits == 32) return PixelFormat::RGBA32Float;
+            if (bits == 8) return isSRGB ? dg::TEX_FORMAT_RGBA8_UNORM_SRGB : dg::TEX_FORMAT_RGBA8_UNORM;
+            if (bits == 16) return dg::TEX_FORMAT_RGBA16_FLOAT;
+            if (bits == 32) return dg::TEX_FORMAT_RGBA32_FLOAT;
         }
 
-        return PixelFormat::RGBA8UNorm;
+        return dg::TEX_FORMAT_RGBA8_UNORM;
     }
 
     AssetRef<Image> GLBSceneImporter::loadTexture(const tinygltf::Texture &texture, const tinygltf::Model &model, bool isSrgb)

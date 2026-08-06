@@ -51,7 +51,7 @@ public:
     bool setTexture(const std::string& name, const AssetRef<Image>& image);
     bool setSampler(const std::string& name, const AssetRef<Image>& image);
 
-    void applyBindings(const grl::Rc<urhi::CommandList>& cmd, urhi::RenderPass& pass);
+    // void applyBindings(const grl::Rc<urhi::CommandList>& cmd, urhi::RenderPass& pass);
 
     [[nodiscard]] const AssetRef<MaterialTemplate>& materialTemplate() const { return m_template; }
 
@@ -67,7 +67,7 @@ public:
     [[nodiscard]] const auto& resources() const { return m_template->resources(); }
     [[nodiscard]] const auto& properties() const { return m_template->properties(); }
 
-    bool dirty() const { return m_dirty; }
+    [[nodiscard]] bool dirty() const { return m_dirty; }
     void dirty(const bool dirty) { m_dirty = dirty; }
 private:
     AssetRef<MaterialTemplate> m_template;
@@ -76,7 +76,7 @@ private:
     std::unordered_map<std::string, AssetRef<Image>> m_textures;
     std::unordered_map<std::string, AssetRef<Image>> m_samplers;
 
-    grl::Rc<urhi::Buffer> m_propertyBuffer;
+    dg::Ref<dg::IBuffer> m_propertyBuffer;
     bool m_dirty = true;
 };
 }

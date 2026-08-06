@@ -1,5 +1,4 @@
 #pragma once
-#include <urhi/urhi.h>
 #include "asset/assetRef.h"
 #include "graphics/materialInstance.h"
 
@@ -21,15 +20,15 @@ namespace ion
             uint32_t materialIndex{};
         };
 
-        explicit GpuMaterialRegistry(const grl::Rc<urhi::Device> &device);
+        explicit GpuMaterialRegistry(const dg::Ref<dg::IRenderDevice> &device);
 
         const MaterialEntry& registerPrimitiveMaterial(const AssetRef<MaterialInstance>& mat);
-        void updateMaterial(const AssetRef<MaterialInstance>& mat, const grl::Rc<urhi::CommandList>& cmd);
-        void syncLayout(const grl::Rc<urhi::CommandList>& cmd);
+        void updateMaterial(const AssetRef<MaterialInstance>& mat, const dg::Ref<dg::IDeviceContext>& ctx);
+        void syncLayout(const dg::Ref<dg::IDeviceContext>& ctx);
 
         AssetRef<MaterialInstance> defaultMaterial() { return m_defaultMaterial; }
 
-        [[nodiscard]] const grl::Rc<urhi::Buffer>& templateBaseOffsetsBuffer() const { return m_templateBaseOffsetsBuffer; }
+        [[nodiscard]] const dg::Ref<dg::IBuffer>& templateBaseOffsetsBuffer() const { return m_templateBaseOffsetsBuffer; }
 
         const std::vector<AssetRef<MaterialTemplate>>& templates() const { return m_templates; }
         const std::vector<TemplateInfo>& templateInfos() const { return m_templateInfos; }
@@ -42,12 +41,12 @@ namespace ion
         std::vector<TemplateInfo> m_templateInfos;
         std::vector<AssetRef<MaterialTemplate>> m_templates;
 
-        std::unordered_map<AssetId, grl::Rc<urhi::Buffer>> m_materialBuffers;
+        std::unordered_map<AssetId, dg::Ref<dg::IBuffer>> m_materialBuffers;
 
         std::vector<uint32_t> m_templateBaseOffsets;
 
-        grl::Rc<urhi::Device> m_device;
+        dg::Ref<dg::IRenderDevice> m_device;
 
-        grl::Rc<urhi::Buffer> m_templateBaseOffsetsBuffer;
+        dg::Ref<dg::IBuffer> m_templateBaseOffsetsBuffer;
     };
 }

@@ -21,7 +21,7 @@
 #include "serializers/materialInstanceSerializer.h"
 #include "serializers/materialTemplateSerializer.h"
 #include "serializers/meshSerializer.h"
-#include "serializers/slangModuleSerializer.h"
+#include "serializers/shaderModuleSerializer.h"
 #include "serializers/componentSerializers/meshRendererSerializer.h"
 #include "serializers/componentSerializers/parentSerializer.h"
 #include "serializers/componentSerializers/pointLightSerializer.h"
@@ -90,7 +90,7 @@ namespace ion
         m_assetRegistry->registerSerializer<ImageSerializer>();
         m_assetRegistry->registerSerializer<MaterialInstanceSerializer>();
         m_assetRegistry->registerSerializer<MaterialTemplateSerializer>();
-        m_assetRegistry->registerSerializer<SlangModuleSerializer>();
+        m_assetRegistry->registerSerializer<ShaderModuleSerializer>();
     }
 
 

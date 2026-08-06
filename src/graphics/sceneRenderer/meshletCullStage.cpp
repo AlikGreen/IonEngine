@@ -12,20 +12,41 @@ namespace ion
         uint32_t padding;
     };
 
-    MeshletCullStage::MeshletCullStage(const grl::Rc<urhi::Device> &device)
+    MeshletCullStage::MeshletCullStage(const dg::Ref<dg::IRenderDevice> &device, const GpuSceneBuffers &sceneBuffers, const MeshletFrameResources &frame)
         : m_device(device)
     {
         auto& importPipeline = Engine::assetImportPipeline();
 
-        urhi::ComputePipelineDesc desc{};
-        auto module = importPipeline.load<urhi::slang::Module>("shaders/meshletCull.slang");
-        const auto shader = urhi::slang::Compiler::linkToShaderSet({{*module}}).stages()[0];
-        desc.shader = m_device->createShader(shader);
-        m_pipeline = m_device->createPipeline(desc);
-        m_cameraBuffer = m_device->createBuffer({ urhi::BufferUsage::Uniform, sizeof(CameraData1) });
+        dg::BufferDesc bufferDesc;
+        bufferDesc.Size      = sizeof(CameraData1);
+        bufferDesc.Usage     = dg::USAGE_DYNAMIC;
+        bufferDesc.BindFlags = dg::BIND_UNIFORM_BUFFER;
+        bufferDesc.CPUAccessFlags = dg::CPU_ACCESS_WRITE;
+        device->CreateBuffer( bufferDesc, nullptr, &m_cameraBuffer );
+
+        const auto& graphics = *Engine::getSystem<GraphicsSystem>();
+
+        const auto module = importPipeline.load<ShaderModule>("shaders/meshletCull.hlsl");
+        const auto bundle = graphics.shaderRegistry().getOrCreate(*module);
+
+        m_pso = graphics.pipelineRegistry().getOrCreateCompute(bundle);
+        m_pso->CreateShaderResourceBinding(&m_srb);
+
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gMeshletInstances")->Set(sceneBuffers.meshletInstanceBuffer()->GetDefaultView(dg::BUFFER_VIEW_SHADER_RESOURCE));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gMeshlets")->Set(sceneBuffers.meshletBuffer()->GetDefaultView(dg::BUFFER_VIEW_SHADER_RESOURCE));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gPrimitives")->Set(sceneBuffers.primitiveBuffer()->GetDefaultView(dg::BUFFER_VIEW_SHADER_RESOURCE));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gModelData")->Set(sceneBuffers.transformBuffer()->GetDefaultView(dg::BUFFER_VIEW_SHADER_RESOURCE));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gVisibleMeshlets")->Set(frame.visibleMeshlets->GetDefaultView(dg::BUFFER_VIEW_UNORDERED_ACCESS));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gIndirectDispatchArgs")->Set(frame.indirectDispatchArgs->GetDefaultView(dg::BUFFER_VIEW_UNORDERED_ACCESS));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gIndexCountPerPrimitive")->Set(frame.indexCountOrOffsetPerPrimitive->GetDefaultView(dg::BUFFER_VIEW_UNORDERED_ACCESS));
+
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gDebugLines")->Set(frame.debugLinesBuffer->GetDefaultView(dg::BUFFER_VIEW_UNORDERED_ACCESS));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gDebugLinesDraw")->Set(frame.linesDrawCmdBuffer->GetDefaultView(dg::BUFFER_VIEW_UNORDERED_ACCESS));
+
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gCamera")->Set(m_cameraBuffer->GetDefaultView(dg::BUFFER_VIEW_SHADER_RESOURCE));
     }
 
-    void MeshletCullStage::execute(const grl::Rc<urhi::CommandList> &cmd, urhi::ComputePass& pass, const glm::mat4 &camTransform, const Camera &camera, const GpuSceneBuffers &sceneBuffers, const MeshletFrameResources &frame)
+    void MeshletCullStage::execute(const dg::Ref<dg::IDeviceContext> &ctx, const glm::mat4 &camTransform, const Camera &camera, const GpuSceneBuffers &sceneBuffers)
     {
         const glm::mat4 flip = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, -1));
         const glm::mat4 invViewMat = camTransform * flip;
@@ -37,26 +58,13 @@ namespace ion
 
         data.position = glm::vec3(camTransform[3]);
 
-        cmd->updateBuffer(m_cameraBuffer, data);
+        ctx->UpdateBuffer(m_cameraBuffer, 0, sizeof(CameraData1), &data, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-        pass.setPipeline(m_pipeline);
+        ctx->SetPipelineState(m_pso);
 
-        pass.setBuffer("gMeshletInstances", sceneBuffers.meshletInstanceBuffer());
-        pass.setBuffer("gMeshlets", sceneBuffers.meshletBuffer());
-        pass.setBuffer("gPrimitives", sceneBuffers.primitiveBuffer());
-        pass.setBuffer("gModelData", sceneBuffers.transformBuffer());
-        pass.setBuffer("gVisibleMeshlets", frame.visibleMeshlets);
-        pass.setBuffer("gIndirectDispatchArgs", frame.indirectDispatchArgs);
-        pass.setBuffer("gIndexCountPerPrimitive", frame.indexCountOrOffsetPerPrimitive);
+        const uint32_t meshletInstanceCount = sceneBuffers.meshletInstanceCount();
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "pc")->SetInlineConstants(&meshletInstanceCount, 0, 1);
 
-        pass.setBuffer("gDebugLines", frame.debugLinesBuffer);
-        pass.setBuffer("gDebugLinesDraw", frame.linesDrawCmdBuffer);
-
-        pass.setBuffer("gCamera", m_cameraBuffer);
-
-        uint32_t meshletInstanceCount = sceneBuffers.meshletInstanceCount();
-        pass.pushConstants(meshletInstanceCount);
-
-        pass.dispatch((meshletInstanceCount  + 63) / 64, 1, 1);
+        ctx->DispatchCompute({(meshletInstanceCount  + 63) / 64, 1, 1});
     }
 }

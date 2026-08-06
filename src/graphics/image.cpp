@@ -2,25 +2,28 @@
 
 #include "graphicsSystem.h"
 #include "core/engine.h"
+#include "helpers/gfx.h"
+#include "helpers/textureReadback.h"
 
 namespace ion
 {
-    Image::Image(const grl::Rc<urhi::Texture>& texture, const grl::Rc<urhi::Sampler>& sampler)
+    Image::Image(const dg::Ref<dg::ITexture>& texture, const dg::Ref<dg::ISampler>& sampler)
         : m_texture(texture), m_sampler(sampler)
     {
-        m_format = m_texture->format();
-        m_width = m_texture->width();
-        m_height = m_texture->height();
+        const auto texDesc = m_texture->GetDesc();
+        m_format = texDesc.Format;
+        m_width = texDesc.Width;
+        m_height = texDesc.Height;
         m_uploaded = true;
     }
 
-    Image::Image(const TextureData &data, const grl::Rc<urhi::Sampler> &sampler)
+    Image::Image(const TextureData &data, const dg::Ref<dg::ISampler> &sampler)
     {
         m_sampler = sampler;
         if(m_sampler == nullptr)
         {
-            const grl::Rc<urhi::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
-            m_sampler = device->createSampler({});
+            const dg::Ref<dg::IRenderDevice> device = Engine::getSystem<GraphicsSystem>()->device();
+            device->CreateSampler({}, &m_sampler);
         }
 
         m_pixels = data.data;
@@ -29,7 +32,7 @@ namespace ion
         m_format = data.pixelFormat;
     }
 
-    grl::Rc<urhi::Texture> Image::texture()
+    dg::Ref<dg::ITexture> Image::texture()
     {
         if(m_texture == nullptr)
             upload();
@@ -37,21 +40,21 @@ namespace ion
         return m_texture;
     }
 
-    grl::Rc<urhi::TextureView> Image::textureView()
+    dg::Ref<dg::ITextureView> Image::srv()
     {
-        if(m_textureView == nullptr)
+        if(m_srv == nullptr)
         {
             if(m_texture == nullptr)
                 upload();
 
-            const grl::Rc<urhi::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
-            m_textureView = device->createTextureView(m_texture);
+            const dg::Ref<dg::IRenderDevice> device = Engine::getSystem<GraphicsSystem>()->device();
+            m_srv = m_texture->GetDefaultView(dg::TEXTURE_VIEW_SHADER_RESOURCE);
         }
 
-        return m_textureView;
+        return m_srv;
     }
 
-    grl::Rc<urhi::Sampler> Image::sampler()
+    dg::Ref<dg::ISampler> Image::sampler()
     {
         return m_sampler;
     }
@@ -63,56 +66,50 @@ namespace ion
             return m_pixels;
         }
 
-        const grl::Rc<urhi::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
-        const auto cmd = device->acquireCommandList(urhi::QueueType::Graphics);
+        const auto device = Engine::getSystem<GraphicsSystem>()->device();
+        const auto ctx = Engine::getSystem<GraphicsSystem>()->imContext();
 
-        urhi::TextureReadbackDesc desc;
+        TextureReadbackDesc desc;
         desc.width = m_width;
         desc.height = m_height;
-        desc.texture = m_texture;
-        const auto result = cmd->readback(desc);
-        device->submit(cmd);
+        desc.srcTexture = m_texture;
 
-        std::vector<uint8_t> pixels{};
-        pixels.resize(result->size());
+        TextureReadback readback = TextureReadback::Create(device, ctx, desc);
 
-        std::memcpy(pixels.data(), result->data(), result->size());
-        return pixels;
-    }
-
-    uint32_t Image::sizeInBytes() const
-    {
-        return m_width * m_height * (m_format == urhi::PixelFormat::RGBA8UNorm ? 4 : 16);
+        return readback.getData();
     }
 
     void Image::upload()
     {
-        const grl::Rc<urhi::Device> device = Engine::getSystem<GraphicsSystem>()->getDevice();
+        const auto graphicsSys = Engine::getSystem<GraphicsSystem>();
+        const auto device = graphicsSys->device();
+        const auto ctx = graphicsSys->imContext();
 
-        urhi::TextureDesc texDesc{};
-        texDesc.width = m_width;
-        texDesc.height = m_height;
-        texDesc.format = m_format;
+        dg::TextureDesc texDesc{};
+        texDesc.Width = m_width;
+        texDesc.Height = m_height;
+        texDesc.Format = m_format;
+        texDesc.Type = dg::RESOURCE_DIMENSION::RESOURCE_DIM_TEX_2D;
+        texDesc.BindFlags = dg::BIND_SHADER_RESOURCE;
+        texDesc.MipLevels = 1;
+        texDesc.Usage = dg::USAGE_DEFAULT;
 
-        m_texture = device->createTexture(texDesc);
+        const uint32_t texSize = gfx::getTextureSize(m_format, m_width, m_height, 1);
 
-        urhi::TextureUploadDesc uploadDesc{};
+        dg::TextureSubResData subResData{};
+        subResData.pData = m_pixels.data();
+        subResData.Stride = texSize / m_height;
+        subResData.DepthStride = texSize;
 
-        uploadDesc.data = m_pixels.data();
-        uploadDesc.texture = m_texture;
-        uploadDesc.width = m_width;
-        uploadDesc.height = m_height;
+        dg::TextureData texData{};
+        texData.pContext = ctx;
+        texData.NumSubresources = 1;
+        texData.pSubResources = &subResData;
 
-        const auto cl = device->acquireCommandList(urhi::QueueType::Graphics); // TODO use transfer queue when it works
-
-        cl->begin();
-        cl->updateTexture(uploadDesc);
-
-        device->submit(cl);
+        device->CreateTexture(texDesc, &texData, &m_texture);
 
         m_pixels.clear();
         m_pixels.shrink_to_fit();
         m_uploaded = true;
-
     }
 }

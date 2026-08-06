@@ -6,31 +6,23 @@
 
 namespace ion
 {
-    grl::Box<urhi::slang::Module> ShaderImporter::import(
-        const std::filesystem::path& src,
-        const ShaderImportOpts& options)
+    grl::Box<ShaderModule> ShaderImporter::import(const std::filesystem::path &path, const NoOptions &)
     {
-        auto source = grl::File::read(src.string());
-        clogr::ensure(source.has_value(), "Failed to read shader file: {}", src.string());
+        const auto source = grl::File::read(path.string());
+        clogr::ensure(source.has_value(), "Failed to read shader file: {}", path.string());
 
-        urhi::slang::CompileDesc compileDesc{};
-        compileDesc.moduleName = src.stem().string();
-        compileDesc.modulePath = src.string();
+        const ShaderModule module{source.value()};
+        ShaderProcessDesc desc{};
+        desc.includePaths = { path.parent_path() };
 
-        compileDesc.optimize = true;
-        compileDesc.includePaths = options.includeDirs;
-        compileDesc.includePaths.push_back(src.parent_path().string());
-        compileDesc.defines = options.defines;
+        ShaderPreprocessor preprocessor{module, desc};
+        std::string processedSource = preprocessor.process(ShaderPreprocessMode::ResolveOnly).hlsl;
 
-        compileDesc.moduleSource = source.value();
-
-        urhi::slang::Diagnostics diags;
-        auto module = urhi::slang::Compiler::compileModule(compileDesc, &diags);
-        return grl::makeBox<urhi::slang::Module>(std::move(module));
+        return grl::makeBox<ShaderModule>(processedSource, path.string(), path.stem().string());
     }
 
     bool ShaderImporter::canImport(const std::filesystem::path &src) const
     {
-        return src.extension() == ".slang" || src.extension() == ".shader";
+        return src.extension() == ".hlsl" || src.extension() == ".hlsli" || src.extension() == ".shader";
     }
 }

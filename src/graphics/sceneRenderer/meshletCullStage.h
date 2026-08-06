@@ -1,5 +1,4 @@
 #pragma once
-#include <urhi/urhi.h>
 
 #include "gpuSceneBuffers.h"
 #include "meshletFrameResources.h"
@@ -11,11 +10,12 @@ namespace ion
 class MeshletCullStage
 {
 public:
-    MeshletCullStage(const grl::Rc<urhi::Device> &device);
-    void execute(const grl::Rc<urhi::CommandList> &cmd, urhi::ComputePass& pass, const glm::mat4 &camTransform, const Camera &camera, const GpuSceneBuffers& sceneBuffers, const MeshletFrameResources& frame);
+    MeshletCullStage(const dg::Ref<dg::IRenderDevice> &device, const GpuSceneBuffers &sceneBuffers, const MeshletFrameResources &frame);
+    void execute(const dg::Ref<dg::IDeviceContext> &ctx, const glm::mat4 &camTransform, const Camera &camera, const GpuSceneBuffers& sceneBuffers);
 private:
-    grl::Rc<urhi::Device> m_device;
-    grl::Rc<urhi::Pipeline> m_pipeline;
-    grl::Rc<urhi::Buffer> m_cameraBuffer;
+    dg::Ref<dg::IRenderDevice> m_device;
+    dg::Ref<dg::IPipelineState> m_pso;
+    dg::Ref<dg::IShaderResourceBinding> m_srb;
+    dg::Ref<dg::IBuffer> m_cameraBuffer;
 };
 }

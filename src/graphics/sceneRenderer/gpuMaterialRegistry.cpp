@@ -4,10 +4,17 @@
 
 namespace ion
 {
-    GpuMaterialRegistry::GpuMaterialRegistry(const grl::Rc<urhi::Device> &device)
+    GpuMaterialRegistry::GpuMaterialRegistry(const dg::Ref<dg::IRenderDevice> &device)
         : m_device(device)
     {
-        m_templateBaseOffsetsBuffer = m_device->createBuffer({urhi::BufferUsage::Storage, sizeof(uint32_t) * 512});
+        dg::BufferDesc desc{};
+        desc.Size      = sizeof(uint32_t) * 512;
+        desc.Usage     = dg::USAGE_DEFAULT;
+        desc.BindFlags = dg::BIND_UNORDERED_ACCESS | dg::BIND_SHADER_RESOURCE;
+        desc.Mode      = dg::BUFFER_MODE_STRUCTURED;
+        desc.ElementByteStride = sizeof(uint32_t);
+
+        m_device->CreateBuffer(desc, nullptr, &m_templateBaseOffsetsBuffer);
 
         auto& assets = Engine::assetRegistry();
         m_defaultMaterial = assets.create<MaterialInstance>(MaterialTemplates::pbr());
@@ -41,7 +48,7 @@ namespace ion
         return matIt->second;
     }
 
-    void GpuMaterialRegistry::updateMaterial(const AssetRef<MaterialInstance> &mat, const grl::Rc<urhi::CommandList> &cmd)
+    void GpuMaterialRegistry::updateMaterial(const AssetRef<MaterialInstance> &mat, const dg::Ref<dg::IDeviceContext> &ctx)
     {
         if(!mat->dirty()) return;
 
@@ -51,18 +58,32 @@ namespace ion
 
         auto& buffer = m_materialBuffers[mat.id()];
         if(buffer == nullptr)
-            buffer = m_device->createBuffer({urhi::BufferUsage::Storage, propsBufSize * 512});
+        {
+            dg::BufferDesc desc{};
+            desc.Size      = propsBufSize * 512;
+            desc.Usage     = dg::USAGE_DEFAULT;
+            desc.BindFlags = dg::BIND_UNORDERED_ACCESS | dg::BIND_SHADER_RESOURCE;
+
+            m_device->CreateBuffer(desc, nullptr, &buffer);
+        }
 
         const auto it = m_materialEntries.find(mat.id());
         if(it == m_materialEntries.end())
             return;
 
-        cmd->updateBuffer(buffer, mat->cpuBuffer(), it->second.materialIndex * propsBufSize);
+
+        ctx->UpdateBuffer(
+            buffer,
+            it->second.materialIndex * propsBufSize,
+            mat->cpuBuffer().size(),
+            mat->cpuBuffer().data(),
+            dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+        );
 
         mat->dirty(false);
     }
 
-    void GpuMaterialRegistry::syncLayout(const grl::Rc<urhi::CommandList> &cmd)
+    void GpuMaterialRegistry::syncLayout(const dg::Ref<dg::IDeviceContext> &ctx)
     {
         m_templateBaseOffsets.resize(m_templateInfos.size(), 0);
 
@@ -72,7 +93,14 @@ namespace ion
             m_templateBaseOffsets[info.index] = offset;
             offset += info.totalPrimitiveCount;
         }
-        cmd->updateBuffer(m_templateBaseOffsetsBuffer, m_templateBaseOffsets);
+
+        ctx->UpdateBuffer(
+            m_templateBaseOffsetsBuffer,
+            0,
+            m_templateBaseOffsets.size() * sizeof(uint32_t),
+            m_templateBaseOffsets.data(),
+            dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION
+        );
     }
 
 }

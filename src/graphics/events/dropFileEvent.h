@@ -12,6 +12,6 @@ namespace ion
 
         [[nodiscard]] std::string getPath() const { return path; }
     private:
-        std::string path;
+        std::string path{};
     };
 }

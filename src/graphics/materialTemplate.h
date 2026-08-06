@@ -1,9 +1,7 @@
 #pragma once
-#include <urhi/urhi.h>
 
-#include "shaderSet.h"
+#include "graphicsSystem.h"
 #include "asset/assetRef.h"
-#include "slang/compiler.h"
 
 namespace ion
 {
@@ -19,19 +17,16 @@ struct MaterialDesc
 class MaterialTemplate
 {
 public:
-    static AssetRef<urhi::slang::Module> s_reflectionShader;
-
     explicit MaterialTemplate(const MaterialDesc& desc);
-    MaterialTemplate(std::string name, bool opaque, bool lit, AssetRef<urhi::slang::Module> module);
+    MaterialTemplate(std::string name, bool opaque, bool lit, AssetRef<ShaderModule> module);
 
-    grl::Rc<urhi::Pipeline> getOrCreatePipeline(const urhi::slang::Module& passModule,
-                                                urhi::GraphicsPipelineDesc pipelineDesc);
+    std::pair<dg::Ref<dg::IPipelineState>, dg::Ref<dg::IShaderResourceBinding>> getOrCreatePipeline(const ShaderModule& passModule, const PassDefinition& passDef);
 
-    [[nodiscard]] const grl::Rc<urhi::TextureView>& defaultTexture() const { return s_defaultTexture; }
-    [[nodiscard]] const grl::Rc<urhi::Sampler>& defaultSampler() const { return s_defaultSampler; }
+    [[nodiscard]] static const dg::Ref<dg::ITextureView>& defaultTexture() { return s_defaultTexture; }
+    [[nodiscard]] static const dg::Ref<dg::ISampler>& defaultSampler() { return s_defaultSampler; }
 
-    [[nodiscard]] const auto& resources() const { return m_resources; }
-    [[nodiscard]] const auto& properties() const { return m_properties; }
+    [[nodiscard]] const std::unordered_map<std::string, ShaderResource>& resources() const { return m_resources; }
+    [[nodiscard]] const std::unordered_map<std::string, ShaderMember>& properties() const { return m_properties; }
 
     [[nodiscard]] uint32_t propertiesBufferSize() const { return m_propertiesSize; }
 
@@ -41,28 +36,29 @@ public:
 private:
     friend class MaterialTemplateSerializer;
 
-    void compileModule();
-    static void init(const grl::Rc<urhi::Device> &device);
-
-    [[nodiscard]] static size_t pipelineHash(const urhi::slang::Module& passModule, const urhi::GraphicsPipelineDesc &desc);
+    void reflectModule();
+    static void init(const dg::Ref<dg::IRenderDevice>& device);
 
     bool m_lit = true;
     bool m_opaque = true;
     std::string m_name{};
 
-    AssetRef<urhi::slang::Module> m_module;
+    AssetRef<ShaderModule> m_module;
 
-    grl::Rc<urhi::Device> m_device;
+    GraphicsSystem* m_graphicsSystem;
+    dg::Ref<dg::IRenderDevice> m_device;
 
-    std::unordered_map<std::string, urhi::ShaderReflection::Resource> m_resources;
-    std::unordered_map<std::string, urhi::ShaderReflection::Member> m_properties;
     uint32_t m_propertiesSize = 0;
 
-    std::unordered_map<size_t, grl::Rc<urhi::Pipeline>> m_pipelines;
+    std::unordered_map<dg::IPipelineState*, dg::Ref<dg::IShaderResourceBinding>> m_srbCache;
 
-    static AssetRef<urhi::slang::Module> s_baseMaterialModule;
-    static grl::Rc<urhi::TextureView> s_defaultTexture;
-    static grl::Rc<urhi::Sampler> s_defaultSampler;
+    std::unordered_map<std::string, ShaderResource> m_resources;
+    std::unordered_map<std::string, ShaderMember> m_properties;
+
+    static AssetRef<ShaderModule> s_reflectionShader;
+
+    static dg::Ref<dg::ITextureView> s_defaultTexture;
+    static dg::Ref<dg::ISampler> s_defaultSampler;
 };
 
 class MaterialTemplates

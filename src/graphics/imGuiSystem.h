@@ -2,10 +2,11 @@
 #include <chrono>
 
 #include "graphicsSystem.h"
-#include "imgui/imGuiController.h"
 #include "core/system.h"
-#include "imgui/imGuiConfig.h"
-#include <clogr.h>
+#include "ImGuiImplDiligent.hpp"
+
+#include "imgui.h"
+#include "glm/glm.hpp"
 
 namespace ion
 {
@@ -26,8 +27,6 @@ public:
     void addRenderCallback(const std::function<void()> &callback);
     void onMessage(const ConsoleMessage &message);
 
-    void event(Event *event) override;
-
     bool shouldDrawDockSpace = false;
     bool shouldDrawConsole = false;
     bool shouldDrawStats = false;
@@ -45,13 +44,15 @@ private:
     std::vector<ConsoleMessage> consoleMessages{};
     std::vector<std::function<void()>> renderCallbacks{};
 
-    grl::Box<urhi::ImGuiController> m_imGuiController{};
-    grl::Rc<urhi::Device> m_device{};
-    grl::Rc<urhi::Window> m_window{};
+    grl::Box<dg::ImGuiImplDiligent> m_imGuiController{};
+    
+    dg::Ref<dg::IRenderDevice> m_device{};
+    dg::Ref<dg::ISwapChain> m_swapChain{};
+    grl::Rc<Window> m_window{};
 
-    grl::Rc<urhi::Texture> m_imguiTexture{};
-    grl::Rc<urhi::TextureView> m_colorTextureView{};
-    grl::Rc<urhi::Sampler> m_colorTextureSampler{};
+    dg::Ref<dg::ITexture> m_imguiTexture{};
+    dg::Ref<dg::ITextureView> m_colorTextureView{};
+    dg::Ref<dg::ISampler> m_colorTextureSampler{};
 
     GraphicsSystem* m_graphicsSystem{};
 

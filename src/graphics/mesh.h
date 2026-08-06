@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 
-#include <urhi/urhi.h>
 #include "glm/glm.hpp"
 
 namespace ion
@@ -119,13 +118,6 @@ namespace ion
         void buildInternals();
         void recalculateBounds();
 
-        struct PrimitiveMeshletInfo
-        {
-            uint32_t meshletOffset;
-            uint32_t meshletCount;
-            uint32_t bvhRoot;
-        };
-
         bool m_dirty = false;
 
         uint32_t m_indexCount{};
@@ -141,5 +133,12 @@ namespace ion
         std::vector<MeshletPrimitive>  m_meshletPrimitives;
 
         AABB m_bounds{};
+    public:
+        struct PrimitiveMeshletInfo
+        {
+            uint32_t meshletOffset;
+            uint32_t meshletCount;
+            uint32_t bvhRoot;
+        };
     };
 }

@@ -1,22 +1,42 @@
 #include "rendererSystem.h"
 
-#include "DrawIndexedIndirectCommand.h"
 #include "asset/assetImportPipeline.h"
 #include "core/engine.h"
 #include "core/components/transformComponent.h"
 #include "graphics/graphicsSystem.h"
+#include "graphics/pipelineRegistry.h"
+#include "graphics/shaders/shaderModule.h"
 
 namespace ion
 {
     void RendererSystem::startup()
     {
-        m_device = Engine::getSystem<GraphicsSystem>()->getDevice();
-        m_pipeline = grl::makeBox<IndirectMeshletPipeline>(m_device);
+        const auto graphicsSystem = Engine::getSystem<GraphicsSystem>();
+        m_device = graphicsSystem->device();
+
         m_sceneBuffers = grl::makeBox<GpuSceneBuffers>(m_device);
         m_matRegistry = grl::makeBox<GpuMaterialRegistry>(m_device);
+
+        m_pipeline = grl::makeBox<IndirectMeshletPipeline>(m_device, *m_sceneBuffers, *m_matRegistry);
+
+        auto& importPipeline = Engine::assetImportPipeline();
+
+        const PassDefinition debugLinesPass
+        {
+            .name       = "debug_bounding_box_lines",
+            .rtvFormats = {dg::TEX_FORMAT_RGBA8_UNORM},
+            .topology   = dg::PRIMITIVE_TOPOLOGY_LINE_LIST
+        };
+
+        const auto module = importPipeline.load<ShaderModule>("shaders/linesDraw.hlsl");
+
+        const auto shaderBundle = graphicsSystem->shaderRegistry().getOrCreate(*module);
+        m_debugLinesPSO = graphicsSystem->pipelineRegistry().getOrCreateGraphics(shaderBundle, debugLinesPass);
+
+        m_debugLinesPSO->CreateShaderResourceBinding(&m_debugLinesSRB);
     }
 
-    void RendererSystem::queueView(const grl::Rc<Renderer>& renderer, const grl::Rc<RenderContext>& ctx, Camera camera, glm::mat4 cameraTransform)
+    void RendererSystem::queueView(const grl::Rc<Renderer>& renderer, const grl::Rc<RenderContext>& ctx, const Camera& camera, glm::mat4 cameraTransform)
     {
         m_queuedViews.emplace_back(renderer, ctx, camera, cameraTransform);
     }
@@ -25,8 +45,7 @@ namespace ion
     {
         const auto& meshRenderers = scene.registry().view<MeshRenderer, Transform>();
 
-        const auto cmd = m_device->acquireCommandList(urhi::QueueType::Compute);
-        cmd->begin();
+        const auto cmd = Engine::getSystem<GraphicsSystem>()->imContext();
 
         bool meshLoaded = false;
 
@@ -54,56 +73,48 @@ namespace ion
 
         if(meshLoaded)
             m_matRegistry->syncLayout(cmd);
-
-        m_device->submit(cmd);
     }
 
     void RendererSystem::render(Scene &scene)
     {
-        const auto cmd = m_device->acquireCommandList(urhi::QueueType::Compute);
-        cmd->begin();
+        const auto dc = Engine::getSystem<GraphicsSystem>()->imContext();
 
         for(const auto& view : m_queuedViews)
         {
 
             if(m_sceneBuffers->meshletInstanceCount() > 0)
-                m_pipeline->render(cmd, view.camTransform, view.camera, *m_sceneBuffers, *m_matRegistry);
+                m_pipeline->render(dc, view.camTransform, view.camera, *m_sceneBuffers, *m_matRegistry);
 
             view.ctx->set("frame_resources", &m_pipeline->frameResources());
             view.ctx->set("scene_buffers", m_sceneBuffers.get());
             view.ctx->set("material_registry", m_matRegistry.get());
 
-            view.renderer->execute(cmd, *view.ctx);
+            view.renderer->execute(dc, *view.ctx);
 
-            const auto sceneColorTexture = view.ctx->get<grl::Rc<urhi::TextureView>>("scene_color_texture");
-            const auto sceneDepthTexture = view.ctx->get<grl::Rc<urhi::TextureView>>("scene_depth_texture");
+            auto renderTarget = view.ctx->get<RenderTarget>("scene_rtv");
+            const auto cameraBuffer = view.ctx->get<dg::Ref<dg::IBuffer>>("camera_buffer");
+            m_debugLinesSRB->GetVariableByName(dg::SHADER_TYPE_VERTEX, "gCamera")->Set(cameraBuffer);
 
-            urhi::ColorAttachment colorAttachment{};
-            colorAttachment.target = sceneColorTexture;
-            colorAttachment.loadOp = urhi::LoadOp::Load;
-            colorAttachment.storeOp = urhi::StoreOp::Store;
+            dc->SetRenderTargets(
+                1,
+                &renderTarget.getColorRTV(),
+                nullptr,
+                dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-            urhi::DepthStencilAttachment depthAttachment{};
-            depthAttachment.target = sceneDepthTexture;
-            depthAttachment.loadOp = urhi::LoadOp::Load;
-            depthAttachment.storeOp = urhi::StoreOp::DontCare;
+            dc->SetPipelineState(m_debugLinesPSO);
 
-            urhi::RenderPassDesc renderPassDesc{};
-            renderPassDesc.colorAttachments = {colorAttachment};
-            renderPassDesc.depthAttachment = depthAttachment;
+            dc->SetVertexBuffers(0, 1, &m_pipeline->frameResources().debugLinesBuffer, nullptr, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
 
-            // auto& renderPass = cmd->beginRenderPass(renderPassDesc);
-            //
-            // renderPass.setPipeline(m_debugLinesPipeline);
-            //
-            // renderPass.setVertexBuffer(0, m_pipeline->frameResources().debugLinesBuffer);
-            //
-            // renderPass.multiDrawIndirect(m_pipeline->frameResources().linesDrawCmdBuffer, 1);
-            //
-            // renderPass.end();
+
+            dc->CommitShaderResources(m_debugLinesSRB, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION);
+
+            dg::DrawIndirectAttribs drawAttribs{};
+            drawAttribs.pAttribsBuffer = m_pipeline->frameResources().linesDrawCmdBuffer;
+            drawAttribs.DrawCount = 1;
+            drawAttribs.AttribsBufferStateTransitionMode = dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION;
+
+            dc->DrawIndirect(drawAttribs);
         }
-
-        m_device->submit(cmd);
 
         m_queuedViews.clear();
     }
@@ -118,12 +129,12 @@ namespace ion
         return !m_loadedEntities.contains(entity);
     }
 
-    void RendererSystem::unloadMesh(Mesh &mesh, const grl::Rc<urhi::CommandList> &cmd)
+    void RendererSystem::unloadMesh(Mesh &mesh, const dg::Ref<dg::IDeviceContext> &cmd)
     {
         // TODO implement
     }
 
-    void RendererSystem::loadMesh(const entis::Entity entity, const MeshRenderer& meshRenderer, const grl::Rc<urhi::CommandList> &cmd)
+    void RendererSystem::loadMesh(const entis::Entity entity, const MeshRenderer& meshRenderer, const dg::Ref<dg::IDeviceContext> &cmd)
     {
         m_loadedEntities.emplace(entity);
 

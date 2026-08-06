@@ -66,6 +66,6 @@ class RenderPass
 {
 public:
     virtual ~RenderPass() = default;
-    virtual void execute(const grl::Rc<urhi::CommandList>& cmd, RenderContext& ctx) = 0;
+    virtual void execute(const dg::Ref<dg::IDeviceContext>& dc, RenderContext& ctx) = 0;
 };
 }

@@ -12,7 +12,7 @@ class RendererSystem final : public System
 public:
     void startup() override;
 
-    void queueView(const grl::Rc<Renderer>& renderer, const grl::Rc<RenderContext>& ctx, Camera camera, glm::mat4 cameraTransform);
+    void queueView(const grl::Rc<Renderer>& renderer, const grl::Rc<RenderContext>& ctx, const Camera& camera, glm::mat4 cameraTransform);
     void update(Scene& scene) override;
     void render(Scene& scene) override;
 private:
@@ -40,14 +40,17 @@ private:
     bool needsUnload(Mesh& mesh, Transform& transform);
     bool needsLoad(entis::Entity entity);
 
-    void unloadMesh(Mesh& mesh, const grl::Rc<urhi::CommandList> &cmd);
-    void loadMesh(entis::Entity entity, const MeshRenderer& meshRenderer, const grl::Rc<urhi::CommandList> &cmd);
+    void unloadMesh(Mesh& mesh, const dg::Ref<dg::IDeviceContext> &cmd);
+    void loadMesh(entis::Entity entity, const MeshRenderer& meshRenderer, const dg::Ref<dg::IDeviceContext> &cmd);
 
     std::vector<QueuedView> m_queuedViews;
 
     std::unordered_set<entis::Entity> m_loadedEntities;
 
-    grl::Rc<urhi::Device> m_device;
+    dg::Ref<dg::IRenderDevice> m_device;
+    dg::Ref<dg::IPipelineState> m_debugLinesPSO;
+    dg::Ref<dg::IShaderResourceBinding> m_debugLinesSRB;
+
     grl::Box<IndirectMeshletPipeline> m_pipeline;
     grl::Box<GpuSceneBuffers> m_sceneBuffers;
     grl::Box<GpuMaterialRegistry> m_matRegistry;

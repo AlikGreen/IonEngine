@@ -24,7 +24,7 @@ public:
     static PointLightsData createPointLightsUniformData(Scene &scene);
     static PassData createPassData(glm::vec2 resolution);
 
-    void execute(const grl::Rc<urhi::CommandList> &cmd, RenderContext& ctx);
+    void execute(const dg::Ref<dg::IDeviceContext>& cmd, RenderContext& ctx);
 
     template<typename T, typename ...Args>
     requires std::derived_from<T, RenderPass> && std::is_constructible_v<T, Args...>

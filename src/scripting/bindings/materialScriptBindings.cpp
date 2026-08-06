@@ -1,5 +1,6 @@
 #include "materialScriptBindings.h"
 
+#include "glm/glm.hpp"
 #include "graphics/materialInstance.h"
 #include "scripting/handleRegistry.h"
 

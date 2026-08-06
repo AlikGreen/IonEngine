@@ -5,29 +5,29 @@
 
 namespace ion
 {
-    IndexScatterStage::IndexScatterStage(const grl::Rc<urhi::Device> &device)
+    IndexScatterStage::IndexScatterStage(const dg::Ref<dg::IRenderDevice> &device, const GpuSceneBuffers &sceneBuffers, const MeshletFrameResources &frame)
         : m_device(device)
     {
         auto& importPipeline = Engine::assetImportPipeline();
+        const auto& graphics = *Engine::getSystem<GraphicsSystem>();
 
-        urhi::ComputePipelineDesc desc{};
-        auto module = importPipeline.load<urhi::slang::Module>("shaders/buildIndexBuffer.slang");
-        const auto shader = urhi::slang::Compiler::linkToShaderSet({{*module}}).stages()[0];
-        desc.shader = m_device->createShader(shader);
-        m_pipeline = m_device->createPipeline(desc);
+        const auto module = importPipeline.load<ShaderModule>("shaders/buildIndexBuffer.hlsl");
+        const auto bundle = graphics.shaderRegistry().getOrCreate(*module);
+
+        m_pso = graphics.pipelineRegistry().getOrCreateCompute(bundle);
+        m_pso->CreateShaderResourceBinding(&m_srb);
+
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gMeshlets")->Set(sceneBuffers.meshletBuffer()->GetDefaultView(dg::BUFFER_VIEW_SHADER_RESOURCE));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gVisibleMeshlets")->Set(frame.visibleMeshlets->GetDefaultView(dg::BUFFER_VIEW_SHADER_RESOURCE));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gCurrentOffsetPerPrimitive")->Set(frame.indexCountOrOffsetPerPrimitive->GetDefaultView(dg::BUFFER_VIEW_UNORDERED_ACCESS));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gGlobalIndices")->Set(sceneBuffers.indexBuffer()->GetDefaultView(dg::BUFFER_VIEW_SHADER_RESOURCE));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gScratchIndices")->Set(frame.indexScratchBuffer->GetDefaultView(dg::BUFFER_VIEW_UNORDERED_ACCESS));
+        m_srb->GetVariableByName(dg::SHADER_TYPE_COMPUTE, "gPrimitives")->Set(sceneBuffers.primitiveBuffer()->GetDefaultView(dg::BUFFER_VIEW_SHADER_RESOURCE));
     }
 
-    void IndexScatterStage::execute(urhi::ComputePass &pass, const GpuSceneBuffers &sceneBuffers, const MeshletFrameResources &frame)
+    void IndexScatterStage::execute(const dg::Ref<dg::IDeviceContext>& ctx, const MeshletFrameResources &frame)
     {
-        pass.setPipeline(m_pipeline);
-
-        pass.setBuffer("gMeshlets", sceneBuffers.meshletBuffer());
-        pass.setBuffer("gVisibleMeshlets", frame.visibleMeshlets);
-        pass.setBuffer("gCurrentOffsetPerPrimitive", frame.indexCountOrOffsetPerPrimitive);
-        pass.setBuffer("gGlobalIndices", sceneBuffers.indexBuffer());
-        pass.setBuffer("gScratchIndices", frame.indexScratchBuffer);
-        pass.setBuffer("gPrimitives", sceneBuffers.primitiveBuffer());
-
-        pass.dispatchIndirect(frame.indirectDispatchArgs);
+        ctx->SetPipelineState(m_pso);
+        ctx->DispatchComputeIndirect({ frame.indirectDispatchArgs, dg::RESOURCE_STATE_TRANSITION_MODE_TRANSITION });
     }
 }

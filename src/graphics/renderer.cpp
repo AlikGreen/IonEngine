@@ -69,7 +69,7 @@ namespace ion
         return pass;
     }
 
-    void Renderer::execute(const grl::Rc<urhi::CommandList> &cmd, RenderContext &ctx)
+    void Renderer::execute(const dg::Ref<dg::IDeviceContext>& cmd, RenderContext &ctx)
     {
         for(const auto& pass : m_passes)
         {
